@@ -3,6 +3,8 @@ package main
 import (
 	"fmt"
 	"os"
+
+	"syncerman/internal/cmd"
 )
 
 func main() {
@@ -13,6 +15,5 @@ func main() {
 }
 
 func run() error {
-	fmt.Println("Syncerman - Synchronizing targets")
-	return nil
+	return cmd.Execute()
 }

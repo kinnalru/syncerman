@@ -1,35 +1,32 @@
 package main
 
 import (
-	"bytes"
-	"io"
 	"os"
-	"strings"
 	"testing"
+
+	"syncerman/internal/cmd"
 )
 
-func TestRun(t *testing.T) {
-	// Redirect stdout to capture output
-	oldStdout := os.Stdout
-	r, w, _ := os.Pipe()
-	os.Stdout = w
+func TestRunIntegration(t *testing.T) {
+	t.Run("help command", func(t *testing.T) {
+		oldArgs := os.Args
+		defer func() { os.Args = oldArgs }()
+		os.Args = []string{"syncerman", "--help"}
 
-	err := run()
+		err := run()
+		if err != nil {
+			t.Errorf("run() error = %v", err)
+		}
+	})
+}
 
-	// Restore stdout
-	w.Close()
-	os.Stdout = oldStdout
+func TestMainIntegration(t *testing.T) {
+	oldArgs := os.Args
+	defer func() { os.Args = oldArgs }()
+	os.Args = []string{"syncerman", "--help"}
 
+	err := cmd.Execute()
 	if err != nil {
-		t.Fatalf("expected no error, got %v", err)
-	}
-
-	var buf bytes.Buffer
-	_, _ = io.Copy(&buf, r)
-	output := buf.String()
-
-	expected := "Syncerman - Synchronizing targets\n"
-	if !strings.Contains(output, "Syncerman") {
-		t.Errorf("expected output to contain %q, got %q", expected, output)
+		t.Errorf("cmd.Execute() error = %v", err)
 	}
 }

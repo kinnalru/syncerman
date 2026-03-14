@@ -7,6 +7,7 @@ This document provides guidelines for autonomous coding agents working on this r
 ## Current Project Guides
 
 - `guides/STYLE.md` - Go Code Style Guidelines
+- `guides/PLANING.md` - Autonomous Coding Agent Workflow
 
 ## Technology Stack
 
