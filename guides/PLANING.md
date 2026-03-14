@@ -5,7 +5,7 @@ This document outlines the standard operating procedure for autonomous coding ag
 ## 1. Overall Planning with Multiple Milestones
 
 Before writing any code, the agent must establish a high-level roadmap.
-Always read `guides/OVERLL.md` when planning.
+Always read `guides/OVERALL.md` when planning.
 
 *   **Context Gathering:** Begin by exploring the codebase, reading documentation, and analyzing the core request to understand the full scope of the work.
 *   **Milestone Definition:** Deconstruct the overarching goal into a sequence of logical, manageable milestones. Each milestone must represent a significant, standalone, and verifiable phase of the project (e.g., "Implement Data Layer", "Build Core API", "Integrate Frontend Components").
@@ -20,7 +20,7 @@ Always read `guides/OVERLL.md` when planning.
 ## 2. Comprehensive Detailed Planning for a Milestone
 
 Once a milestone is selected for execution, it must be broken down into concrete, actionable steps.
-Always read `guides/OVERLL.md` when planning.
+Always read `guides/OVERALL.md` when planning.
 
 *   **Milestone Selection:** Select the highest priority pending milestone that has its dependencies met.
 *   **Deep Dive Analysis:** Perform targeted exploration of the domain specific to the selected milestone. Understand existing file structures, interfaces, and patterns related to this phase.
