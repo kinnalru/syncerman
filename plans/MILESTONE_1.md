@@ -1,3 +1,8 @@
+---
+title: "Milestone 1: Project Foundation and Core Structure"
+status: "completed"
+---
+
 # Milestone 1: Project Foundation and Core Structure
 
 ## Goal

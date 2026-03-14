@@ -15,7 +15,7 @@ var checkCmd = &cobra.Command{
 	Use:   "check",
 	Short: "Check configuration and remotes",
 	Long: `Check validates configuration and verifies rclone remotes.
-	
+
 Use 'check config' to validate configuration file.
 Use 'check remotes' to verify rclone remote configuration.`,
 	Run: func(cmd *cobra.Command, args []string) {
@@ -27,7 +27,17 @@ var checkConfigCmd = &cobra.Command{
 	Use:   "config",
 	Short: "Check configuration file validity",
 	Long: `Config validates configuration file and checks that all
-configured providers and destinations are valid.`,
+configured providers and destinations are valid.
+
+This command verifies:
+  - Configuration file syntax and structure
+  - Provider and path configurations
+  - Destination format and required fields
+  - Provider existence in rclone configuration (if not --skip-remotes)
+
+Examples:
+  syncerman check config
+  syncerman check config --config /path/to/config.yaml`,
 	Run: func(cmd *cobra.Command, args []string) {
 		doCheckConfig(cmd)
 	},
@@ -37,7 +47,21 @@ var checkRemotesCmd = &cobra.Command{
 	Use:   "remotes",
 	Short: "Check rclone remotes configuration",
 	Long: `Remotes checks that all providers in configuration
-are properly configured in rclone.`,
+are properly configured in rclone.
+
+This command:
+  - Lists all providers from configuration file
+  - Verifies each provider exists in rclone
+  - Reports OK for each valid provider
+  - Reports NOT FOUND for missing providers
+
+Exit codes:
+  0 - All providers configured in rclone
+  1 - One or more providers not found
+
+Examples:
+  syncerman check remotes
+  syncerman check remotes --verbose`,
 	Run: func(cmd *cobra.Command, args []string) {
 		doCheckRemotes(cmd)
 	},

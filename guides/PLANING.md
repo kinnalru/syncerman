@@ -1,11 +1,11 @@
 # Autonomous Coding Agent Workflow
 
-This document outlines the standard operating procedure for autonomous coding agents PLANNING to the project. Agents must follow these guidelines to ensure structured, safe, and verifiable progress.
+This document outlines the standard operating procedure for autonomous coding agents PLANNING to the project. Agents must follow these guidelines to ensure structured, safe, and verifiable progress. You MUST user `todowrite` and `todoread` tools.
 
 ## 1. Overall Planning with Multiple Milestones
 
 Before writing any code, the agent must establish a high-level roadmap.
-Always read `guides/OVERALL.md` when planning.
+Always read `guides/OVERALL.md` when planning. You MUST user `todowrite` and `todoread` tools.
 
 *   **Context Gathering:** Begin by exploring the codebase, reading documentation, and analyzing the core request to understand the full scope of the work.
 *   **Milestone Definition:** Deconstruct the overarching goal into a sequence of logical, manageable milestones. Each milestone must represent a significant, standalone, and verifiable phase of the project (e.g., "Implement Data Layer", "Build Core API", "Integrate Frontend Components").
@@ -20,7 +20,7 @@ Always read `guides/OVERALL.md` when planning.
 ## 2. Comprehensive Detailed Planning for a Milestone
 
 Once a milestone is selected for execution, it must be broken down into concrete, actionable steps.
-Always read `guides/OVERALL.md` when planning.
+Always read `guides/OVERALL.md` when planning. You MUST user `todowrite` and `todoread` tools.
 
 *   **Milestone Selection:** Select the highest priority pending milestone that has its dependencies met.
 *   **Deep Dive Analysis:** Perform targeted exploration of the domain specific to the selected milestone. Understand existing file structures, interfaces, and patterns related to this phase.
@@ -53,7 +53,7 @@ Format:
 
 ## 3. Executing Tasks from Milestones
 
-Execution must be methodical and focused to maintain code quality.
+Execution must be methodical and focused to maintain code quality. You MUST user `todowrite` and `todoread` tools.
 
 *   **Single-Task Focus:** Mark exactly *one* task as "In Progress" at a time. The agent must never work on multiple unrelated tasks simultaneously to prevent context switching and contamination.
 *   **Implementation:** Execute the necessary code changes adhering strictly to the project's style guides and conventions.

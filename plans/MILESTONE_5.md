@@ -1,6 +1,6 @@
 ---
 title: "Milestone 5: CLI Commands Implementation"
-status: "in_progress"
+status: "completed"
 ---
 
 # Milestone 5: CLI Commands Implementation

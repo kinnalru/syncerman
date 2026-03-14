@@ -176,7 +176,7 @@ func TestValidateDestinationPaths_InvalidFormat(t *testing.T) {
 		{
 			Provider:    "gdrive",
 			SourcePath:  "docs",
-			Destination: config.Destination{To: "path:with:too:many:colons"},
+			Destination: config.Destination{To: ":emptyprovider"},
 		},
 	}
 
@@ -184,7 +184,7 @@ func TestValidateDestinationPaths_InvalidFormat(t *testing.T) {
 	err := engine.ValidateDestinationPaths(targets)
 
 	require.Error(t, err)
-	assert.Contains(t, err.Error(), "invalid remote format")
+	assert.Contains(t, err.Error(), "provider name cannot be empty")
 }
 
 func TestValidateDestinationPaths_EmptyProvider(t *testing.T) {

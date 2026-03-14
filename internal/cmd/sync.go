@@ -15,9 +15,21 @@ var syncCmd = &cobra.Command{
 	Use:   "sync",
 	Short: "Synchronize targets from configuration or single target",
 	Long: `Sync executes bidirectional synchronization using rclone bisync.
-	
+
 When called without arguments, syncs all targets from configuration file.
-When called with a target argument (provider:path), syncs only that specific target.`,
+When called with a target argument (provider:path), syncs only that specific target.
+
+Examples:
+  syncerman sync                  # Sync all targets
+  syncerman sync gdrive:docs       # Sync gdrive:docs only
+  syncerman sync --dry-run        # Show what would be synced
+  syncerman sync --verbose         # Show detailed output
+
+Global Flags:
+  -c, --config string   Path to configuration file (default: ./syncerman.yaml)
+  -d, --dry-run        Dry run mode (show what would be done)
+  -v, --verbose         Verbose output
+  -q, --quiet          Quiet mode (suppress output)`,
 	Args: cobra.MaximumNArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
 		runSync(cmd, args)
