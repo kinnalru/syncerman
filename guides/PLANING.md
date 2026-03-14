@@ -28,7 +28,8 @@ Always read `guides/OVERLL.md` when planning.
 *   **Verification Strategy:** For each milestone, clearly define how success will be verified. This should include specific testing, linting, or building steps that must pass upon completion.
 *   **Refferences:** MAY Use refferences to key documents (guides/PLANING.md, PLAN_NUM.md and other) lxample: `(PLAN_1.md: lines 11-13)`
 *   **Tracker Update:** Populate the active milestone in `./WAL.md` (Write Ahead Log) with these granular tasks. Write BEFORE and AFTER actual work.
-*   **Storage** Persist in Markdown file  `plans/MILESTONE_<NUM>.md` where NUM is milestone number.
+*   **Storage:** Persist in Markdown file  `plans/MILESTONE_<NUM>.md` where NUM is milestone number.
+*   **Subagent invocation:** use `@plan` in planing agent invocation. example: `@plan create a plan to implement Milestone 3`
 
 Format:
 
@@ -59,7 +60,7 @@ Execution must be methodical and focused to maintain code quality.
 *   **Continuous Verification:** Immediately after completing a task's code, run local verification steps (e.g., formatters, linters, unit tests).
 *   **Task Completion:** Once verified successfully, mark the task as "Completed".
 *   **Dynamic Adaptation:** If a task requires unforeseen subsequent steps, dynamically add new tasks to the current milestone rather than deviating from the plan.
-*   **Subagents** you MUST use subagents for each task wia `task` tool
+*   **Subagents** you MUST use subagents for each task wia `task` tool. 
 
 ## 4. Fixing and Tracking Current Progress
 
@@ -98,6 +99,7 @@ Robust state management and error handling are critical for autonomous progress.
 
 
 **Create New Milestone Flow**:
-1. read next UNFINISHED `plans/PLAN_<NUM>.md`
-2. created detailed complehensive Milestone definitions in `plans/MILESTONE_<NUM>.md`
-3. use 'Take Next Milestone Flow'
+1. CLEAN Write head Log - remove details from completed milestones leave only names and status. example: `### 2026-03-14 Milestone 1: Project Foundation and Core Structure - COMPLETED`
+2. read next UNFINISHED `plans/PLAN_<NUM>.md`
+3. created detailed complehensive Milestone definitions in `plans/MILESTONE_<NUM>.md`
+4. use 'Take Next Milestone Flow'
