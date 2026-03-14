@@ -62,3 +62,14 @@ golangci-lint run
 staticcheck ./...
 ```
 
+## Makefile Commands
+
+A `Makefile` is provided to simplify common tasks:
+
+- `make build`: Compiles the binary for Linux and Windows.
+- `make test`: Runs all tests with coverage and verbose output.
+- `make lint`: Runs `golangci-lint` and `go vet`.
+- `make fmt`: Runs `go fmt` and `goimports`.
+- `make clean`: Removes generated binaries.
+- `make all`: Runs `make test` followed by `make build`.
+
