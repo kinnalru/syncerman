@@ -9,6 +9,7 @@ Always read `guides/OVERALL.md` when planning. You MUST user `todowrite` and `to
 
 *   **Context Gathering:** Begin by exploring the codebase, reading documentation, and analyzing the core request to understand the full scope of the work.
 *   **Milestone Definition:** Deconstruct the overarching goal into a sequence of logical, manageable milestones. Each milestone must represent a significant, standalone, and verifiable phase of the project (e.g., "Implement Data Layer", "Build Core API", "Integrate Frontend Components").
+*   **Tasks:** there must be 5-7 SHORT tasks in milestone when Overall Planning
 *   **Refferences:** MAY Use refferences to key documents (guides/PLANING.md, and other) lxample: `(OVERALL.md: lines 256-267)`
 *   **Dependency Mapping:** Sequence milestones logically, ensuring that foundational work is completed before dependent features.
 *   **State Tracking:** Maintain a structured list of milestones, tracking their current state (e.g., Pending, In Progress, Completed).
