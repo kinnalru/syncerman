@@ -29,7 +29,7 @@ Always read `guides/OVERALL.md` when planning. You MUST user `todowrite` and `to
 *   **Verification Strategy:** For each milestone, clearly define how success will be verified. This should include specific testing, linting, or building steps that must pass upon completion.
 *   **Refferences:** MAY Use refferences to key documents (guides/PLANING.md, PLAN_NUM.md and other) lxample: `(PLAN_1.md: lines 11-13)`
 *   **Tracker Update:** Populate the active milestone in `./WAL.md` (Write Ahead Log) with these granular tasks. Write BEFORE and AFTER actual work.
-*   **Storage:** Persist in Markdown file  `plans/MILESTONE_<NUM>.md` where NUM is milestone number.
+*   **Storage:** Persist in Markdown file  `plans/PLAN_N/MILESTONE_<NUM>.md` where NUM is milestone number.
 *   **Subagent invocation:** use `@plan` in planing agent invocation. example: `@plan create a plan to implement Milestone 3`
 
 Format:
@@ -74,7 +74,7 @@ Robust state management and error handling are critical for autonomous progress.
     4.  Resolve the error and successfully re-verify before resuming the original plan.
 *   **Checkpointing:** Treat logical completion points (like finishing a significant task or a full milestone) as checkpoints. Ensure the codebase is in a stable, verifiable state before moving on. Fix checkpoint in Write Ahead Log.
 *   **Single Source of Truth:** The agent must treat its `./WAL.md` as the definitive record of progress. The status of milestones and tasks must be continuously updated in real-time to reflect the actual state of the codebase.
-*   **Milestone completition** Mark all tasks in `plans/MILESTONE_<NUM>.md` after completition. USE Frontmatter for marking
+*   **Milestone completition** Mark all tasks in `plans/PLAN_N/MILESTONE_<NUM>.md` after completition. USE Frontmatter for marking
 *   
 
 ## 5. Flow and Steps definition
@@ -83,28 +83,46 @@ Robust state management and error handling are critical for autonomous progress.
 1. read Write Ahead Log and find next unfinished Task or Milestone
 2. If there is unfinished TASK or MILESTONE  use 'Continue Current Milestone Flow'
 3. If there is no unfinished TASK or MILESTONE use 'Take Next Milestone Flow'
-4. when all Milestones from `plans/MILESTONE_<NUM>.md` finished use 'Create New Milestone Flow'
+4. when all Milestones from `plans/PLAN_N/MILESTONE_<NUM>.md` finished use 'Create New Milestone Flow'
 
 
 **Continue Current Milestone Flow**:
-1. read current Milestone tasks from `plans/MILESTONE_<NUM>.md`
+1. read current Milestone tasks from `plans/PLAN_N/MILESTONE_<NUM>.md`
 2. execute all unfinished Tasks in sequental order
 3. when all Tasks finished use 'Take Next Milestone Flow'
 
 
 **Take Next Milestone Flow**:
-1. read next UNFINISHED Milestone from `plans/MILESTONE_<NUM>.md`
+1. read next UNFINISHED Milestone from `plans/PLAN_N/MILESTONE_<NUM>.md`
 2. execute all unfinished Tasks in sequental order
 3. when all Tasks finished use 'Take Next Milestone Flow'
-4. when all Milestones from `plans/MILESTONE_<NUM>.md` finished use 'Create New Milestone Flow'
+4. when all Milestones from `plans/PLAN_N/MILESTONE_<NUM>.md` finished use 'Create New Milestone Flow'
 
 
 **Create New Milestone Flow**:
 1. CLEAN Write head Log - remove details from completed milestones leave only names and status. example: `### 2026-03-14 Milestone 1: Project Foundation and Core Structure - COMPLETED`
 2. read next UNFINISHED `plans/PLAN_<NUM>.md`
-3. created detailed complehensive Milestone definitions in `plans/MILESTONE_<NUM>.md`
+3. created detailed complehensive Milestone definitions in `plans/PLAN_N/MILESTONE_<NUM>.md`
 4. use 'Take Next Milestone Flow'
 
 ## 6. subagents spawning
 
 You MUST use tool with subagents → Use OpenCode's subagent system (@mention `@plan`)
+
+
+## 7. Persistant planing structure example:
+
+`tree plans`
+```
+plans
+├── PLAN_1
+│   ├── MILESTONE_1.md
+│   ├── MILESTONE_2.md
+│   ├── MILESTONE_3.md
+│   ├── MILESTONE_4.md
+│   ├── MILESTONE_5.md
+│   └── MILESTONE_6.md
+├── PLAN_1.md
+├── PLAN_2.md
+└── PLAN_3.md
+```
