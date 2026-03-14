@@ -1,3 +1,8 @@
+---
+title: "Milestone 2: Configuration System"
+status: "completed"
+---
+
 # Milestone 2: Configuration System
 
 ## Goal
