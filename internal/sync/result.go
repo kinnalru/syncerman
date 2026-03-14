@@ -68,6 +68,9 @@ func (e *Engine) CollectResults(results []*SyncResult) *SyncReport {
 	return report
 }
 
+// calculateExitCode determines the appropriate exit code based on sync results.
+// Returns 0 for success, 1 for any failures.
+// First-run errors that were successfully retried do not cause a failure exit code.
 func (r *SyncReport) calculateExitCode() int {
 	if !r.HasErrorsField() {
 		return 0
@@ -116,6 +119,7 @@ func (r *SyncReport) Format(verbose bool) string {
 		for i, target := range r.FailedTargets {
 			builder.WriteString(fmt.Sprintf("%d. %s:%s -> %s\n", i+1, target.Provider, target.SourcePath, target.Destination.To))
 
+			// Match error to target by index since they're stored in parallel arrays
 			for j, err := range r.Errors {
 				errMsg := err.Error()
 				if len(errMsg) > 0 && i < len(r.Errors) {
@@ -157,11 +161,14 @@ func (r *SyncReport) FormatError() string {
 }
 
 // HasErrorsField returns true if any sync operations failed.
+// Uses field suffix to match struct field naming convention.
 func (r *SyncReport) HasErrorsField() bool {
 	return r.HasErrors
 }
 
 // GetExitCodeField returns recommended exit code for this report.
+// Uses field suffix to match struct field naming convention.
+// Returns 0 for success, 1 for failures.
 func (r *SyncReport) GetExitCodeField() int {
 	return r.ExitCode
 }
@@ -173,6 +180,8 @@ func NewReport(results []*SyncResult) *SyncReport {
 }
 
 // AggregateReport combines multiple reports into a single summary.
+// Aggregates statistics, target lists, and errors from all reports.
+// Returns a new combined report with totals from all input reports.
 func AggregateReport(reports []*SyncReport) *SyncReport {
 	combined := &SyncReport{
 		TotalTargets:     0,
@@ -188,14 +197,21 @@ func AggregateReport(reports []*SyncReport) *SyncReport {
 	}
 
 	for _, report := range reports {
+		// Aggregate statistics
 		combined.TotalTargets += report.TotalTargets
 		combined.SuccessCount += report.SuccessCount
 		combined.FailureCount += report.FailureCount
 		combined.FirstRunCount += report.FirstRunCount
+
+		// Append target lists from each report
 		combined.FirstRunTargets = append(combined.FirstRunTargets, report.FirstRunTargets...)
 		combined.FailedTargets = append(combined.FailedTargets, report.FailedTargets...)
 		combined.SucceededTargets = append(combined.SucceededTargets, report.SucceededTargets...)
+
+		// Aggregated errors flag is true if any report has errors
 		combined.HasErrors = combined.HasErrors || report.HasErrors
+
+		// Collect all errors from all reports
 		combined.Errors = append(combined.Errors, report.Errors...)
 	}
 

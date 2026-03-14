@@ -9,9 +9,12 @@ import (
 )
 
 // ValidationErrors represents collection of validation errors.
+// Used to aggregate multiple validation failures into a single error return.
 type ValidationErrors []error
 
 // Error returns formatted error message from all validation errors.
+// Concatenates all error messages into a single string separated by semicolons.
+// Returns empty string if no validation errors exist.
 func (ve ValidationErrors) Error() string {
 	if len(ve) == 0 {
 		return ""
@@ -26,13 +29,35 @@ func (ve ValidationErrors) Error() string {
 }
 
 // ValidateTargets checks that all providers and paths in config are valid.
-// It verifies that providers exist in rclone and paths are configured.
+// It verifies that providers exist in rclone configuration and paths are configured.
+// Validates each provider by querying rclone, except for 'local' which is always valid.
 func (e *Engine) ValidateTargets(ctx context.Context, config *config.Config) error {
 	var errs ValidationErrors
 
 	providers := config.GetProviders()
 	if len(providers) == 0 {
 		return fmt.Errorf("no providers configured")
+	}
+
+	for provider := range providers {
+		if provider == "" {
+			errs = append(errs, fmt.Errorf("provider name cannot be empty"))
+			continue
+		}
+
+		if provider == "local" {
+			continue
+		}
+
+		exists, err := rclone.RemoteExists(ctx, e.rclone, provider)
+		if err != nil {
+			errs = append(errs, fmt.Errorf("failed to verify provider %s: %w", provider, err))
+			continue
+		}
+
+		if !exists {
+			errs = append(errs, fmt.Errorf("provider %s not found in rclone configuration", provider))
+		}
 	}
 
 	for provider := range providers {
@@ -64,7 +89,9 @@ func (e *Engine) ValidateTargets(ctx context.Context, config *config.Config) err
 }
 
 // ExpandTargets expands configuration YAML into a list of sync targets.
-// Each source:path + destination combination becomes a SyncTarget.
+// Each provider:sourcePath + destination combination becomes a SyncTarget.
+// Validates all source paths and destinations during expansion.
+// Returns error if any target is invalid, along with all validation errors found.
 func (e *Engine) ExpandTargets(config *config.Config) ([]*SyncTarget, error) {
 	var targets []*SyncTarget
 	var errs ValidationErrors
@@ -83,6 +110,7 @@ func (e *Engine) ExpandTargets(config *config.Config) ([]*SyncTarget, error) {
 				continue
 			}
 
+			// Create a sync target for each destination
 			for _, dest := range destinations {
 				if dest.To == "" {
 					errs = append(errs, fmt.Errorf("destination 'to' cannot be empty for %s:%s", provider, sourcePath))
@@ -138,11 +166,15 @@ func FormatRemote(provider, path string) string {
 
 // ParseRemote parses a remote path string into provider and path components.
 // Returns empty provider if format is invalid.
+// Assumes 'local' provider if no colon is present.
+// Validates that both provider and path are non-empty.
 func ParseRemote(remote string) (provider, path string, err error) {
+	// Local path (no colon found)
 	if !strings.Contains(remote, ":") {
 		return "local", remote, nil
 	}
 
+	// Remote path with format "provider:path"
 	parts := strings.SplitN(remote, ":", 2)
 	if len(parts) != 2 {
 		return "", "", fmt.Errorf("invalid remote format: %s", remote)

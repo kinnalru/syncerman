@@ -40,8 +40,10 @@ func (e *Engine) RunSync(ctx context.Context, target SyncTarget, options SyncOpt
 	}
 
 	maxRetries := 1
+	// If target explicitly requests resync, we don't retry on first-run errors
+	// since --resync is already included in the initial attempt
 	if target.Resync {
-		maxRetries = 1
+		maxRetries = 0
 	}
 
 	for attempt := 0; attempt <= maxRetries; attempt++ {
@@ -55,6 +57,8 @@ func (e *Engine) RunSync(ctx context.Context, target SyncTarget, options SyncOpt
 
 		cmdResult, err := e.rclone.Run(ctx, args.Build()...)
 
+		// If the command execution itself fails (not the sync operation),
+		// return immediately without attempting recovery
 		if err != nil {
 			result.Error = fmt.Errorf("sync command failed: %w", err)
 
@@ -69,24 +73,31 @@ func (e *Engine) RunSync(ctx context.Context, target SyncTarget, options SyncOpt
 			e.logger.Debug("Sync output: %s", cmdResult.Combined)
 		}
 
+		// Check for first-run error - occurs when state files don't exist
+		// This is recoverable by retrying with --resync flag
 		if rclone.IsFirstRunError(cmdResult.Stderr) {
 			if attempt == maxRetries {
+				// Max retries reached, give up on this target
 				e.logger.Warn("First-run error detected but max retries exceeded for %s:%s", target.Provider, target.SourcePath)
 				result.Error = fmt.Errorf("first-run error after %d retries: %s", maxRetries+1, cmdResult.Stderr)
 				return result, nil
 			}
 
+			// Retry with --resync flag to initialize state files
 			e.logger.Warn("First-run error detected for %s:%s, retrying with --resync", target.Provider, target.SourcePath)
 			result.FirstRun = true
 			continue
 		}
 
+		// Command executed successfully with exit code 0
 		if cmdResult.ExitCode == 0 {
 			result.Success = true
 			e.logger.Info("Sync completed successfully for %s:%s to %s", target.Provider, target.SourcePath, destRemote)
 			return result, nil
 		}
 
+		// Non-zero exit code indicates sync operation failed
+		// This could be due to conflicts, network errors, etc.
 		result.Error = fmt.Errorf("sync failed with exit code %d: %s", cmdResult.ExitCode, cmdResult.Stderr)
 		e.logger.Error("Sync failed for %s:%s: %s", target.Provider, target.SourcePath, cmdResult.Stderr)
 		return result, nil
@@ -98,7 +109,7 @@ func (e *Engine) RunSync(ctx context.Context, target SyncTarget, options SyncOpt
 
 // RunAll executes all sync operations defined in the configuration.
 // It processes targets sequentially and returns aggregated results.
-// Stops on first error unless ContinueOnError is set in options.
+// Stops on first error if Quiet mode is off, otherwise stops on any failure.
 func (e *Engine) RunAll(ctx context.Context, config *config.Config, options SyncOptions) ([]*SyncResult, error) {
 	targets, err := e.ExpandTargets(config)
 	if err != nil {
@@ -122,14 +133,15 @@ func (e *Engine) RunAll(ctx context.Context, config *config.Config, options Sync
 
 		results[i] = result
 
+		// Stop processing if a sync fails
+		// The error message is the same regardless of Quiet mode since we're returning
+		// the results along with the error for partial success tracking
 		if !result.Success {
-			if options.Quiet {
-				return results, fmt.Errorf("sync target %d failed: %w", i+1, result.Error)
-			}
 			return results, fmt.Errorf("sync target %d failed: %w", i+1, result.Error)
 		}
 	}
 
+	// Calculate final statistics for logging
 	successCount := 0
 	firstRunCount := 0
 

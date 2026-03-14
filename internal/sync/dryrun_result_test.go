@@ -4,9 +4,10 @@ import (
 	"fmt"
 	"testing"
 
+	"syncerman/internal/config"
+
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"syncerman/internal/config"
 )
 
 func TestCollectResults_SuccessOnly(t *testing.T) {

@@ -5,10 +5,11 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/spf13/cobra"
 	"syncerman/internal/config"
 	"syncerman/internal/rclone"
 	"syncerman/internal/sync"
+
+	"github.com/spf13/cobra"
 )
 
 var checkCmd = &cobra.Command{
@@ -73,6 +74,36 @@ func init() {
 	checkCmd.AddCommand(checkRemotesCmd)
 }
 
+// doCheckConfig validates the configuration file and its targets.
+//
+// This function performs comprehensive validation of the configuration file,
+// checking both structure and semantic correctness. It validates the YAML
+// structure, provider configurations, and ensures targets are properly defined.
+//
+// Parameters:
+//
+//	cmd: The cobra command instance
+//
+// Validation Steps:
+//  1. Discover configuration file path (flags or default locations)
+//  2. Load and parse the configuration file
+//  3. Validate configuration structure (syntax, fields, types)
+//  4. Validate targets and remotes through the sync engine
+//
+// Output:
+//   - Success message if configuration is valid
+//   - List of all providers with their path counts
+//
+// Error Handling:
+//   - Exits with code 1 if no configuration file found
+//   - Exits with code 1 if configuration fails to load
+//   - Exits with code 1 if configuration structure validation fails
+//   - Exits with code 1 if target/remote validation fails
+//
+// Usage:
+//
+//	syncerman check config
+//	syncerman check config --config /path/to/config.yaml
 func doCheckConfig(cmd *cobra.Command) {
 	log := GetLogger()
 
@@ -110,6 +141,42 @@ func doCheckConfig(cmd *cobra.Command) {
 	}
 }
 
+// doCheckRemotes verifies that all providers in the configuration are properly
+// configured in rclone.
+//
+// This function checks each provider from the configuration file against the
+// rclone configuration to ensure they exist and are accessible. It reports
+// the status of each provider and exits with an error if any are missing.
+//
+// Parameters:
+//
+//	cmd: The cobra command instance
+//
+// Verification Steps:
+//  1. Discover and load configuration file
+//  2. Extract all unique providers from configuration
+//  3. Iterate through each provider and check if it exists in rclone
+//  4. Report status for each provider (OK or NOT FOUND)
+//
+// Output:
+//   - "Checking rclone remotes..." message
+//   - For each provider: "  provider-name: OK" or "  provider-name: NOT FOUND"
+//   - Final message: "All providers are configured in rclone" (if all valid)
+//
+// Error Handling:
+//   - Continues checking other providers if one fails verification
+//   - Logs error for each failed provider check
+//   - Exits with code 1 at the end if any provider was not found or check failed
+//
+// Exit Codes:
+//
+//	0 - All providers are configured in rclone
+//	1 - One or more providers not found or verification errors
+//
+// Usage:
+//
+//	syncerman check remotes
+//	syncerman check remotes --config /path/to/config.yaml
 func doCheckRemotes(cmd *cobra.Command) {
 	log := GetLogger()
 	ctx := context.Background()

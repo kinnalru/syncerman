@@ -16,11 +16,23 @@ const (
 	RcloneBinaryName = "rclone"
 )
 
-// FindRcloneBinary locates the rclone binary by checking:
-// 1. SYNCERMAN_RCLONE_PATH environment variable
-// 2. PATH for an executable named "rclone"
+// FindRcloneBinary locates the rclone binary on the system.
+// It attempts to find the binary using the following discovery logic:
 //
-// Returns the path to the rclone binary, or an error if not found.
+//  1. SYNCERMAN_RCLONE_PATH environment variable (custom binary path)
+//  2. PATH environment variable search for "rclone" executable
+//
+// The SYNCERMAN_RCLONE_PATH environment variable can be used to specify
+// a custom path to the rclone binary, useful for development or testing
+// with different rclone versions.
+//
+// Returns:
+//   - string: Absolute path to the rclone binary
+//   - error:  Error if binary is not found or custom path does not exist
+//
+// Error cases:
+//   - Custom path specified in SYNCERMAN_RCLONE_PATH does not exist
+//   - rclone binary not found in PATH
 func FindRcloneBinary() (string, error) {
 	if customPath := os.Getenv(RcloneEnvVar); customPath != "" {
 		if _, err := os.Stat(customPath); err == nil {
@@ -58,8 +70,21 @@ func FindRcloneBinaryOrFatal() string {
 	return path
 }
 
-// ConfigFromEnv loads rclone configuration from environment.
-// Returns a Config with the binary path based on environment variables.
+// ConfigFromEnv loads rclone configuration from environment variables.
+// It discovers the rclone binary path using the following order:
+//
+//  1. SYNCERMAN_RCLONE_PATH environment variable for a custom binary path
+//  2. PATH environment variable search for the "rclone" executable
+//
+// This function provides automatic binary discovery suitable for production
+// environments where the rclone binary location may vary.
+//
+// Returns:
+//   - *Config: A pointer to a new Config instance with the discovered binary path
+//   - error:  Error if rclone binary cannot be found
+//
+// Error cases:
+//   - rclone binary not found in any of the discovery locations
 func ConfigFromEnv() (*Config, error) {
 	binaryPath, err := FindRcloneBinary()
 	if err != nil {

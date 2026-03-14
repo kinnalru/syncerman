@@ -4,9 +4,10 @@ import (
 	"context"
 	"testing"
 
+	"syncerman/internal/rclone"
+
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"syncerman/internal/rclone"
 )
 
 func TestHandle_Success(t *testing.T) {

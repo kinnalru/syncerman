@@ -58,6 +58,7 @@ func (e *Engine) Prepare(ctx context.Context, config *config.Config, options Syn
 }
 
 // mapKeys returns all keys from a map as a slice.
+// Used internally for logging unique destination paths.
 func (e *Engine) mapKeys(m map[string]struct{}) []string {
 	keys := make([]string, 0, len(m))
 	for k := range m {
@@ -68,8 +69,11 @@ func (e *Engine) mapKeys(m map[string]struct{}) []string {
 
 // ExtractDestinationPathFromTo extracts the destination path from 'to' field.
 // Handles both 'provider:path' and '/path' formats.
+// For remote paths, returns the path portion after the colon.
+// For local paths, returns the path as-is.
 func ExtractDestinationPathFromTo(to string) string {
 	if strings.Contains(to, ":") {
+		// Split on first colon only to handle paths that might contain colons
 		parts := strings.SplitN(to, ":", 2)
 		if len(parts) == 2 {
 			return parts[1]
