@@ -4,7 +4,9 @@ This document provides guidelines for autonomous coding agents working on this r
 
 > `Syncerman` is a console application (CLI) for syncronizing targets (sources and destination) based on `rclone` CLI.
 
-## Documentation
+## Current Project Guides
+
+- `guides/STYLE.md` - Go Code Style Guidelines
 
 ## Technology Stack
 
