@@ -2,80 +2,66 @@
 
 ## Overview
 
-Building a CLI application for synchronizing targets using rclone, with YAML-based configuration and flexible sync operations.
+Building a CLI application for synchronizing targets using rclone bisync, with YAML-based configuration and flexible sync operations.
 
 ---
 
 ## Milestones
 
-### Milestone 1: Project Foundation and Core Structure
-**Goal**: Establish project structure, CLI framework, and base utilities
-
-**Context**:
-- Existing stub in `main.go` needs expansion
-- Follow Go style guidelines from `guides/STYLE.md`
-- Set up internal package structure for maintainability
+### ✅ [COMPLETED] Milestone 1: Project Foundation and Core Structure
 
 **Status**: Completed
 
----
-
-### Milestone 2: Configuration System
-**Goal**: Implement YAML configuration loading and validation
-
-**Context**:
-- Configuration format specified with provider/path/destination structure
-- Optional fields: `args` (array), `resync` (bool)
-- Need robust validation and error messages
+### ✅ [COMPLETED] Milestone 2: Configuration System
 
 **Status**: Completed
-
----
 
 ### Milestone 3: Rclone Integration Foundation
 **Goal**: Build rclone command execution and verification layer
 
 **Context**:
-- Must execute rclone bisync with specific flags
+- Must execute rclone bisync with specific flags (OVERALL.md: lines 256-267)
 - Need to check rclone remotes via `rclone listremotes`
 - Must create destination directories with `rclone mkdir`
+- Need structured output parsing and error handling
 
 **Status**: Pending
-
----
 
 ### Milestone 4: Sync Execution Engine
 **Goal**: Build core synchronization logic with error handling
 
 **Context**:
-- Sequential sync processing required
-- Must detect and handle "cannot find prior listings" error
+- Sequential sync processing required (OVERALL.md: lines 376-383)
+- Must detect and handle "cannot find prior listings" error (OVERALL.md: lines 311-337)
 - First-run handling with --resync flag
 - Dry-run mode support
+- Error pattern detection using REGEXP
 
 **Status**: Pending
-
----
 
 ### Milestone 5: CLI Commands Implementation
 **Goal**: Implement all CLI command variants
 
 **Context**:
-- Need commands: sync all, sync specific target, check config, check remotes
-- Support dry-run flag across all sync operations
-- Provide clear user feedback
+- Commands required (OVERALL.md: lines 125-204):
+  - `sync [flags]` - Sync all targets
+  - `sync <provider>:<path> [flags]` - Sync specific target
+  - `check config [flags]` - Check configuration
+  - `check remotes [flags]` - Check rclone remotes
+- Global flags: --config, --dry-run, --verbose, --quiet
+- Need proper Cobra-based CLI structure
 
 **Status**: Pending
-
----
 
 ### Milestone 6: Testing and Quality Assurance
 **Goal**: Ensure code quality with comprehensive testing
 
 **Context**:
-- Follow style guide requirements
-- Run lint, fmt, vet before commits
-- Test critical paths including error scenarios
+- Test first-run error handling with specific error pattern (OVERALL.md: lines 321-326)
+- Test configuration validation
+- Test rclone command execution and verification
+- Test CLI commands with various flag combinations
+- Follow style guide requirements (go fmt, go vet, golangci-lint)
 
 **Status**: Pending
 
@@ -87,14 +73,23 @@ Each milestone will be verified:
 - All tests pass (go test ./... -v -cover)
 - Code formatting (go fmt, goimports)
 - Linting passes (golangci-lint run, go vet)
-- Binary builds successfully (make build)
+- Binary builds successfully for Linux and Windows (make build)
 - Manual verification of CLI functionality
+- Specific test cases from OVERALL.md (first-run error pattern)
 
 ---
 
 ## Dependencies
 
 - yaml v3 (gopkg.in/yaml.v3)
-- cobra or similar CLI framework
-- Testing: testify
+- cobra (github.com/spf13/cobra) - CLI framework
+- Testing: testify (github.com/stretchr/testify)
 - Mock framework for rclone commands (testify/mock)
+
+---
+
+## References
+
+- Overall Project Definition: guides/OVERALL.md
+- Planning Guidelines: guides/PLANING.md
+- Style Guidelines: guides/STYLE.md

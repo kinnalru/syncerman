@@ -6,6 +6,7 @@ This document provides guidelines for autonomous coding agents working on this r
 
 ## Current Project Guides
 
+- `guides/OVERLL.md` - Comprehensive and detailed project description, features and corner cases. READ WHEN PLANING
 - `guides/STYLE.md` - Go Code Style Guidelines
 - `guides/PLANING.md` - Autonomous Coding Agent Workflow
 

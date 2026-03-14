@@ -5,9 +5,11 @@ This document outlines the standard operating procedure for autonomous coding ag
 ## 1. Overall Planning with Multiple Milestones
 
 Before writing any code, the agent must establish a high-level roadmap.
+Always read `guides/OVERLL.md` when planning.
 
 *   **Context Gathering:** Begin by exploring the codebase, reading documentation, and analyzing the core request to understand the full scope of the work.
 *   **Milestone Definition:** Deconstruct the overarching goal into a sequence of logical, manageable milestones. Each milestone must represent a significant, standalone, and verifiable phase of the project (e.g., "Implement Data Layer", "Build Core API", "Integrate Frontend Components").
+*   **Refferences:** MAY Use refferences to key documents (guides/PLANING.md, and other) lxample: `(OVERALL.md: lines 256-267)`
 *   **Dependency Mapping:** Sequence milestones logically, ensuring that foundational work is completed before dependent features.
 *   **State Tracking:** Maintain a structured list of milestones, tracking their current state (e.g., Pending, In Progress, Completed).
 *   **Approval:** Present the high-level roadmap for user alignment and approval before proceeding to implementation.
@@ -18,11 +20,13 @@ Before writing any code, the agent must establish a high-level roadmap.
 ## 2. Comprehensive Detailed Planning for a Milestone
 
 Once a milestone is selected for execution, it must be broken down into concrete, actionable steps.
+Always read `guides/OVERLL.md` when planning.
 
 *   **Milestone Selection:** Select the highest priority pending milestone that has its dependencies met.
 *   **Deep Dive Analysis:** Perform targeted exploration of the domain specific to the selected milestone. Understand existing file structures, interfaces, and patterns related to this phase.
 *   **Task Decomposition:** Break the milestone down into atomic tasks. An ideal task should be scoped to a single logical change (e.g., "Create database schema for User model", "Write unit tests for User schema").
 *   **Verification Strategy:** For each milestone, clearly define how success will be verified. This should include specific testing, linting, or building steps that must pass upon completion.
+*   **Refferences:** MAY Use refferences to key documents (guides/PLANING.md, PLAN_NUM.md and other) lxample: `(PLAN_1.md: lines 11-13)`
 *   **Tracker Update:** Populate the active milestone in `./WAL.md` (Write Ahead Log) with these granular tasks. Write BEFORE and AFTER actual work.
 *   **Storage** Persist in Markdown file  `plans/MILESTONE_<NUM>.md` where NUM is milestone number.
 
@@ -68,7 +72,7 @@ Robust state management and error handling are critical for autonomous progress.
     4.  Resolve the error and successfully re-verify before resuming the original plan.
 *   **Checkpointing:** Treat logical completion points (like finishing a significant task or a full milestone) as checkpoints. Ensure the codebase is in a stable, verifiable state before moving on. Fix checkpoint in Write Ahead Log.
 *   **Single Source of Truth:** The agent must treat its `./WAL.md` as the definitive record of progress. The status of milestones and tasks must be continuously updated in real-time to reflect the actual state of the codebase.
-*   **Milestone completition** Mark all tasks in `plans/MILESTONE_<NUM>.md` after completition
+*   **Milestone completition** Mark all tasks in `plans/MILESTONE_<NUM>.md` after completition. USE Frontmatter for marking
 *   
 
 ## 5. Flow and Steps definition
