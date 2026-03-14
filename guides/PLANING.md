@@ -103,3 +103,7 @@ Robust state management and error handling are critical for autonomous progress.
 2. read next UNFINISHED `plans/PLAN_<NUM>.md`
 3. created detailed complehensive Milestone definitions in `plans/MILESTONE_<NUM>.md`
 4. use 'Take Next Milestone Flow'
+
+## 6. subagents spawning
+
+You MUST use tool with subagents → Use OpenCode's subagent system (@mention `@plan`)

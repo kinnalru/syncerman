@@ -28,7 +28,7 @@ func (e *Engine) CreateDestinationDirectories(ctx context.Context, config *confi
 		return nil
 	}
 
-	if options.DryRun {
+	if options.DryRun || e.dryRun {
 		e.logger.Info("Skipping directory creation in dry-run mode")
 		e.logger.Debug("Would create %d destination directories: %v", len(uniquePaths), e.mapKeys(uniquePaths))
 		return nil

@@ -48,6 +48,7 @@ type Engine struct {
 	config *config.Config
 	rclone rclone.Executor
 	logger Logger
+	dryRun bool
 }
 
 // Logger interface for sync engine logging.
@@ -56,6 +57,12 @@ type Logger interface {
 	Info(msg string, args ...interface{})
 	Warn(msg string, args ...interface{})
 	Error(msg string, args ...interface{})
+}
+
+// SetDryRun sets the dry-run mode for the engine.
+// When dry-run is enabled, sync operations will only show what would be changed.
+func (e *Engine) SetDryRun(dryRun bool) {
+	e.dryRun = dryRun
 }
 
 // NewEngine creates a new sync engine with the given configuration and rclone executor.

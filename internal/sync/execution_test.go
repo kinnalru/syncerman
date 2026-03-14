@@ -358,3 +358,134 @@ func TestRunSync_CustomArgs(t *testing.T) {
 	require.NotNil(t, result)
 	assert.True(t, result.Success)
 }
+
+func TestSetDryRun(t *testing.T) {
+	mockExec := &mockExecutor{
+		results: []*rclone.Result{
+			{ExitCode: 0, Stdout: "synced", Stderr: ""},
+		},
+	}
+
+	log := &mockLogger{}
+	engine := NewEngine(nil, mockExec, log)
+	assert.False(t, engine.dryRun)
+
+	engine.SetDryRun(true)
+	assert.True(t, engine.dryRun)
+
+	engine.SetDryRun(false)
+	assert.False(t, engine.dryRun)
+}
+
+func TestRunSync_DryRunViaEngine(t *testing.T) {
+	mockExec := &mockExecutor{
+		results: []*rclone.Result{
+			{ExitCode: 0, Stdout: "dry-run complete", Stderr: ""},
+		},
+	}
+
+	log := &mockLogger{}
+	engine := NewEngine(nil, mockExec, log)
+	engine.SetDryRun(true)
+
+	target := SyncTarget{
+		Provider:    "gdrive",
+		SourcePath:  "docs",
+		Destination: config.Destination{To: "s3:backup/docs"},
+		Resync:      false,
+	}
+
+	ctx := context.Background()
+	result, err := engine.RunSync(ctx, target, SyncOptions{Verbose: false})
+
+	require.NoError(t, err)
+	require.NotNil(t, result)
+	assert.True(t, result.Success)
+	assert.False(t, result.FirstRun)
+	assert.Equal(t, 0, result.RetryCount)
+}
+
+func TestRunSync_DryRunOptionsOverridesEngine(t *testing.T) {
+	mockExec := &mockExecutor{
+		results: []*rclone.Result{
+			{ExitCode: 0, Stdout: "dry-run complete", Stderr: ""},
+		},
+	}
+
+	log := &mockLogger{}
+	engine := NewEngine(nil, mockExec, log)
+	engine.SetDryRun(false)
+
+	target := SyncTarget{
+		Provider:    "gdrive",
+		SourcePath:  "docs",
+		Destination: config.Destination{To: "s3:backup/docs"},
+		Resync:      false,
+	}
+
+	ctx := context.Background()
+	result, err := engine.RunSync(ctx, target, SyncOptions{DryRun: true, Verbose: false})
+
+	require.NoError(t, err)
+	require.NotNil(t, result)
+	assert.True(t, result.Success)
+}
+
+func TestRunAll_DryRun(t *testing.T) {
+	mockExec := &mockExecutor{
+		results: []*rclone.Result{
+			{ExitCode: 0, Stdout: "dry-run", Stderr: ""},
+			{ExitCode: 0, Stdout: "dry-run", Stderr: ""},
+		},
+	}
+
+	log := &mockLogger{}
+	engine := NewEngine(nil, mockExec, log)
+
+	cfg := config.NewConfig()
+	cfg.AddProvider("gdrive", config.PathMap{
+		"docs": []config.Destination{
+			{To: "s3:backup/docs"},
+		},
+	})
+	cfg.AddProvider("local", config.PathMap{
+		"/data": []config.Destination{
+			{To: "gdrive:data"},
+		},
+	})
+
+	ctx := context.Background()
+	results, err := engine.RunAll(ctx, cfg, SyncOptions{DryRun: true, Verbose: false})
+
+	require.NoError(t, err)
+	assert.Len(t, results, 2)
+	assert.True(t, results[0].Success)
+	assert.True(t, results[1].Success)
+}
+
+func TestRunAll_DryRunViaEngine(t *testing.T) {
+	mockExec := &mockExecutor{
+		results: []*rclone.Result{
+			{ExitCode: 0, Stdout: "dry-run", Stderr: ""},
+			{ExitCode: 0, Stdout: "dry-run", Stderr: ""},
+		},
+	}
+
+	log := &mockLogger{}
+	engine := NewEngine(nil, mockExec, log)
+	engine.SetDryRun(true)
+
+	cfg := config.NewConfig()
+	cfg.AddProvider("gdrive", config.PathMap{
+		"docs": []config.Destination{
+			{To: "s3:backup/docs"},
+		},
+	})
+
+	ctx := context.Background()
+	results, err := engine.RunAll(ctx, cfg, SyncOptions{Verbose: false})
+
+	require.NoError(t, err)
+	assert.Len(t, results, 1)
+	assert.True(t, results[0].Success)
+}

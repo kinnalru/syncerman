@@ -249,3 +249,22 @@ func TestMapKeys_Empty(t *testing.T) {
 
 	assert.Len(t, keys, 0)
 }
+
+func TestCreateDestinationDirectories_DryRunViaEngine(t *testing.T) {
+	mockExec := &mockMkdirExecutor{}
+
+	cfg := config.NewConfig()
+	cfg.AddProvider("gdrive", config.PathMap{
+		"docs": []config.Destination{
+			{To: "s3:backup/docs"},
+		},
+	})
+
+	engine := NewEngine(cfg, mockExec, nil)
+	engine.SetDryRun(true)
+	ctx := context.Background()
+
+	err := engine.CreateDestinationDirectories(ctx, cfg, SyncOptions{})
+
+	require.NoError(t, err)
+}

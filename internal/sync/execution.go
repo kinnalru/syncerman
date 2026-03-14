@@ -20,12 +20,12 @@ func (e *Engine) RunSync(ctx context.Context, target SyncTarget, options SyncOpt
 	destRemote := target.Destination.To
 
 	bisyncOptions := &rclone.BisyncOptions{
-		Resync: target.Resync || options.DryRun,
+		Resync: target.Resync || options.DryRun || e.dryRun,
 	}
 
 	bisyncOptions.Args = append(bisyncOptions.Args, target.Destination.Args...)
 
-	if options.DryRun {
+	if options.DryRun || e.dryRun {
 		bisyncOptions.DryRun = true
 	}
 

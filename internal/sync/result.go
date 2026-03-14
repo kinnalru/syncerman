@@ -22,8 +22,16 @@ type SyncReport struct {
 // CollectResults aggregates sync results into a comprehensive report.
 // It calculates statistics and generates exit codes based on results.
 func (e *Engine) CollectResults(results []*SyncResult) *SyncReport {
+	nonNilResults := []*SyncResult{}
+
+	for _, result := range results {
+		if result != nil {
+			nonNilResults = append(nonNilResults, result)
+		}
+	}
+
 	report := &SyncReport{
-		TotalTargets:     len(results),
+		TotalTargets:     len(nonNilResults),
 		SuccessCount:     0,
 		FailureCount:     0,
 		FirstRunCount:    0,
@@ -35,11 +43,7 @@ func (e *Engine) CollectResults(results []*SyncResult) *SyncReport {
 		Errors:           []error{},
 	}
 
-	for _, result := range results {
-		if result == nil {
-			continue
-		}
-
+	for _, result := range nonNilResults {
 		if result.Success {
 			report.SuccessCount++
 			report.SucceededTargets = append(report.SucceededTargets, result.Target)
@@ -112,11 +116,13 @@ func (r *SyncReport) Format(verbose bool) string {
 		for i, target := range r.FailedTargets {
 			builder.WriteString(fmt.Sprintf("%d. %s:%s -> %s\n", i+1, target.Provider, target.SourcePath, target.Destination.To))
 
-			idx := r.FailureCount - 1
-			for j, result := range r.Errors {
-				if j == idx {
-					builder.WriteString(fmt.Sprintf("   Error: %v\n", result))
-					break
+			for j, err := range r.Errors {
+				errMsg := err.Error()
+				if len(errMsg) > 0 && i < len(r.Errors) {
+					if j == i {
+						builder.WriteString(fmt.Sprintf("   Error: %v\n", err))
+						break
+					}
 				}
 			}
 		}
@@ -127,7 +133,6 @@ func (r *SyncReport) Format(verbose bool) string {
 		builder.WriteString("=== First-Run Errors ===\n")
 		for i, target := range r.FirstRunTargets {
 			builder.WriteString(fmt.Sprintf("%d. %s:%s -> %s\n", i+1, target.Provider, target.SourcePath, target.Destination.To))
-			builder.WriteString(fmt.Sprintf("   Retried with --resync (attempt %d)\n", target.Resync+1))
 		}
 		builder.WriteString("\n")
 	}
@@ -153,7 +158,7 @@ func (r *SyncReport) FormatError() string {
 
 // HasErrorsField returns true if any sync operations failed.
 func (r *SyncReport) HasErrorsField() bool {
-	return r.HasErrorsField()
+	return r.HasErrors
 }
 
 // GetExitCodeField returns recommended exit code for this report.
