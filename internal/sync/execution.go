@@ -3,6 +3,7 @@ package sync
 import (
 	"context"
 	"fmt"
+
 	"gitlab.com/kinnalru/syncerman/internal/config"
 	"gitlab.com/kinnalru/syncerman/internal/rclone"
 )

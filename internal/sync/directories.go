@@ -3,9 +3,10 @@ package sync
 import (
 	"context"
 	"fmt"
+	"strings"
+
 	"gitlab.com/kinnalru/syncerman/internal/config"
 	"gitlab.com/kinnalru/syncerman/internal/rclone"
-	"strings"
 )
 
 // CreateAllDirectories creates all source and destination directories from configuration.

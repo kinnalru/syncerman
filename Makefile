@@ -25,8 +25,6 @@ all: test build
 
 build: linux windows
 
-build: linux windows
-
 linux:
 	GOOS=linux GOARCH=amd64 $(GOBUILD) -ldflags "$(LDFLAGS)" -o bin/$(LINUX_BINARY)
 

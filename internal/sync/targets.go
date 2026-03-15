@@ -3,10 +3,11 @@ package sync
 import (
 	"context"
 	"fmt"
-	"gitlab.com/kinnalru/syncerman/internal/config"
-	"gitlab.com/kinnalru/syncerman/internal/rclone"
 	"regexp"
 	"strings"
+
+	"gitlab.com/kinnalru/syncerman/internal/config"
+	"gitlab.com/kinnalru/syncerman/internal/rclone"
 )
 
 const (
