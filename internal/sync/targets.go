@@ -3,6 +3,7 @@ package sync
 import (
 	"context"
 	"fmt"
+	"regexp"
 	"strings"
 	"syncerman/internal/config"
 	"syncerman/internal/rclone"
@@ -178,4 +179,26 @@ func ParseRemote(remote string) (provider, path string, err error) {
 	}
 
 	return provider, path, nil
+}
+
+// StripProviderHash removes provider hash suffix from rclone path format.
+// Pattern matches: provider{ALPHANUMERIC_HASH}:rest_of_path
+// Returns provider:rest_of_path if pattern matches, otherwise returns original path.
+func StripProviderHash(path string) string {
+	re := regexp.MustCompile(`^(\w+)\{[A-Za-z0-9]+\}:(.*)$`)
+	matches := re.FindStringSubmatch(path)
+
+	if len(matches) == 3 {
+		return matches[1] + ":" + matches[2]
+	}
+
+	return path
+}
+
+// NormalizeOutputPaths removes provider hash suffixes from all paths in output text.
+// Pattern matches: provider{ALPHANUMERIC_HASH}:any_path anywhere in the text.
+// Returns output with all paths normalized to provider:any_path format.
+func NormalizeOutputPaths(output string) string {
+	re := regexp.MustCompile(`(\w+)\{[A-Za-z0-9]+\}(:[^\\s\\n]+)`)
+	return re.ReplaceAllString(output, "${1}${2}")
 }

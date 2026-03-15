@@ -218,7 +218,7 @@ func TestReportFormat_VerboseWithFirstRun(t *testing.T) {
 	report := engine.CollectResults(results)
 	output := report.Format(true)
 
-	assert.Contains(t, output, "=== First-Run Errors ===")
+	assert.Contains(t, output, "=== First-Runs ===")
 	assert.Contains(t, output, "1. gdrive:docs -> s3:backup/docs")
 }
 
@@ -633,7 +633,7 @@ func TestFormatFirstRunTargets(t *testing.T) {
 	report.formatFirstRunTargets(&builder, true)
 	output := builder.String()
 
-	assert.Contains(t, output, "=== First-Run Errors ===")
+	assert.Contains(t, output, "=== First-Runs ===")
 	assert.Contains(t, output, "1. gdrive:docs -> s3:backup/docs")
 	assert.Contains(t, output, "2. local:/data -> gdrive:data")
 }

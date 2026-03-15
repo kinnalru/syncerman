@@ -69,7 +69,7 @@ func TestRunSync_FirstRunError(t *testing.T) {
 	assert.True(t, result.FirstRun)
 	assert.Equal(t, 1, result.RetryCount)
 	assert.Nil(t, result.Error)
-	assert.Len(t, log.warn, 1)
+	assert.Contains(t, log.info, "First-run detected, retrying with --resync (attempt %d/%d)")
 }
 
 func TestRunSync_DryRun(t *testing.T) {

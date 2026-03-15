@@ -11,9 +11,9 @@ import (
 // It builds the rclone bisync command with appropriate flags and executes it.
 func (e *Engine) RunSync(ctx context.Context, target SyncTarget, options SyncOptions) (*SyncResult, error) {
 	if options.Verbose {
-		e.logger.Info("Starting sync for %s:%s to %s", target.Provider, target.SourcePath, target.Destination.To)
+		e.logger.Info("Starting sync for %s:%s to %s", target.Provider, target.SourcePath, StripProviderHash(target.Destination.To))
 	} else {
-		e.logger.Debug("Starting sync for %s:%s to %s", target.Provider, target.SourcePath, target.Destination.To)
+		e.logger.Debug("Starting sync for %s:%s to %s", target.Provider, target.SourcePath, StripProviderHash(target.Destination.To))
 	}
 
 	sourceRemote := FormatRemote(target.Provider, target.SourcePath)
@@ -40,7 +40,7 @@ func (e *Engine) RunSync(ctx context.Context, target SyncTarget, options SyncOpt
 	cmdResult, retryCount, err := handler.Handle(ctx, e.rclone, args)
 
 	if cmdResult != nil && options.Verbose {
-		e.logger.Debug("Sync output: %s", cmdResult.Combined)
+		e.logger.Debug("Sync output: %s", NormalizeOutputPaths(cmdResult.Combined))
 	}
 
 	result := &SyncResult{
@@ -62,7 +62,7 @@ func (e *Engine) RunSync(ctx context.Context, target SyncTarget, options SyncOpt
 		e.logger.Info("First-run recovery completed for %s:%s", target.Provider, target.SourcePath)
 	}
 
-	e.logger.Info("Sync completed successfully for %s:%s to %s", target.Provider, target.SourcePath, destRemote)
+	e.logger.Info("Sync completed successfully for %s:%s to %s", target.Provider, target.SourcePath, StripProviderHash(destRemote))
 	return result, nil
 }
 

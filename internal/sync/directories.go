@@ -28,7 +28,7 @@ func (e *Engine) CreateDestinationDirectories(ctx context.Context, config *confi
 	}
 
 	if options.DryRun || e.dryRun {
-		e.logger.Info("Creating %d destination directories (even in dry-run mode for sync to work)...", len(uniquePaths))
+		e.logger.Info("Ensuring %d destination directories exist (required by rclone even in dry-run mode)...", len(uniquePaths))
 	} else {
 		e.logger.Info("Creating %d destination directories...", len(uniquePaths))
 	}

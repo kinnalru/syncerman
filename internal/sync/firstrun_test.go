@@ -49,7 +49,7 @@ func TestHandle_FirstRunRetry(t *testing.T) {
 	require.NotNil(t, result)
 	assert.Equal(t, 0, result.ExitCode)
 	assert.Equal(t, 1, retries)
-	assert.Len(t, log.warn, 1)
+	assert.Contains(t, log.info, "First-run detected, retrying with --resync (attempt %d/%d)")
 }
 
 func TestHandle_MaxRetriesExceeded(t *testing.T) {

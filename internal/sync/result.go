@@ -16,7 +16,7 @@ type SyncReport struct {
 	SuccessCount     int          // Number of successful syncs
 	FailureCount     int          // Number of failed syncs
 	FirstRunCount    int          // Number of first-run retried syncs
-	FirstRunTargets  []SyncTarget // List of targets that had first-run errors
+	FirstRunTargets  []SyncTarget // List of targets that had first-runs
 	FailedTargets    []SyncTarget // List of targets that failed
 	SucceededTargets []SyncTarget // List of targets that succeeded
 	HasErrors        bool         // Whether any errors occurred
@@ -124,7 +124,7 @@ func (r *SyncReport) formatFailedTargets(builder *strings.Builder, verbose bool)
 
 func (r *SyncReport) formatFirstRunTargets(builder *strings.Builder, verbose bool) {
 	if r.FirstRunCount > 0 && verbose {
-		builder.WriteString("=== First-Run Errors ===\n")
+		builder.WriteString("=== First-Runs ===\n")
 		for i, target := range r.FirstRunTargets {
 			builder.WriteString(fmt.Sprintf("%d. %s:%s -> %s\n", i+1, target.Provider, target.SourcePath, target.Destination.To))
 		}

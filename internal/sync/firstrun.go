@@ -66,7 +66,7 @@ func (h *FirstRunHandler) Handle(ctx context.Context, exec rclone.Executor, args
 		}
 
 		// First-run error: retry with --resync flag to initialize state files
-		h.logger.Warn("First-run error detected, retrying with --resync (attempt %d/%d)", retries, h.maxRetries+1)
+		h.logger.Info("First-run detected, retrying with --resync (attempt %d/%d)", retries, h.maxRetries+1)
 		args = args.WithResync()
 	}
 }

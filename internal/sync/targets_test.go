@@ -392,3 +392,140 @@ func TestValidationErrors_Empty(t *testing.T) {
 	errMsg := errs.Error()
 	assert.Empty(t, errMsg)
 }
+
+func TestStripProviderHash(t *testing.T) {
+	tests := []struct {
+		name     string
+		path     string
+		expected string
+	}{
+		{
+			name:     "valid path with hash suffix",
+			path:     "gd{ABC}:path/",
+			expected: "gd:path/",
+		},
+		{
+			name:     "valid path with hash suffix long hash",
+			path:     "gdrive{YRXYK123}:documents/work",
+			expected: "gdrive:documents/work",
+		},
+		{
+			name:     "path without hash",
+			path:     "gd:path/",
+			expected: "gd:path/",
+		},
+		{
+			name:     "path with multiple colons",
+			path:     "gd:path/to:file",
+			expected: "gd:path/to:file",
+		},
+		{
+			name:     "path with multiple colons and hash",
+			path:     "gd{ABC}:path/to:file",
+			expected: "gd:path/to:file",
+		},
+		{
+			name:     "empty string",
+			path:     "",
+			expected: "",
+		},
+		{
+			name:     "invalid format missing hash",
+			path:     "gd{}",
+			expected: "gd{}",
+		},
+		{
+			name:     "invalid format no colon after hash",
+			path:     "gd{ABC}path",
+			expected: "gd{ABC}path",
+		},
+		{
+			name:     "invalid format hash without provider",
+			path:     "{ABC}:path",
+			expected: "{ABC}:path",
+		},
+		{
+			name:     "local path (no colon)",
+			path:     "/local/path/to/file",
+			expected: "/local/path/to/file",
+		},
+		{
+			name:     "mixed case hash",
+			path:     "s3{AbCdEf}:bucket/path",
+			expected: "s3:bucket/path",
+		},
+		{
+			name:     "path with only hash and colon",
+			path:     "gd{ABC}:",
+			expected: "gd:",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result := StripProviderHash(tt.path)
+			assert.Equal(t, tt.expected, result)
+		})
+	}
+}
+
+func TestNormalizeOutputPaths(t *testing.T) {
+	tests := []struct {
+		name     string
+		output   string
+		expected string
+	}{
+		{
+			name:     "single path with hash",
+			output:   "Syncing gd{ABC}:path/",
+			expected: "Syncing gd:path/",
+		},
+		{
+			name:     "multiple paths with hashes",
+			output:   "Copying gd{ABC}:file1.txt to s3{XYZ}:file2.txt",
+			expected: "Copying gd:file1.txt to s3:file2.txt",
+		},
+		{
+			name:     "no paths in output",
+			output:   "This is a normal log message",
+			expected: "This is a normal log message",
+		},
+		{
+			name:     "paths without hashes remain unchanged",
+			output:   "Copying gd:file.txt to gd:file2.txt",
+			expected: "Copying gd:file.txt to gd:file2.txt",
+		},
+		{
+			name:     "mixed paths with and without hashes",
+			output:   "Copying gd{ABC}:file1.txt to gd:file2.txt and s3{XYZ}:file3.txt",
+			expected: "Copying gd:file1.txt to gd:file2.txt and s3:file3.txt",
+		},
+		{
+			name:     "empty string",
+			output:   "",
+			expected: "",
+		},
+		{
+			name:     "path at end of line",
+			output:   "Starting sync for gdrive{YRXYK123}:documents/work",
+			expected: "Starting sync for gdrive:documents/work",
+		},
+		{
+			name:     "path at beginning of line",
+			output:   "gd{ABC}:file.txt was synced successfully",
+			expected: "gd:file.txt was synced successfully",
+		},
+		{
+			name:     "long hash values",
+			output:   "Syncing gdrive{YRXYK123ABC456}:documents/work/file.txt",
+			expected: "Syncing gdrive:documents/work/file.txt",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result := NormalizeOutputPaths(tt.output)
+			assert.Equal(t, tt.expected, result)
+		})
+	}
+}
