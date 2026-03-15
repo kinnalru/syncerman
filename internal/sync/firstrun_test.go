@@ -118,58 +118,6 @@ func TestHandle_CommandError(t *testing.T) {
 	assert.Contains(t, err.Error(), "command failed")
 }
 
-func TestShouldRetry(t *testing.T) {
-	handler := NewFirstRunHandler(1, &mockLogger{})
-
-	firstRunError := "ERROR: cannot find prior Path1 or Path2 listings...here are the filenames\n"
-	genericError := "ERROR: permission denied\n"
-
-	assert.True(t, handler.ShouldRetry(firstRunError))
-	assert.False(t, handler.ShouldRetry(genericError))
-}
-
-func TestExtractFirstRunError(t *testing.T) {
-	firstRunError := "ERROR: cannot find prior Path1 or Path2 listings...here are the filenames\n"
-	genericError := "ERROR: permission denied\n"
-
-	t.Run("first run error", func(t *testing.T) {
-		err := ExtractFirstRunError(firstRunError)
-		require.Error(t, err)
-		assert.Contains(t, err.Error(), "first-run")
-	})
-
-	t.Run("generic error", func(t *testing.T) {
-		err := ExtractFirstRunError(genericError)
-		require.NoError(t, err)
-	})
-}
-
-func TestIsFirstRunSyncError(t *testing.T) {
-	firstRunResult := &rclone.Result{
-		ExitCode: 1,
-		Stdout:   "",
-		Stderr:   "ERROR: cannot find prior Path1 or Path2 listings...here are the filenames\n",
-	}
-
-	genericResult := &rclone.Result{
-		ExitCode: 1,
-		Stdout:   "",
-		Stderr:   "ERROR: permission denied\n",
-	}
-
-	t.Run("first run result", func(t *testing.T) {
-		assert.True(t, IsFirstRunSyncError(firstRunResult))
-	})
-
-	t.Run("generic result", func(t *testing.T) {
-		assert.False(t, IsFirstRunSyncError(genericResult))
-	})
-
-	t.Run("nil result", func(t *testing.T) {
-		assert.False(t, IsFirstRunSyncError(nil))
-	})
-}
-
 func TestDefaultFirstRunHandler(t *testing.T) {
 	log := &mockLogger{}
 	handler := DefaultFirstRunHandler(log)

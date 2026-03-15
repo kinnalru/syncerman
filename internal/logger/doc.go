@@ -88,8 +88,12 @@ package logger
 // to separate informational output from program results. The output destination can be
 // changed to any io.Writer:
 //
-//	logger.SetOutput(os.Stdout)
-//	logger.SetOutput(logFile)
+//	if err := logger.SetOutput(os.Stdout); err != nil {
+//	    handle error
+//	}
+//	if err := logger.SetOutput(logFile); err != nil {
+//	    handle error
+//	}
 //
 // Logger Interface
 //
@@ -101,7 +105,7 @@ package logger
 //	    Warn(msg string, args ...interface{})
 //	    Error(msg string, args ...interface{})
 //	    SetLevel(level LogLevel)
-//	    SetOutput(w io.Writer)
+//	    SetOutput(w io.Writer) error
 //	    GetLevel() LogLevel
 //	    SetVerbose(verbose bool)
 //	    SetQuiet(quiet bool)

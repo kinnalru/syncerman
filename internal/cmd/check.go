@@ -1,11 +1,8 @@
 package cmd
 
 import (
-	"context"
 	"fmt"
-	"os"
 
-	"syncerman/internal/config"
 	"syncerman/internal/rclone"
 	"syncerman/internal/sync"
 
@@ -19,8 +16,9 @@ var checkCmd = &cobra.Command{
 
 Use 'check config' to validate configuration file.
 Use 'check remotes' to verify rclone remote configuration.`,
-	Run: func(cmd *cobra.Command, args []string) {
+	RunE: func(cmd *cobra.Command, args []string) error {
 		cmd.Help()
+		return nil
 	},
 }
 
@@ -39,8 +37,8 @@ This command verifies:
 Examples:
   syncerman check config
   syncerman check config --config /path/to/config.yaml`,
-	Run: func(cmd *cobra.Command, args []string) {
-		doCheckConfig(cmd)
+	RunE: func(cmd *cobra.Command, args []string) error {
+		return doCheckConfig(cmd)
 	},
 }
 
@@ -63,8 +61,8 @@ Exit codes:
 Examples:
   syncerman check remotes
   syncerman check remotes --verbose`,
-	Run: func(cmd *cobra.Command, args []string) {
-		doCheckRemotes(cmd)
+	RunE: func(cmd *cobra.Command, args []string) error {
+		return doCheckRemotes(cmd)
 	},
 }
 
@@ -74,63 +72,22 @@ func init() {
 	checkCmd.AddCommand(checkRemotesCmd)
 }
 
-// doCheckConfig validates the configuration file and its targets.
-//
-// This function performs comprehensive validation of the configuration file,
-// checking both structure and semantic correctness. It validates the YAML
-// structure, provider configurations, and ensures targets are properly defined.
-//
-// Parameters:
-//
-//	cmd: The cobra command instance
-//
-// Validation Steps:
-//  1. Discover configuration file path (flags or default locations)
-//  2. Load and parse the configuration file
-//  3. Validate configuration structure (syntax, fields, types)
-//  4. Validate targets and remotes through the sync engine
-//
-// Output:
-//   - Success message if configuration is valid
-//   - List of all providers with their path counts
-//
-// Error Handling:
-//   - Exits with code 1 if no configuration file found
-//   - Exits with code 1 if configuration fails to load
-//   - Exits with code 1 if configuration structure validation fails
-//   - Exits with code 1 if target/remote validation fails
-//
-// Usage:
-//
-//	syncerman check config
-//	syncerman check config --config /path/to/config.yaml
-func doCheckConfig(cmd *cobra.Command) {
+func doCheckConfig(cmd *cobra.Command) error {
 	log := GetLogger()
 
-	configPath := getConfigPath()
-	if configPath == "" {
-		fmt.Fprintln(os.Stderr, "Error: No configuration file found (use --config to specify)")
-		os.Exit(1)
-	}
-
-	cfg, err := config.LoadConfig(configPath)
+	cfg, err := loadAndValidateConfig()
 	if err != nil {
-		log.Error("Failed to load configuration: %v", err)
-		os.Exit(1)
-	}
-
-	if err := cfg.Validate(); err != nil {
-		log.Error("Configuration validation failed: %v", err)
-		os.Exit(1)
+		return err
 	}
 
 	executor := rclone.NewExecutor(rclone.NewConfig())
 	engine := sync.NewEngine(cfg, executor, log)
-	ctx := context.Background()
+	ctx, cancel := GetConfig().CreateContext()
+	defer cancel()
 
 	if err := engine.Validate(ctx, cfg); err != nil {
 		log.Error("Target validation failed: %v", err)
-		os.Exit(1)
+		return &ExitCodeError{Code: exitCodeValidationError, Err: err}
 	}
 
 	log.Info("Configuration is valid")
@@ -139,61 +96,18 @@ func doCheckConfig(cmd *cobra.Command) {
 	for provider, paths := range providers {
 		log.Info("  %s: %d path(s)", provider, len(paths))
 	}
+
+	return nil
 }
 
-// doCheckRemotes verifies that all providers in the configuration are properly
-// configured in rclone.
-//
-// This function checks each provider from the configuration file against the
-// rclone configuration to ensure they exist and are accessible. It reports
-// the status of each provider and exits with an error if any are missing.
-//
-// Parameters:
-//
-//	cmd: The cobra command instance
-//
-// Verification Steps:
-//  1. Discover and load configuration file
-//  2. Extract all unique providers from configuration
-//  3. Iterate through each provider and check if it exists in rclone
-//  4. Report status for each provider (OK or NOT FOUND)
-//
-// Output:
-//   - "Checking rclone remotes..." message
-//   - For each provider: "  provider-name: OK" or "  provider-name: NOT FOUND"
-//   - Final message: "All providers are configured in rclone" (if all valid)
-//
-// Error Handling:
-//   - Continues checking other providers if one fails verification
-//   - Logs error for each failed provider check
-//   - Exits with code 1 at the end if any provider was not found or check failed
-//
-// Exit Codes:
-//
-//	0 - All providers are configured in rclone
-//	1 - One or more providers not found or verification errors
-//
-// Usage:
-//
-//	syncerman check remotes
-//	syncerman check remotes --config /path/to/config.yaml
-func doCheckRemotes(cmd *cobra.Command) {
+func doCheckRemotes(cmd *cobra.Command) error {
 	log := GetLogger()
-	ctx := context.Background()
+	ctx, cancel := GetConfig().CreateContext()
+	defer cancel()
 
-	executor := rclone.NewExecutor(rclone.NewConfig())
-	engine := sync.NewEngine(nil, executor, log)
-
-	configPath := getConfigPath()
-	if configPath == "" {
-		fmt.Fprintln(os.Stderr, "Error: No configuration file found (use --config to specify)")
-		os.Exit(1)
-	}
-
-	cfg, err := config.LoadConfig(configPath)
+	cfg, err := loadAndValidateConfig()
 	if err != nil {
-		log.Error("Failed to load configuration: %v", err)
-		os.Exit(1)
+		return err
 	}
 
 	providers := cfg.GetProviders()
@@ -201,7 +115,10 @@ func doCheckRemotes(cmd *cobra.Command) {
 
 	log.Info("Checking rclone remotes...")
 	for provider := range providers {
-		exists, err := engine.ProviderExists(ctx, provider)
+		executor := rclone.NewExecutor(rclone.NewConfig())
+		engine := sync.NewEngine(nil, executor, log)
+
+		exists, err := engine.RemoteProviderExists(ctx, provider)
 		if err != nil {
 			log.Error("Failed to verify provider %s: %v", provider, err)
 			allValid = false
@@ -219,6 +136,21 @@ func doCheckRemotes(cmd *cobra.Command) {
 	if allValid {
 		log.Info("All providers are configured in rclone")
 	} else {
-		os.Exit(1)
+		return &ExitCodeError{Code: exitCodeValidationError, Err: fmt.Errorf("one or more providers not found")}
 	}
+
+	return nil
+}
+
+type ExitCodeError struct {
+	Code int
+	Err  error
+}
+
+func (e *ExitCodeError) Error() string {
+	return e.Err.Error()
+}
+
+func (e *ExitCodeError) ExitCode() int {
+	return e.Code
 }

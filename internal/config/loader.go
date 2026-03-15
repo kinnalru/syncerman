@@ -1,6 +1,7 @@
 package config
 
 import (
+	"fmt"
 	"os"
 
 	"syncerman/internal/errors"
@@ -42,12 +43,12 @@ import (
 func LoadConfig(path string) (*Config, error) {
 	data, err := os.ReadFile(path)
 	if err != nil {
-		return nil, errors.NewConfigError("failed to read configuration file", err)
+		return nil, errors.NewConfigError(fmt.Sprintf("failed to read configuration file: %s", path), err)
 	}
 
-	var providerMap ProviderMap
-	if err := yaml.Unmarshal(data, &providerMap); err != nil {
-		return nil, errors.NewConfigError("failed to parse configuration file", err)
+	providerMap, err := parseProviderMap(data)
+	if err != nil {
+		return nil, errors.NewConfigError(fmt.Sprintf("failed to parse configuration file: %s", path), err)
 	}
 
 	config := NewConfig()
@@ -90,8 +91,8 @@ func LoadConfig(path string) (*Config, error) {
 //	}
 //	fmt.Printf("Loaded %d providers\n", len(config.Providers))
 func LoadConfigFromData(data []byte) (*Config, error) {
-	var providerMap ProviderMap
-	if err := yaml.Unmarshal(data, &providerMap); err != nil {
+	providerMap, err := parseProviderMap(data)
+	if err != nil {
 		return nil, errors.NewConfigError("failed to parse configuration data", err)
 	}
 
@@ -99,4 +100,12 @@ func LoadConfigFromData(data []byte) (*Config, error) {
 	config.Providers = providerMap
 
 	return config, nil
+}
+
+func parseProviderMap(data []byte) (ProviderMap, error) {
+	var providerMap ProviderMap
+	if err := yaml.Unmarshal(data, &providerMap); err != nil {
+		return nil, err
+	}
+	return providerMap, nil
 }

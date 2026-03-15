@@ -67,7 +67,7 @@ Create `check remotes` command:
 - Use rclone.ListRemotes() to get remote list
 - Check if providers in config exist in rclone
 - Display valid and missing providers
-- Use sync.Engine.ProviderExists() for verification
+- Use sync.Engine.RemoteProviderExists() for verification
 - Return exit code: 0 if all providers exist, 1 if any missing
 
 ### 5.5: Add Configuration File Defaults

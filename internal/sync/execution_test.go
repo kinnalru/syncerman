@@ -2,7 +2,6 @@ package sync
 
 import (
 	"context"
-	"fmt"
 	"testing"
 	"time"
 
@@ -12,51 +11,6 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
-
-type mockExecutor struct {
-	results []*rclone.Result
-	errors  []error
-	index   int
-}
-
-func (m *mockExecutor) Run(ctx context.Context, args ...string) (*rclone.Result, error) {
-	if m.index >= len(m.results) {
-		return &rclone.Result{ExitCode: 0, Stdout: "", Stderr: ""}, nil
-	}
-
-	result := m.results[m.index]
-	m.index++
-
-	err := error(nil)
-	if m.index-1 < len(m.errors) {
-		err = m.errors[m.index-1]
-	}
-
-	return result, err
-}
-
-type mockLogger struct {
-	info     []string
-	warn     []string
-	errorLog []string
-	debugLog []string
-}
-
-func (m *mockLogger) Info(msg string, args ...interface{}) {
-	m.info = append(m.info, msg)
-}
-
-func (m *mockLogger) Warn(msg string, args ...interface{}) {
-	m.warn = append(m.warn, msg)
-}
-
-func (m *mockLogger) Error(msg string, args ...interface{}) {
-	m.errorLog = append(m.errorLog, msg)
-}
-
-func (m *mockLogger) Debug(msg string, args ...interface{}) {
-	m.debugLog = append(m.debugLog, msg)
-}
 
 func TestRunSync_Success(t *testing.T) {
 	mockExec := &mockExecutor{
@@ -165,12 +119,9 @@ func TestRunSync_CommandFailure(t *testing.T) {
 	ctx := context.Background()
 	result, err := engine.RunSync(ctx, target, SyncOptions{Verbose: false})
 
-	require.NoError(t, err)
-	require.NotNil(t, result)
-	assert.False(t, result.Success)
-	assert.False(t, result.FirstRun)
-	assert.Equal(t, 0, result.RetryCount)
-	assert.NotNil(t, result.Error)
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "sync failed")
+	assert.Nil(t, result)
 }
 
 func TestRunAll_SingleTarget(t *testing.T) {
@@ -256,10 +207,11 @@ func TestRunAll_StopOnError(t *testing.T) {
 	ctx := context.Background()
 	results, err := engine.RunAll(ctx, cfg, SyncOptions{Verbose: false})
 
-	require.Error(t, err)
+	assert.Error(t, err)
 	assert.Len(t, results, 2)
 	assert.True(t, results[0].Success)
-	assert.Contains(t, err.Error(), "sync target 2 failed")
+	assert.Nil(t, results[1])
+	assert.Contains(t, err.Error(), "sync failed for target 2")
 }
 
 func TestRunAll_Verbose(t *testing.T) {
@@ -311,24 +263,6 @@ func TestRunSync_ContextCancellation(t *testing.T) {
 	if err != nil {
 		assert.Contains(t, err.Error(), "command failed")
 	}
-}
-
-func TestValidationErrors_Error(t *testing.T) {
-	errs := ValidationErrors{
-		fmt.Errorf("error 1"),
-		fmt.Errorf("error 2"),
-	}
-
-	errMsg := errs.Error()
-	assert.Contains(t, errMsg, "validation errors")
-	assert.Contains(t, errMsg, "error 1")
-	assert.Contains(t, errMsg, "error 2")
-}
-
-func TestValidationErrors_Empty(t *testing.T) {
-	errs := ValidationErrors{}
-	errMsg := errs.Error()
-	assert.Empty(t, errMsg)
 }
 
 func TestRunSync_CustomArgs(t *testing.T) {

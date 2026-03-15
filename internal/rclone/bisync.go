@@ -153,21 +153,3 @@ func (b *BisyncArgs) String() string {
 	args := b.Build()
 	return "rclone " + strings.Join(args, " ")
 }
-
-// cmdString is a helper function to join command arguments with spaces.
-// This function returns a space-separated string representation of command arguments.
-//
-// Parameters: []string args - the command arguments to join
-//
-// Returns: space-separated string of all arguments
-func cmdString(args []string) string {
-	result := ""
-	for _, arg := range args {
-		if result == "" {
-			result = arg
-		} else {
-			result += " " + arg
-		}
-	}
-	return result
-}

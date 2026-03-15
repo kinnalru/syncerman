@@ -36,17 +36,32 @@ import (
 //   - Permission denied: returns formatted error from rclone
 //   - Remote error: returns formatted error with stderr output
 //   - Parent directory doesn't exist: returns error from rclone (not treated as success)
-func Mkdir(ctx context.Context, executor Executor, remotePath string) error {
+//
+// executeMkdirCommand executes the rclone mkdir command with custom error handling.
+// It uses rclone mkdir to create a directory at the specified remote path.
+// Treats existing directory as success (returns nil) and applies custom error handling.
+//
+// Parameters:
+//   - ctx: Context for cancellation and timeout control
+//   - executor: Executor interface to run rclone commands
+//   - remotePath: The remote path for directory creation
+//   - errorHandler: Optional custom error handler function
+//
+// Returns: nil on success or if directory exists, error otherwise
+func executeMkdirCommand(ctx context.Context, executor Executor, remotePath string, errorHandler func(Result) error) error {
 	if remotePath == "" {
 		return fmt.Errorf("remote path cannot be empty")
 	}
 
 	result, err := executor.Run(ctx, "mkdir", remotePath)
 	if err != nil {
-		// If rclone returned an error but the stderr indicates directory already exists,
-		// treat it as success (idempotent behavior)
 		if result != nil && isDirectoryExistsError(result.Stderr) {
 			return nil
+		}
+		if result != nil && errorHandler != nil {
+			if handlerErr := errorHandler(*result); handlerErr != nil {
+				return fmt.Errorf("failed to create directory %s: %w", remotePath, handlerErr)
+			}
 		}
 		stderr := ""
 		if result != nil {
@@ -55,18 +70,25 @@ func Mkdir(ctx context.Context, executor Executor, remotePath string) error {
 		return fmt.Errorf("failed to create directory %s: %s", remotePath, stderr)
 	}
 
-	// Check exit code for cases where rclone returns non-zero exit code
-	// but the executor didn't return an error
 	if result.ExitCode == 0 {
 		return nil
 	}
 
-	// Even with non-zero exit code, check if directory exists to treat as success
 	if isDirectoryExistsError(result.Stderr) {
 		return nil
 	}
 
+	if errorHandler != nil {
+		if handlerErr := errorHandler(*result); handlerErr != nil {
+			return fmt.Errorf("failed to create directory %s: %w", remotePath, handlerErr)
+		}
+	}
+
 	return fmt.Errorf("failed to create directory %s: %s", remotePath, result.Stderr)
+}
+
+func Mkdir(ctx context.Context, executor Executor, remotePath string) error {
+	return executeMkdirCommand(ctx, executor, remotePath, nil)
 }
 
 // isDirectoryExistsError checks if the error output indicates the directory already exists.
@@ -91,26 +113,37 @@ func Mkdir(ctx context.Context, executor Executor, remotePath string) error {
 // Case-insensitive matching:
 //   - Converts stderr to lowercase for matching
 //   - Ensures pattern matching works regardless of rclone's output casing
-func isDirectoryExistsError(stderr string) bool {
+//
+// matchesAnyPattern checks if stderr contains any of the given patterns.
+// Performs case-insensitive matching to handle different error message formats.
+//
+// Parameters:
+//   - stderr: The stderr output from rclone command execution
+//   - patterns: List of patterns to search for in stderr
+//
+// Returns: true if any pattern is found in stderr, false otherwise
+func matchesAnyPattern(stderr string, patterns []string) bool {
 	if stderr == "" {
 		return false
 	}
 
 	lowerStderr := strings.ToLower(stderr)
-
-	alreadyExistsPatterns := []string{
-		"already exists",
-		"file exists",
-		"path already exists",
-	}
-
-	for _, pattern := range alreadyExistsPatterns {
+	for _, pattern := range patterns {
 		if strings.Contains(lowerStderr, pattern) {
 			return true
 		}
 	}
 
 	return false
+}
+
+func isDirectoryExistsError(stderr string) bool {
+	alreadyExistsPatterns := []string{
+		"already exists",
+		"file exists",
+		"path already exists",
+	}
+	return matchesAnyPattern(stderr, alreadyExistsPatterns)
 }
 
 // CreatePath creates a directory structure on the specified remote path with parent directory support.
@@ -147,40 +180,13 @@ func isDirectoryExistsError(stderr string) bool {
 //   - Some cloud providers: May not support nested directory creation
 //   - Check specific rclone backend documentation for details
 func CreatePath(ctx context.Context, executor Executor, remotePath string) error {
-	if remotePath == "" {
-		return fmt.Errorf("remote path cannot be empty")
-	}
-
-	result, err := executor.Run(ctx, "mkdir", remotePath)
-	if err != nil {
-		// If directory already exists, treat as success
-		if result != nil && isDirectoryExistsError(result.Stderr) {
-			return nil
+	parentDirErrorHandler := func(result Result) error {
+		if isParentDirNotFoundError(result.Stderr) {
+			return fmt.Errorf("parent directory does not exist for path: %s", result.Stderr)
 		}
-		// Provide specific error message if parent directory doesn't exist
-		if result != nil && isParentDirNotFoundError(result.Stderr) {
-			return fmt.Errorf("parent directory does not exist for path %s: %s", remotePath, result.Stderr)
-		}
-		stderr := ""
-		if result != nil {
-			stderr = result.Stderr
-		}
-		return fmt.Errorf("failed to create directory %s: %s", remotePath, stderr)
-	}
-
-	if result.ExitCode == 0 {
 		return nil
 	}
-
-	if isDirectoryExistsError(result.Stderr) {
-		return nil
-	}
-
-	if isParentDirNotFoundError(result.Stderr) {
-		return fmt.Errorf("parent directory does not exist for path %s: %s", remotePath, result.Stderr)
-	}
-
-	return fmt.Errorf("failed to create directory %s: %s", remotePath, result.Stderr)
+	return executeMkdirCommand(ctx, executor, remotePath, parentDirErrorHandler)
 }
 
 // isParentDirNotFoundError checks if the error output indicates the parent directory does not exist.
@@ -211,24 +217,11 @@ func CreatePath(ctx context.Context, executor Executor, remotePath string) error
 //   - Converts stderr to lowercase for pattern matching
 //   - Ensures pattern matching works regardless of rclone's output casing
 func isParentDirNotFoundError(stderr string) bool {
-	if stderr == "" {
-		return false
-	}
-
-	lowerStderr := strings.ToLower(stderr)
-
 	parentNotFoundPatterns := []string{
 		"parent directory",
 		"no such file",
 		"not found",
 		"directory not found",
 	}
-
-	for _, pattern := range parentNotFoundPatterns {
-		if strings.Contains(lowerStderr, pattern) {
-			return true
-		}
-	}
-
-	return false
+	return matchesAnyPattern(stderr, parentNotFoundPatterns)
 }

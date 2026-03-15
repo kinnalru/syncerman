@@ -5,6 +5,11 @@ import (
 	"strings"
 )
 
+const (
+	exitCodeSuccess = 0
+	exitCodeFailure = 1
+)
+
 // SyncReport represents aggregated statistics and details of sync operations.
 type SyncReport struct {
 	TotalTargets     int          // Total number of sync targets processed
@@ -19,8 +24,6 @@ type SyncReport struct {
 	Errors           []error      // Collection of errors from failed syncs
 }
 
-// CollectResults aggregates sync results into a comprehensive report.
-// It calculates statistics and generates exit codes based on results.
 func (e *Engine) CollectResults(results []*SyncResult) *SyncReport {
 	nonNilResults := []*SyncResult{}
 
@@ -30,18 +33,8 @@ func (e *Engine) CollectResults(results []*SyncResult) *SyncReport {
 		}
 	}
 
-	report := &SyncReport{
-		TotalTargets:     len(nonNilResults),
-		SuccessCount:     0,
-		FailureCount:     0,
-		FirstRunCount:    0,
-		FirstRunTargets:  []SyncTarget{},
-		FailedTargets:    []SyncTarget{},
-		SucceededTargets: []SyncTarget{},
-		HasErrors:        false,
-		ExitCode:         0,
-		Errors:           []error{},
-	}
+	report := newEmptyReport()
+	report.TotalTargets = len(nonNilResults)
 
 	for _, result := range nonNilResults {
 		if result.Success {
@@ -69,29 +62,27 @@ func (e *Engine) CollectResults(results []*SyncResult) *SyncReport {
 }
 
 // calculateExitCode determines the appropriate exit code based on sync results.
-// Returns 0 for success, 1 for any failures.
-// First-run errors that were successfully retried do not cause a failure exit code.
+// Returns exitCodeSuccess for success, exitCodeFailure for any failures.
 func (r *SyncReport) calculateExitCode() int {
-	if !r.HasErrorsField() {
-		return 0
+	if r.FailureCount > 0 {
+		return exitCodeFailure
 	}
-
-	if r.FailureCount == 0 {
-		return 0
-	}
-
-	if r.FirstRunCount > 0 && r.FailureCount == 0 {
-		return 0
-	}
-
-	return 1
+	return exitCodeSuccess
 }
 
-// Format generates human-readable summary of sync report.
-// The verbosity level determines how much detail is included.
 func (r *SyncReport) Format(verbose bool) string {
 	var builder strings.Builder
 
+	r.formatHeader(&builder)
+	r.formatSuccessfulTargets(&builder, verbose)
+	r.formatFailedTargets(&builder, verbose)
+	r.formatFirstRunTargets(&builder, verbose)
+	builder.WriteString(fmt.Sprintf("Exit code: %d\n", r.ExitCode))
+
+	return builder.String()
+}
+
+func (r *SyncReport) formatHeader(builder *strings.Builder) {
 	builder.WriteString("=== Sync Summary ===\n")
 	builder.WriteString(fmt.Sprintf("Total targets:   %d\n", r.TotalTargets))
 	builder.WriteString(fmt.Sprintf("Successful:     %d\n", r.SuccessCount))
@@ -105,7 +96,9 @@ func (r *SyncReport) Format(verbose bool) string {
 	}
 
 	builder.WriteString("\n")
+}
 
+func (r *SyncReport) formatSuccessfulTargets(builder *strings.Builder, verbose bool) {
 	if r.SuccessCount > 0 && verbose {
 		builder.WriteString("=== Successful Targets ===\n")
 		for i, target := range r.SucceededTargets {
@@ -113,26 +106,23 @@ func (r *SyncReport) Format(verbose bool) string {
 		}
 		builder.WriteString("\n")
 	}
+}
 
+func (r *SyncReport) formatFailedTargets(builder *strings.Builder, verbose bool) {
 	if r.FailureCount > 0 && verbose {
 		builder.WriteString("=== Failed Targets ===\n")
 		for i, target := range r.FailedTargets {
 			builder.WriteString(fmt.Sprintf("%d. %s:%s -> %s\n", i+1, target.Provider, target.SourcePath, target.Destination.To))
 
-			// Match error to target by index since they're stored in parallel arrays
-			for j, err := range r.Errors {
-				errMsg := err.Error()
-				if len(errMsg) > 0 && i < len(r.Errors) {
-					if j == i {
-						builder.WriteString(fmt.Sprintf("   Error: %v\n", err))
-						break
-					}
-				}
+			if i < len(r.Errors) {
+				builder.WriteString(fmt.Sprintf("   Error: %v\n", r.Errors[i]))
 			}
 		}
 		builder.WriteString("\n")
 	}
+}
 
+func (r *SyncReport) formatFirstRunTargets(builder *strings.Builder, verbose bool) {
 	if r.FirstRunCount > 0 && verbose {
 		builder.WriteString("=== First-Run Errors ===\n")
 		for i, target := range r.FirstRunTargets {
@@ -140,15 +130,10 @@ func (r *SyncReport) Format(verbose bool) string {
 		}
 		builder.WriteString("\n")
 	}
-
-	builder.WriteString(fmt.Sprintf("Exit code: %d\n", r.ExitCode))
-
-	return builder.String()
 }
 
-// FormatError generates detailed error message from sync report.
 func (r *SyncReport) FormatError() string {
-	if !r.HasErrorsField() {
+	if !r.HasErrors {
 		return "sync completed successfully"
 	}
 
@@ -160,30 +145,14 @@ func (r *SyncReport) FormatError() string {
 	return fmt.Sprintf("sync failed with %d error(s):\n%s", r.FailureCount, strings.Join(errorsStr, "\n---\n"))
 }
 
-// HasErrorsField returns true if any sync operations failed.
-// Uses field suffix to match struct field naming convention.
-func (r *SyncReport) HasErrorsField() bool {
-	return r.HasErrors
-}
-
-// GetExitCodeField returns recommended exit code for this report.
-// Uses field suffix to match struct field naming convention.
-// Returns 0 for success, 1 for failures.
-func (r *SyncReport) GetExitCodeField() int {
-	return r.ExitCode
-}
-
 // NewReport creates a new SyncReport from sync results.
 func NewReport(results []*SyncResult) *SyncReport {
 	engine := NewEngine(nil, nil, nil)
 	return engine.CollectResults(results)
 }
 
-// AggregateReport combines multiple reports into a single summary.
-// Aggregates statistics, target lists, and errors from all reports.
-// Returns a new combined report with totals from all input reports.
-func AggregateReport(reports []*SyncReport) *SyncReport {
-	combined := &SyncReport{
+func newEmptyReport() *SyncReport {
+	return &SyncReport{
 		TotalTargets:     0,
 		SuccessCount:     0,
 		FailureCount:     0,
@@ -195,23 +164,22 @@ func AggregateReport(reports []*SyncReport) *SyncReport {
 		ExitCode:         0,
 		Errors:           []error{},
 	}
+}
+
+func AggregateReport(reports []*SyncReport) *SyncReport {
+	combined := newEmptyReport()
 
 	for _, report := range reports {
-		// Aggregate statistics
 		combined.TotalTargets += report.TotalTargets
 		combined.SuccessCount += report.SuccessCount
 		combined.FailureCount += report.FailureCount
 		combined.FirstRunCount += report.FirstRunCount
 
-		// Append target lists from each report
 		combined.FirstRunTargets = append(combined.FirstRunTargets, report.FirstRunTargets...)
 		combined.FailedTargets = append(combined.FailedTargets, report.FailedTargets...)
 		combined.SucceededTargets = append(combined.SucceededTargets, report.SucceededTargets...)
 
-		// Aggregated errors flag is true if any report has errors
 		combined.HasErrors = combined.HasErrors || report.HasErrors
-
-		// Collect all errors from all reports
 		combined.Errors = append(combined.Errors, report.Errors...)
 	}
 

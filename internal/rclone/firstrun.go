@@ -85,7 +85,7 @@ func ExtractFirstRunErrorPaths(stderr string) []string {
 
 	paths := make([]string, 0, len(matches))
 	for _, match := range matches {
-		if len(match) > 1 {
+		if len(match) > 1 && match[1] != "" {
 			paths = append(paths, match[1])
 		}
 	}

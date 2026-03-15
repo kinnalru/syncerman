@@ -87,7 +87,7 @@ func TestPersistentFlags(t *testing.T) {
 }
 
 func TestGetConfigFile(t *testing.T) {
-	cfgFile = "test-config.yml"
+	GetConfig().ConfigFile = "test-config.yml"
 	if got := GetConfigFile(); got != "test-config.yml" {
 		t.Errorf("GetConfigFile() = %v, want test-config.yml", got)
 	}
@@ -111,7 +111,7 @@ func TestIsDryRun(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			dryRun = tt.value
+			GetConfig().DryRun = tt.value
 			if got := IsDryRun(); got != tt.value {
 				t.Errorf("IsDryRun() = %v, want %v", got, tt.value)
 			}
@@ -130,7 +130,7 @@ func TestIsVerbose(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			verbose = tt.value
+			GetConfig().Verbose = tt.value
 			if got := IsVerbose(); got != tt.value {
 				t.Errorf("IsVerbose() = %v, want %v", got, tt.value)
 			}
@@ -149,7 +149,7 @@ func TestIsQuiet(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			quiet = tt.value
+			GetConfig().Quiet = tt.value
 			if got := IsQuiet(); got != tt.value {
 				t.Errorf("IsQuiet() = %v, want %v", got, tt.value)
 			}
@@ -185,6 +185,7 @@ func TestSyncCommand(t *testing.T) {
 	syncSubCmd, _, _ := testRoot.Find([]string{"sync"})
 	if syncSubCmd == nil {
 		t.Error("sync command not found")
+		return
 	}
 
 	if syncSubCmd.Short != "Synchronize targets from configuration or single target" {

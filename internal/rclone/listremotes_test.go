@@ -68,15 +68,12 @@ func TestListRemotes(t *testing.T) {
 			}
 
 			tempDir := t.TempDir()
-			binaryPath := filepath.Join(tempDir, "test-listremotes")
-			content := "#!/bin/sh\necho '" + tc.output + "'\nexit " + string(rune('0'+tc.exitCode)) + "\n"
-			if err := os.WriteFile(binaryPath, []byte(content), 0o755); err != nil {
-				t.Fatalf("Failed to create test binary: %v", err)
-			}
+			binaryPath := CreateTestBinary(t, tempDir, tc.output, tc.exitCode)
 
 			config := &Config{BinaryPath: binaryPath}
-			exec := NewExecutorWithLogger(config, logger.NewConsoleLogger())
-			exec.(*ExecutorImpl).logger.SetLevel(logger.LevelQuiet)
+			log := logger.NewConsoleLogger()
+			log.SetLevel(logger.LevelQuiet)
+			exec := NewExecutorWithLogger(config, log)
 
 			ctx := context.Background()
 			remotes, err := ListRemotes(ctx, exec)
@@ -145,15 +142,12 @@ func TestRemoteExists(t *testing.T) {
 			}
 
 			tempDir := t.TempDir()
-			binaryPath := filepath.Join(tempDir, "test-remoteexists")
-			content := "#!/bin/sh\necho '" + tc.output + "'\nexit 0\n"
-			if err := os.WriteFile(binaryPath, []byte(content), 0o755); err != nil {
-				t.Fatalf("Failed to create test binary: %v", err)
-			}
+			binaryPath := CreateTestBinary(t, tempDir, tc.output, 0)
 
 			config := &Config{BinaryPath: binaryPath}
-			exec := NewExecutorWithLogger(config, logger.NewConsoleLogger())
-			exec.(*ExecutorImpl).logger.SetLevel(logger.LevelQuiet)
+			log := logger.NewConsoleLogger()
+			log.SetLevel(logger.LevelQuiet)
+			exec := NewExecutorWithLogger(config, log)
 
 			ctx := context.Background()
 			exists, err := RemoteExists(ctx, exec, tc.remoteName)
@@ -179,8 +173,9 @@ func TestListRemotes_ColonStripping(t *testing.T) {
 	}
 
 	config := &Config{BinaryPath: binaryPath}
-	exec := NewExecutorWithLogger(config, logger.NewConsoleLogger())
-	exec.(*ExecutorImpl).logger.SetLevel(logger.LevelQuiet)
+	log := logger.NewConsoleLogger()
+	log.SetLevel(logger.LevelQuiet)
+	exec := NewExecutorWithLogger(config, log)
 
 	ctx := context.Background()
 	remotes, err := ListRemotes(ctx, exec)
@@ -204,8 +199,9 @@ func TestListRemotes_RealRclone(t *testing.T) {
 		t.Skipf("Skipping real rclone test: %v", err)
 	}
 
-	exec := NewExecutorWithLogger(config, logger.NewConsoleLogger())
-	exec.(*ExecutorImpl).logger.SetLevel(logger.LevelQuiet)
+	log := logger.NewConsoleLogger()
+	log.SetLevel(logger.LevelQuiet)
+	exec := NewExecutorWithLogger(config, log)
 
 	ctx := context.Background()
 	remotes, err := ListRemotes(ctx, exec)
@@ -220,15 +216,12 @@ func TestListRemotes_RealRclone(t *testing.T) {
 
 func TestListRemotes_ContextCancellation(t *testing.T) {
 	tempDir := t.TempDir()
-	binaryPath := filepath.Join(tempDir, "test-cancel")
-	content := "#!/bin/sh\nsleep 10\necho 'gdrive:'\n"
-	if err := os.WriteFile(binaryPath, []byte(content), 0o755); err != nil {
-		t.Fatalf("Failed to create test binary: %v", err)
-	}
+	binaryPath := CreateSlowBinary(t, tempDir)
 
 	config := &Config{BinaryPath: binaryPath}
-	exec := NewExecutorWithLogger(config, logger.NewConsoleLogger())
-	exec.(*ExecutorImpl).logger.SetLevel(logger.LevelQuiet)
+	log := logger.NewConsoleLogger()
+	log.SetLevel(logger.LevelQuiet)
+	exec := NewExecutorWithLogger(config, log)
 
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()

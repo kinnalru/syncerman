@@ -1,6 +1,7 @@
 package config
 
 import (
+	"fmt"
 	"strings"
 
 	"syncerman/internal/errors"
@@ -41,18 +42,18 @@ func (c *Config) Validate() error {
 
 		// Each provider must have at least one path defined
 		if len(paths) == 0 {
-			return errors.NewValidationError("provider "+providerName+" has no paths defined", nil)
+			return errors.NewValidationError(fmt.Sprintf("provider %q has no paths defined", providerName), nil)
 		}
 
 		for path, destinations := range paths {
 			// Source paths must not be empty
 			if path == "" {
-				return errors.NewValidationError("path cannot be empty for provider "+providerName, nil)
+				return errors.NewValidationError(fmt.Sprintf("path cannot be empty for provider %q", providerName), nil)
 			}
 
 			// Each source path must have at least one destination
 			if len(destinations) == 0 {
-				return errors.NewValidationError("no destinations defined for provider "+providerName+" path "+path, nil)
+				return errors.NewValidationError(fmt.Sprintf("no destinations defined for provider %q path %q", providerName, path), nil)
 			}
 
 			// Validate each destination configuration
@@ -86,22 +87,32 @@ func (c *Config) Validate() error {
 //     starting with "." or "/")
 //   - All destination arguments are not empty
 func validateDestination(provider string, path string, dest Destination, index int) error {
-	// Destination must have a target specified
 	if dest.To == "" {
-		return errors.NewValidationError("destination 'to' field cannot be empty at provider "+provider+" path "+path+" index "+string(rune('0'+index)), nil)
+		return errors.NewValidationError(fmt.Sprintf("destination 'to' field cannot be empty for provider %q path %q at index %d",
+			provider, path, index), nil)
 	}
 
-	// Validate destination format: must be either "provider:path" format or local path (starting with "." or "/")
-	if !strings.Contains(dest.To, ":") && !strings.HasPrefix(dest.To, ".") && !strings.HasPrefix(dest.To, "/") {
-		return errors.NewValidationError("destination must be in format 'provider:path' or local path at provider "+provider+" path "+path+" index "+string(rune('0'+index)), nil)
+	if !isValidDestinationFormat(dest.To) {
+		return errors.NewValidationError(fmt.Sprintf("destination must be in format 'provider:path' or local path for provider %q path %q at index %d: %q",
+			provider, path, index, dest.To), nil)
 	}
 
-	// All destination arguments must be non-empty strings
 	for _, arg := range dest.Args {
 		if arg == "" {
-			return errors.NewValidationError("destination argument cannot be empty at provider "+provider+" path "+path+" index "+string(rune('0'+index)), nil)
+			return errors.NewValidationError(fmt.Sprintf("destination argument cannot be empty for provider %q path %q at index %d",
+				provider, path, index), nil)
 		}
 	}
 
 	return nil
+}
+
+func isValidDestinationFormat(to string) bool {
+	if strings.Contains(to, ":") {
+		return true
+	}
+	if strings.HasPrefix(to, ".") || strings.HasPrefix(to, "/") {
+		return true
+	}
+	return false
 }

@@ -95,6 +95,10 @@ type ProviderMap map[string]PathMap
 //
 // Use NewConfig() to create a new Config instance rather than creating one directly.
 type Config struct {
+	// Providers maps provider names to their path configurations.
+	// The yaml:"-" tag indicates that this field is not unmarshaled directly from YAML.
+	// Instead, the LoadConfig and LoadConfigFromData functions manually unmarshal the
+	// ProviderMap to properly handle nested structures and provide better error messages.
 	Providers ProviderMap `yaml:"-"`
 }
 
@@ -179,6 +183,28 @@ func (c *Config) GetDestinations(provider string, path string) ([]Destination, b
 	return destinations, ok
 }
 
+// countTotalTargets returns the total number of sync targets across all providers.
+//
+// This helper method iterates through the Providers map counting all destinations
+// for each provider and path combination. It's used by GetAllDestinations to
+// pre-allocate the result slice for better performance.
+//
+// Returns:
+//   - int: The total number of sync targets configured
+func (c *Config) countTotalTargets() int {
+	if c.Providers == nil {
+		return 0
+	}
+
+	total := 0
+	for _, paths := range c.Providers {
+		for _, destinations := range paths {
+			total += len(destinations)
+		}
+	}
+	return total
+}
+
 // GetAllDestinations converts the configuration into a list of all sync targets.
 //
 // This method iterates through all configured providers, their source paths, and all destinations
@@ -204,7 +230,9 @@ func (c *Config) GetDestinations(provider string, path string) ([]Destination, b
 //	// targets[0] will be a SyncTarget with SourceProvider: "gdrive",
 //	// SourcePath: "documents", and Destination: {To: "local:/backup"}
 func (c *Config) GetAllDestinations() []SyncTarget {
-	var targets []SyncTarget
+	total := c.countTotalTargets()
+	targets := make([]SyncTarget, 0, total)
+
 	for provider, paths := range c.Providers {
 		for path, destinations := range paths {
 			for _, dest := range destinations {

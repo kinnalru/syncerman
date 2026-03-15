@@ -4,6 +4,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"strings"
 	"testing"
 )
 
@@ -103,7 +104,7 @@ func TestFindRcloneBinary(t *testing.T) {
 					t.Errorf("FindRcloneBinary() expected error, got nil")
 					return
 				}
-				if tc.errContains != "" && !containsString(err.Error(), tc.errContains) {
+				if tc.errContains != "" && !strings.Contains(err.Error(), tc.errContains) {
 					t.Errorf("FindRcloneBinary() error = %v, want error containing %q", err, tc.errContains)
 				}
 			} else {
@@ -168,10 +169,6 @@ func TestFindRcloneBinaryOrFatal(t *testing.T) {
 	if path != "" {
 		t.Logf("Found rclone at: %s", path)
 	}
-}
-
-func containsString(s, substr string) bool {
-	return len(s) > 0 && len(substr) > 0 && s != substr
 }
 
 func skipIfNoRclone(t *testing.T) {

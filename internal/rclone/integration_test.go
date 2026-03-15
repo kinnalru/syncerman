@@ -16,8 +16,9 @@ func TestIntegration_EndToEnd_RcloneDetection(t *testing.T) {
 		t.Fatalf("Failed to create config from environment: %v", err)
 	}
 
-	exec := NewExecutorWithLogger(config, logger.NewConsoleLogger())
-	exec.(*ExecutorImpl).logger.SetLevel(logger.LevelQuiet)
+	log := logger.NewConsoleLogger()
+	log.SetLevel(logger.LevelQuiet)
+	exec := NewExecutorWithLogger(config, log)
 
 	if exec == nil {
 		t.Fatal("NewExecutor returned nil")
@@ -43,8 +44,9 @@ func TestIntegration_EndToEnd_MkdirWorkflow(t *testing.T) {
 		t.Fatalf("Failed to create config from environment: %v", err)
 	}
 
-	exec := NewExecutorWithLogger(config, logger.NewConsoleLogger())
-	exec.(*ExecutorImpl).logger.SetLevel(logger.LevelQuiet)
+	log := logger.NewConsoleLogger()
+	log.SetLevel(logger.LevelQuiet)
+	exec := NewExecutorWithLogger(config, log)
 
 	ctx := context.Background()
 
@@ -117,8 +119,9 @@ func TestIntegration_EndToEnd_ErrorHandling(t *testing.T) {
 		t.Fatalf("Failed to create config from environment: %v", err)
 	}
 
-	exec := NewExecutorWithLogger(config, logger.NewConsoleLogger())
-	exec.(*ExecutorImpl).logger.SetLevel(logger.LevelQuiet)
+	log := logger.NewConsoleLogger()
+	log.SetLevel(logger.LevelQuiet)
+	exec := NewExecutorWithLogger(config, log)
 
 	ctx := context.Background()
 

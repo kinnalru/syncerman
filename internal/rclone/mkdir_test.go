@@ -2,9 +2,6 @@ package rclone
 
 import (
 	"context"
-	"os"
-	"path/filepath"
-	"strconv"
 	"strings"
 	"testing"
 	"time"
@@ -79,39 +76,37 @@ func TestMkdir(t *testing.T) {
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
 			if !tc.setupBinary {
+				return
+			}
+
+			tempDir := t.TempDir()
+			var binaryPath string
+			if tc.exitCode != 0 && tc.stderr != "" {
+				binaryPath = CreateTestBinaryWithStderr(t, tempDir, tc.stderr, tc.exitCode)
 			} else {
-				tempDir := t.TempDir()
-				binaryPath := filepath.Join(tempDir, "test-mkdir")
-				if tc.stderr != "" {
-					if tc.exitCode != 0 {
-						binaryPath = createMkdirBinary(t, tempDir, tc.exitCode, tc.stderr)
-					} else {
-						binaryPath = createSuccessBinary(t, tempDir)
-					}
-				} else {
-					binaryPath = createSuccessBinary(t, tempDir)
-				}
+				binaryPath = CreateSuccessBinary(t, tempDir)
+			}
 
-				config := &Config{BinaryPath: binaryPath}
-				exec := NewExecutorWithLogger(config, logger.NewConsoleLogger())
-				exec.(*ExecutorImpl).logger.SetLevel(logger.LevelQuiet)
+			config := &Config{BinaryPath: binaryPath}
+			log := logger.NewConsoleLogger()
+			log.SetLevel(logger.LevelQuiet)
+			exec := NewExecutorWithLogger(config, log)
 
-				ctx := context.Background()
-				err := Mkdir(ctx, exec, tc.remotePath)
+			ctx := context.Background()
+			err := Mkdir(ctx, exec, tc.remotePath)
 
-				if (err != nil) != tc.wantErr {
-					t.Errorf("Mkdir() error = %v, wantErr %v", err, tc.wantErr)
+			if (err != nil) != tc.wantErr {
+				t.Errorf("Mkdir() error = %v, wantErr %v", err, tc.wantErr)
+				return
+			}
+
+			if tc.wantErr && tc.errContains != "" {
+				if err == nil {
+					t.Errorf("Mkdir() expected error containing %q, got nil", tc.errContains)
 					return
 				}
-
-				if tc.wantErr && tc.errContains != "" {
-					if err == nil {
-						t.Errorf("Mkdir() expected error containing %q, got nil", tc.errContains)
-						return
-					}
-					if !strings.Contains(err.Error(), tc.errContains) {
-						t.Errorf("Mkdir() error = %v, want error containing %q", err, tc.errContains)
-					}
+				if !strings.Contains(err.Error(), tc.errContains) {
+					t.Errorf("Mkdir() error = %v, want error containing %q", err, tc.errContains)
 				}
 			}
 		})
@@ -253,14 +248,15 @@ func TestCreatePath(t *testing.T) {
 			var binaryPath string
 
 			if tc.exitCode == 0 {
-				binaryPath = createSuccessBinary(t, tempDir)
+				binaryPath = CreateSuccessBinary(t, tempDir)
 			} else {
-				binaryPath = createMkdirBinary(t, tempDir, tc.exitCode, tc.stderr)
+				binaryPath = CreateTestBinaryWithStderr(t, tempDir, tc.stderr, tc.exitCode)
 			}
 
 			config := &Config{BinaryPath: binaryPath}
-			exec := NewExecutorWithLogger(config, logger.NewConsoleLogger())
-			exec.(*ExecutorImpl).logger.SetLevel(logger.LevelQuiet)
+			log := logger.NewConsoleLogger()
+			log.SetLevel(logger.LevelQuiet)
+			exec := NewExecutorWithLogger(config, log)
 
 			ctx := context.Background()
 			err := CreatePath(ctx, exec, tc.remotePath)
@@ -285,11 +281,12 @@ func TestCreatePath(t *testing.T) {
 
 func TestMkdir_ContextCancellation(t *testing.T) {
 	tempDir := t.TempDir()
-	binaryPath := createSlowBinary(t, tempDir)
+	binaryPath := CreateSlowBinary(t, tempDir)
 
 	config := &Config{BinaryPath: binaryPath}
-	exec := NewExecutorWithLogger(config, logger.NewConsoleLogger())
-	exec.(*ExecutorImpl).logger.SetLevel(logger.LevelQuiet)
+	log := logger.NewConsoleLogger()
+	log.SetLevel(logger.LevelQuiet)
+	exec := NewExecutorWithLogger(config, log)
 
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
@@ -307,11 +304,12 @@ func TestMkdir_ContextCancellation(t *testing.T) {
 
 func TestEmptyPath(t *testing.T) {
 	tempDir := t.TempDir()
-	binaryPath := createSuccessBinary(t, tempDir)
+	binaryPath := CreateSuccessBinary(t, tempDir)
 
 	config := &Config{BinaryPath: binaryPath}
-	exec := NewExecutorWithLogger(config, logger.NewConsoleLogger())
-	exec.(*ExecutorImpl).logger.SetLevel(logger.LevelQuiet)
+	log := logger.NewConsoleLogger()
+	log.SetLevel(logger.LevelQuiet)
+	exec := NewExecutorWithLogger(config, log)
 
 	ctx := context.Background()
 
@@ -323,31 +321,4 @@ func TestEmptyPath(t *testing.T) {
 	if err != nil && !strings.Contains(err.Error(), "remote path cannot be empty") {
 		t.Errorf("Mkdir() error = %v, want error containing 'remote path cannot be empty'", err)
 	}
-}
-
-func createSuccessBinary(t *testing.T, tempDir string) string {
-	binaryPath := filepath.Join(tempDir, "test-success")
-	content := "#!/bin/sh\nexit 0\n"
-	if err := os.WriteFile(binaryPath, []byte(content), 0o755); err != nil {
-		t.Fatalf("Failed to create test binary: %v", err)
-	}
-	return binaryPath
-}
-
-func createMkdirBinary(t *testing.T, tempDir string, exitCode int, stderr string) string {
-	binaryPath := filepath.Join(tempDir, "test-mkdir")
-	content := "#!/bin/sh\necho '" + stderr + "' >&2\nexit " + strconv.Itoa(exitCode) + "\n"
-	if err := os.WriteFile(binaryPath, []byte(content), 0o755); err != nil {
-		t.Fatalf("Failed to create test binary: %v", err)
-	}
-	return binaryPath
-}
-
-func createSlowBinary(t *testing.T, tempDir string) string {
-	binaryPath := filepath.Join(tempDir, "test-slow")
-	content := "#!/bin/sh\nsleep 10\nexit 0\n"
-	if err := os.WriteFile(binaryPath, []byte(content), 0o755); err != nil {
-		t.Fatalf("Failed to create test binary: %v", err)
-	}
-	return binaryPath
 }

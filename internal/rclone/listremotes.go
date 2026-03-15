@@ -5,13 +5,31 @@ import (
 	"strings"
 )
 
+// parseRemoteLine parses a single line of rclone listremotes output.
+// It trims whitespace and removes the trailing colon to extract the clean remote name.
+//
+// Parameters:
+//
+//	line - A single line from rclone listremotes output
+//
+// Returns:
+//
+//	string - The clean remote name without trailing colon
+//	bool   - true if a valid remote was extracted, false for empty lines
+func parseRemoteLine(line string) (string, bool) {
+	line = strings.TrimSpace(line)
+	if line == "" {
+		return "", false
+	}
+	remoteName := strings.TrimSuffix(line, ":")
+	return remoteName, true
+}
+
 // ListRemotes executes the rclone listremotes command and returns a list of remote names.
 //
-// Purpose:
-//
-//	Executes "rclone listremotes" to retrieve all configured remote storages from
-//	the rclone configuration file. This is useful for validating remote names
-//	or providing remote selection options to users.
+// Purpose: Executes "rclone listremotes" to retrieve all configured remote storages from
+// the rclone configuration file. This is useful for validating remote names or providing
+// remote selection options to users.
 //
 // Parameters:
 //
@@ -46,9 +64,7 @@ func ListRemotes(ctx context.Context, executor Executor) ([]string, error) {
 	remotes := make([]string, 0, len(lines))
 
 	for _, line := range lines {
-		line = strings.TrimSpace(line)
-		if line != "" {
-			remoteName := strings.TrimSuffix(line, ":")
+		if remoteName, ok := parseRemoteLine(line); ok {
 			remotes = append(remotes, remoteName)
 		}
 	}

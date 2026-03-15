@@ -59,13 +59,19 @@ type Logger interface {
 	Error(msg string, args ...interface{})
 }
 
-// SetDryRun sets the dry-run mode for the engine.
-// When dry-run is enabled, sync operations will only show what would be changed.
+// defaultLogger is a no-op logger used when nil logger is passed to NewEngine.
+// This prevents nil pointer panics in code paths that may not require actual logging.
+type defaultLogger struct{}
+
+func (l *defaultLogger) Debug(msg string, args ...interface{}) {}
+func (l *defaultLogger) Info(msg string, args ...interface{})  {}
+func (l *defaultLogger) Warn(msg string, args ...interface{})  {}
+func (l *defaultLogger) Error(msg string, args ...interface{}) {}
+
 func (e *Engine) SetDryRun(dryRun bool) {
 	e.dryRun = dryRun
 }
 
-// NewEngine creates a new sync engine with the given configuration and rclone executor.
 func NewEngine(cfg *config.Config, exec rclone.Executor, log Logger) *Engine {
 	if log == nil {
 		log = &defaultLogger{}
@@ -91,11 +97,3 @@ func SyncEngineFromConfig(configPath string, exec rclone.Executor, log Logger) (
 
 	return NewEngine(cfg, exec, log), nil
 }
-
-// defaultLogger provides a no-op logger implementation.
-type defaultLogger struct{}
-
-func (l *defaultLogger) Debug(msg string, args ...interface{}) {}
-func (l *defaultLogger) Info(msg string, args ...interface{})  {}
-func (l *defaultLogger) Warn(msg string, args ...interface{})  {}
-func (l *defaultLogger) Error(msg string, args ...interface{}) {}

@@ -8,6 +8,12 @@ import (
 	"syncerman/internal/rclone"
 )
 
+const (
+	localProvider    = "local"
+	remoteDelimiter  = ":"
+	remoteSplitCount = 2
+)
+
 // ValidationErrors represents collection of validation errors.
 // Used to aggregate multiple validation failures into a single error return.
 type ValidationErrors []error
@@ -45,28 +51,7 @@ func (e *Engine) ValidateTargets(ctx context.Context, config *config.Config) err
 			continue
 		}
 
-		if provider == "local" {
-			continue
-		}
-
-		exists, err := rclone.RemoteExists(ctx, e.rclone, provider)
-		if err != nil {
-			errs = append(errs, fmt.Errorf("failed to verify provider %s: %w", provider, err))
-			continue
-		}
-
-		if !exists {
-			errs = append(errs, fmt.Errorf("provider %s not found in rclone configuration", provider))
-		}
-	}
-
-	for provider := range providers {
-		if provider == "" {
-			errs = append(errs, fmt.Errorf("provider name cannot be empty"))
-			continue
-		}
-
-		if provider == "local" {
+		if provider == localProvider {
 			continue
 		}
 
@@ -90,7 +75,8 @@ func (e *Engine) ValidateTargets(ctx context.Context, config *config.Config) err
 
 // ExpandTargets expands configuration YAML into a list of sync targets.
 // Each provider:sourcePath + destination combination becomes a SyncTarget.
-// Validates all source paths and destinations during expansion.
+// Validates source paths and destination targets, but does not validate rclone provider existence.
+// Provider validation should be done separately using ValidateTargets().
 // Returns error if any target is invalid, along with all validation errors found.
 func (e *Engine) ExpandTargets(config *config.Config) ([]*SyncTarget, error) {
 	var targets []*SyncTarget
@@ -145,10 +131,10 @@ func (e *Engine) Validate(ctx context.Context, config *config.Config) error {
 	return e.ValidateTargets(ctx, config)
 }
 
-// ProviderExists checks if a provider name exists in rclone configuration.
+// RemoteProviderExists checks if a provider name exists in rclone configuration.
 // Local provider always returns true.
-func (e *Engine) ProviderExists(ctx context.Context, provider string) (bool, error) {
-	if provider == "local" {
+func (e *Engine) RemoteProviderExists(ctx context.Context, provider string) (bool, error) {
+	if provider == localProvider {
 		return true, nil
 	}
 
@@ -158,10 +144,10 @@ func (e *Engine) ProviderExists(ctx context.Context, provider string) (bool, err
 // FormatRemote formats provider and path into remote path format.
 // For local provider, returns just the path. For remotes, returns "provider:path".
 func FormatRemote(provider, path string) string {
-	if provider == "local" {
+	if provider == localProvider {
 		return path
 	}
-	return fmt.Sprintf("%s:%s", provider, path)
+	return fmt.Sprintf("%s%s%s", provider, remoteDelimiter, path)
 }
 
 // ParseRemote parses a remote path string into provider and path components.
@@ -170,13 +156,13 @@ func FormatRemote(provider, path string) string {
 // Validates that both provider and path are non-empty.
 func ParseRemote(remote string) (provider, path string, err error) {
 	// Local path (no colon found)
-	if !strings.Contains(remote, ":") {
-		return "local", remote, nil
+	if !strings.Contains(remote, remoteDelimiter) {
+		return localProvider, remote, nil
 	}
 
 	// Remote path with format "provider:path"
-	parts := strings.SplitN(remote, ":", 2)
-	if len(parts) != 2 {
+	parts := strings.SplitN(remote, remoteDelimiter, remoteSplitCount)
+	if len(parts) != remoteSplitCount {
 		return "", "", fmt.Errorf("invalid remote format: %s", remote)
 	}
 

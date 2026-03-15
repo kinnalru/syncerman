@@ -2,9 +2,7 @@ package rclone
 
 import (
 	"context"
-	"os"
 	"os/exec"
-	"path/filepath"
 	"strings"
 	"testing"
 	"time"
@@ -103,15 +101,12 @@ func TestNewExecutorWithLogger(t *testing.T) {
 
 func TestExecutorImpl_Run_Success(t *testing.T) {
 	tempDir := t.TempDir()
-	binaryPath := filepath.Join(tempDir, "test-echo")
-	content := "#!/bin/sh\necho 'success'\nexit 0\n"
-	if err := os.WriteFile(binaryPath, []byte(content), 0o755); err != nil {
-		t.Fatalf("Failed to create test binary: %v", err)
-	}
+	binaryPath := CreateTestBinary(t, tempDir, "success", 0)
 
 	config := &Config{BinaryPath: binaryPath}
-	exec := NewExecutorWithLogger(config, logger.NewConsoleLogger())
-	exec.(*ExecutorImpl).logger.SetLevel(logger.LevelQuiet)
+	log := logger.NewConsoleLogger()
+	log.SetLevel(logger.LevelQuiet)
+	exec := NewExecutorWithLogger(config, log)
 
 	result, err := exec.Run(context.Background(), "test")
 
@@ -131,15 +126,12 @@ func TestExecutorImpl_Run_Success(t *testing.T) {
 
 func TestExecutorImpl_Run_Failure(t *testing.T) {
 	tempDir := t.TempDir()
-	binaryPath := filepath.Join(tempDir, "test-fail")
-	content := "#!/bin/sh\necho 'error' >&2\nexit 1\n"
-	if err := os.WriteFile(binaryPath, []byte(content), 0o755); err != nil {
-		t.Fatalf("Failed to create test binary: %v", err)
-	}
+	binaryPath := CreateTestBinaryWithStderr(t, tempDir, "error", 1)
 
 	config := &Config{BinaryPath: binaryPath}
-	exec := NewExecutorWithLogger(config, logger.NewConsoleLogger())
-	exec.(*ExecutorImpl).logger.SetLevel(logger.LevelQuiet)
+	log := logger.NewConsoleLogger()
+	log.SetLevel(logger.LevelQuiet)
+	exec := NewExecutorWithLogger(config, log)
 
 	result, err := exec.Run(context.Background(), "test")
 
@@ -159,15 +151,12 @@ func TestExecutorImpl_Run_Failure(t *testing.T) {
 
 func TestExecutorImpl_Run_ContextCancelled(t *testing.T) {
 	tempDir := t.TempDir()
-	binaryPath := filepath.Join(tempDir, "test-slow")
-	content := "#!/bin/sh\nsleep 10\necho 'done'\n"
-	if err := os.WriteFile(binaryPath, []byte(content), 0o755); err != nil {
-		t.Fatalf("Failed to create test binary: %v", err)
-	}
+	binaryPath := CreateSlowBinary(t, tempDir)
 
 	config := &Config{BinaryPath: binaryPath}
-	exec := NewExecutorWithLogger(config, logger.NewConsoleLogger())
-	exec.(*ExecutorImpl).logger.SetLevel(logger.LevelQuiet)
+	log := logger.NewConsoleLogger()
+	log.SetLevel(logger.LevelQuiet)
+	exec := NewExecutorWithLogger(config, log)
 
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
@@ -193,8 +182,9 @@ func TestExecutorImpl_Run_ContextCancelled(t *testing.T) {
 
 func TestExecutorImpl_Run_BinaryNotFound(t *testing.T) {
 	config := &Config{BinaryPath: "/nonexistent/binary/path"}
-	exec := NewExecutorWithLogger(config, logger.NewConsoleLogger())
-	exec.(*ExecutorImpl).logger.SetLevel(logger.LevelQuiet)
+	log := logger.NewConsoleLogger()
+	log.SetLevel(logger.LevelQuiet)
+	exec := NewExecutorWithLogger(config, log)
 
 	_, err := exec.Run(context.Background(), "test")
 
@@ -209,15 +199,12 @@ func TestExecutorImpl_Run_BinaryNotFound(t *testing.T) {
 
 func TestExecutorImpl_Run_WithArgs(t *testing.T) {
 	tempDir := t.TempDir()
-	binaryPath := filepath.Join(tempDir, "test-args")
-	content := "#!/bin/sh\necho \"Args: $*\"\nexit 0\n"
-	if err := os.WriteFile(binaryPath, []byte(content), 0o755); err != nil {
-		t.Fatalf("Failed to create test binary: %v", err)
-	}
+	binaryPath := CreateTestBinary(t, tempDir, "Args: arg1 arg2 arg3", 0)
 
 	config := &Config{BinaryPath: binaryPath}
-	exec := NewExecutorWithLogger(config, logger.NewConsoleLogger())
-	exec.(*ExecutorImpl).logger.SetLevel(logger.LevelQuiet)
+	log := logger.NewConsoleLogger()
+	log.SetLevel(logger.LevelQuiet)
+	exec := NewExecutorWithLogger(config, log)
 
 	result, err := exec.Run(context.Background(), "arg1", "arg2", "arg3")
 
@@ -233,15 +220,12 @@ func TestExecutorImpl_Run_WithArgs(t *testing.T) {
 
 func TestExecutorImpl_Run_Timeout(t *testing.T) {
 	tempDir := t.TempDir()
-	binaryPath := filepath.Join(tempDir, "test-timeout")
-	content := "#!/bin/sh\nsleep 10\nexit 0\n"
-	if err := os.WriteFile(binaryPath, []byte(content), 0o755); err != nil {
-		t.Fatalf("Failed to create test binary: %v", err)
-	}
+	binaryPath := CreateSlowBinary(t, tempDir)
 
 	config := &Config{BinaryPath: binaryPath}
-	exec := NewExecutorWithLogger(config, logger.NewConsoleLogger())
-	exec.(*ExecutorImpl).logger.SetLevel(logger.LevelQuiet)
+	log := logger.NewConsoleLogger()
+	log.SetLevel(logger.LevelQuiet)
+	exec := NewExecutorWithLogger(config, log)
 
 	ctx, cancel := context.WithTimeout(context.Background(), 200*time.Millisecond)
 	defer cancel()
@@ -269,8 +253,9 @@ func TestExecutorImpl_Run_RealEcho(t *testing.T) {
 	skipIfNoEcho(t)
 
 	config := &Config{BinaryPath: "echo"}
-	exec := NewExecutorWithLogger(config, logger.NewConsoleLogger())
-	exec.(*ExecutorImpl).logger.SetLevel(logger.LevelQuiet)
+	log := logger.NewConsoleLogger()
+	log.SetLevel(logger.LevelQuiet)
+	exec := NewExecutorWithLogger(config, log)
 
 	result, err := exec.Run(context.Background(), "test", "message")
 

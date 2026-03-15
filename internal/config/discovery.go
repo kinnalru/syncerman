@@ -1,25 +1,23 @@
 package config
 
 import (
+	"fmt"
 	"os"
 	"path/filepath"
 
 	"syncerman/internal/errors"
 )
 
-// DefaultConfigName is the primary configuration file name searched when no custom path is provided.
-const DefaultConfigName = "configuration.yml"
+const defaultConfigName = "configuration.yml"
 
-// AlternateConfigName is a common alternative configuration file name used as a fallback when DefaultConfigName is not found.
-const AlternateConfigName = "config.yml"
+const alternateConfigName = "config.yml"
 
-// HiddenConfigName is the hidden configuration file name, typically used for user-specific overrides.
-const HiddenConfigName = ".syncerman.yml"
+const hiddenConfigName = ".syncerman.yml"
 
 var defaultConfigFiles = []string{
-	DefaultConfigName,
-	AlternateConfigName,
-	HiddenConfigName,
+	defaultConfigName,
+	alternateConfigName,
+	hiddenConfigName,
 }
 
 // DiscoverConfigPath discovers and validates the configuration file path.
@@ -66,7 +64,7 @@ func DiscoverConfigPath(customPath string) (string, error) {
 func findDefaultConfig() (string, error) {
 	cwd, err := os.Getwd()
 	if err != nil {
-		return "", errors.NewConfigError("failed to get current directory", err)
+		return "", errors.NewConfigError("failed to get current working directory", err)
 	}
 
 	configPath := searchInDirectory(cwd)
@@ -75,7 +73,7 @@ func findDefaultConfig() (string, error) {
 	}
 
 	parent := filepath.Dir(cwd)
-	for parent != cwd && parent != "/" {
+	for parent != cwd && filepath.Dir(parent) != parent {
 		configPath = searchInDirectory(parent)
 		if configPath != "" {
 			return configPath, nil
@@ -84,7 +82,7 @@ func findDefaultConfig() (string, error) {
 		parent = filepath.Dir(cwd)
 	}
 
-	return "", errors.NewConfigError("no configuration file found (searched for: configuration.yml, config.yml, .syncerman.yml)", nil)
+	return "", errors.NewConfigError(fmt.Sprintf("no configuration file found in current or parent directories (searching for: %s)", defaultConfigFiles), nil)
 }
 
 // searchInDirectory searches for any default config file in a specific directory.
@@ -121,7 +119,7 @@ func searchInDirectory(dir string) string {
 //   - error: error if the file doesn't exist at the specified path, nil if valid
 func validateConfigPath(path string) error {
 	if _, err := os.Stat(path); err != nil {
-		return errors.NewConfigError("configuration file not found: "+path, err)
+		return errors.NewConfigError(fmt.Sprintf("configuration file not found: %s", path), err)
 	}
 	return nil
 }

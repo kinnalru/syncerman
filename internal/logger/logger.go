@@ -1,10 +1,18 @@
 package logger
 
 import (
+	"bytes"
 	"fmt"
 	"io"
 	"os"
+	"sync"
 )
+
+var bufferPool = sync.Pool{
+	New: func() interface{} {
+		return new(bytes.Buffer)
+	},
+}
 
 // LogLevel represents log severity levels. Lower values are more verbose.
 type LogLevel int
@@ -22,29 +30,33 @@ const (
 	LevelQuiet
 )
 
+const (
+	logPrefix       = "["
+	logSuffix       = "] "
+	nilWriterErrMsg = "output writer cannot be nil"
+)
+
+var levelStrings = [...]string{
+	LevelDebug: "DEBUG",
+	LevelInfo:  "INFO",
+	LevelWarn:  "WARN",
+	LevelError: "ERROR",
+	LevelQuiet: "QUIET",
+}
+
 // String converts LogLevel to string representation.
 // Returns string representation (DEBUG, INFO, WARN, ERROR, QUIET, UNKNOWN).
 func (l LogLevel) String() string {
-	switch l {
-	case LevelDebug:
-		return "DEBUG"
-	case LevelInfo:
-		return "INFO"
-	case LevelWarn:
-		return "WARN"
-	case LevelError:
-		return "ERROR"
-	case LevelQuiet:
-		return "QUIET"
-	default:
-		return "UNKNOWN"
+	if int(l) >= 0 && int(l) < len(levelStrings) {
+		return levelStrings[l]
 	}
+	return "UNKNOWN"
 }
 
 // Logger defines the logging interface for all logger implementations.
-// This interface allows for flexible logging with support for different severity levels
-// and output destinations. Implementations can be swapped out to change logging behavior
-// without modifying application code.
+// This interface focuses only on logging operations without configuration concerns.
+// Implementations can be swapped out to change logging behavior without modifying
+// application code.
 //
 // Methods:
 //
@@ -52,21 +64,33 @@ func (l LogLevel) String() string {
 //   - Info: logs info-level messages (default level)
 //   - Warn: logs warning-level messages for non-critical issues
 //   - Error: logs error-level messages for critical issues
+//
+// Design: Small, focused interface following Go best practices. Configuration
+// operations are separated into the Configurable interface.
+type Logger interface {
+	Debug(msg string, args ...interface{})
+	Info(msg string, args ...interface{})
+	Warn(msg string, args ...interface{})
+	Error(msg string, args ...interface{})
+}
+
+// Configurable defines configuration methods for logger implementations.
+// This interface allows dynamic configuration of log level and output destination.
+//
+// Methods:
+//
 //   - SetLevel: changes the minimum log level (messages below this level are filtered)
 //   - SetOutput: changes the output destination (e.g., file, stderr)
 //   - GetLevel: returns the current minimum log level
 //   - SetVerbose: enables verbose mode by setting level to DEBUG
 //   - SetQuiet: enables quiet mode by setting level to QUIET (suppresses all output)
 //
-// Design: Interface-based design allows for future logger implementations (e.g., file logger,
-// syslog, structured logging) while maintaining a consistent API across the application.
-type Logger interface {
-	Debug(msg string, args ...interface{})
-	Info(msg string, args ...interface{})
-	Warn(msg string, args ...interface{})
-	Error(msg string, args ...interface{})
+// Design: Separate interface for configuration concerns, following interface
+// segregation principle. Consumers that only need logging can depend on Logger,
+// while those needing configuration can depend on both Logger and Configurable.
+type Configurable interface {
 	SetLevel(level LogLevel)
-	SetOutput(w io.Writer)
+	SetOutput(w io.Writer) error
 	GetLevel() LogLevel
 	SetVerbose(verbose bool)
 	SetQuiet(quiet bool)
@@ -89,10 +113,11 @@ type Logger interface {
 // Initialization: Use NewConsoleLogger() factory function to create a new instance
 // with default settings (INFO level, stderr output).
 type ConsoleLogger struct {
-	level   LogLevel
-	output  io.Writer
-	quiet   bool
-	verbose bool
+	level         LogLevel
+	output        io.Writer
+	quiet         bool
+	verbose       bool
+	previousLevel LogLevel
 }
 
 // NewConsoleLogger creates and configures a new console logger instance.
@@ -111,6 +136,7 @@ type ConsoleLogger struct {
 //   - Output set to os.Stderr - log messages are written to standard error
 //   - Quiet mode disabled - logging is enabled
 //   - Verbose mode disabled - debug messages are not shown unless level is changed
+//   - Previous level initialized to LevelInfo - used for restoring level after mode changes
 //
 // Usage: typically called at application startup to initialize the logging subsystem.
 // After creation, the logger can be configured further using methods like SetLevel(),
@@ -122,8 +148,9 @@ type ConsoleLogger struct {
 //	log.Info("Application started")
 func NewConsoleLogger() *ConsoleLogger {
 	return &ConsoleLogger{
-		level:  LevelInfo,
-		output: os.Stderr,
+		level:         LevelInfo,
+		previousLevel: LevelInfo,
+		output:        os.Stderr,
 	}
 }
 
@@ -135,39 +162,42 @@ func NewConsoleLogger() *ConsoleLogger {
 //
 // Parameters:
 //
-//   - level: the log level for prefix (determines the tag like [DEBUG], [INFO], etc.)
+//   - levelStr: the string representation of the log level for prefix (e.g., "DEBUG", "INFO")
 //   - msg: message format string (Printf-style format specifiers like %s, %d, %v)
 //   - args: variable arguments for format string placeholders (optional)
 //
-// Returns: a formatted string in "[LEVEL] message\n" format, where:
-//
-//   - LEVEL is the string representation of the log level
-//   - message is the formatted message with arguments applied
-//   - newline character is appended at the end
-//
 // Implementation details:
 //
+//   - Uses sync.Pool to reuse buffers and reduce allocations
 //   - If args is empty, the msg is used as-is without formatting
-//   - If args is provided, fmt.Sprintf is used to apply Printf-style formatting
-//   - The level is converted to its string representation using level.String()
+//   - If args is provided, fmt.Fprintf is used to apply Printf-style formatting
 //   - The final format is "[LEVEL] message\n"
+//   - After use, buffer is returned to the pool
 //
 // Example:
 //
-//	format(LevelInfo, "Processing %d files", numFiles)
-//	// Returns: "[INFO] Processing 10 files\n"
+//	format("INFO", "Processing %d files", numFiles)
+//	// Writes: "[INFO] Processing 10 files\n"
 //
-//	format(LevelError, "Failed: %v", err)
-//	// Returns: "[ERROR] Failed: connection timeout\n"
-func (l *ConsoleLogger) format(level LogLevel, msg string, args ...interface{}) string {
-	// Format the message with provided arguments using Printf-style formatting
-	formatted := msg
+//	format("ERROR", "Failed: %v", err)
+//	// Writes: "[ERROR] Failed: connection timeout\n"
+func (l *ConsoleLogger) format(levelStr string, msg string, args ...interface{}) {
+	buf := bufferPool.Get().(*bytes.Buffer)
+	buf.Reset()
+	defer bufferPool.Put(buf)
+
+	buf.WriteString(logPrefix)
+	buf.WriteString(levelStr)
+	buf.WriteString(logSuffix)
+
 	if len(args) > 0 {
-		formatted = fmt.Sprintf(msg, args...)
+		fmt.Fprintf(buf, msg, args...)
+	} else {
+		buf.WriteString(msg)
 	}
-	// Add level prefix and newline for structured output: "[LEVEL] message\n"
-	// Note: No timestamp is included in format (logs go to stderr, timestamp comes from system if needed)
-	return fmt.Sprintf("[%s] %s\n", level.String(), formatted)
+	buf.WriteByte('\n')
+
+	buf.WriteTo(l.output)
 }
 
 // Debug logs debug-level messages with optional formatting.
@@ -198,7 +228,7 @@ func (l *ConsoleLogger) Debug(msg string, args ...interface{}) {
 	if l.quiet || l.level > LevelDebug {
 		return
 	}
-	fmt.Fprint(l.output, l.format(LevelDebug, msg, args...))
+	l.format(levelStrings[LevelDebug], msg, args...)
 }
 
 // Info logs info-level messages with optional formatting.
@@ -229,7 +259,7 @@ func (l *ConsoleLogger) Info(msg string, args ...interface{}) {
 	if l.quiet || l.level > LevelInfo {
 		return
 	}
-	fmt.Fprint(l.output, l.format(LevelInfo, msg, args...))
+	l.format(levelStrings[LevelInfo], msg, args...)
 }
 
 // Warn logs warning-level messages with optional formatting.
@@ -261,7 +291,7 @@ func (l *ConsoleLogger) Warn(msg string, args ...interface{}) {
 	if l.quiet || l.level > LevelWarn {
 		return
 	}
-	fmt.Fprint(l.output, l.format(LevelWarn, msg, args...))
+	l.format(levelStrings[LevelWarn], msg, args...)
 }
 
 // Error logs error-level messages with optional formatting.
@@ -293,7 +323,7 @@ func (l *ConsoleLogger) Error(msg string, args ...interface{}) {
 	if l.quiet || l.level > LevelError {
 		return
 	}
-	fmt.Fprint(l.output, l.format(LevelError, msg, args...))
+	l.format(levelStrings[LevelError], msg, args...)
 }
 
 // SetLevel sets the minimum log level for this logger instance.
@@ -342,14 +372,16 @@ func (l *ConsoleLogger) SetLevel(level LogLevel) {
 //
 //   - w: io.Writer for log output destination
 //
-// Returns: none.
+// Returns:
+//
+//   - error: nil on success, error if the writer is nil
 //
 // Implementation details:
 //
 //   - Any io.Writer can be used (os.Stdout, os.Stderr, files, buffers, etc.)
 //   - The writer is used directly without additional buffering
 //   - Thread safety depends on the underlying writer's implementation
-//   - No validation is performed on the writer (nil writer will panic on write)
+//   - Writer is validated to ensure it is not nil before accepting it
 //
 // Use cases: redirecting logs to file for persistent storage, capturing logs in a buffer
 // for testing or analysis, writing to network sockets for centralized logging, directing
@@ -363,18 +395,23 @@ func (l *ConsoleLogger) SetLevel(level LogLevel) {
 //	if err != nil {
 //		panic(err)
 //	}
-//	log.SetOutput(logFile)
+//	if err := log.SetOutput(logFile); err != nil {
+//		panic(err)
+//	}
 //
 //	// Redirect to stdout
-//	log.SetOutput(os.Stdout)
-//
-//	// Redirect to ioutil.Discard to suppress all output
-//	log.SetOutput(ioutil.Discard)
+//	if err := log.SetOutput(os.Stdout); err != nil {
+//		panic(err)
+//	}
 //
 // Note: It is the caller's responsibility to close the writer when it's no longer needed
 // (e.g., closing files, flushing buffers).
-func (l *ConsoleLogger) SetOutput(w io.Writer) {
+func (l *ConsoleLogger) SetOutput(w io.Writer) error {
+	if w == nil {
+		return fmt.Errorf(nilWriterErrMsg)
+	}
 	l.output = w
+	return nil
 }
 
 // SetVerbose enables or disables verbose mode for detailed output.
@@ -392,9 +429,10 @@ func (l *ConsoleLogger) SetOutput(w io.Writer) {
 // Implementation details:
 //
 //   - When verbose is true: sets the log level to LevelDebug
-//   - When verbose is false: does not automatically change the log level (leaves current level)
-//   - The verbose flag is stored in the l.verbose field for potential future use
-//   - Enabling verbose mode overrides quiet mode (quiet flag is not automatically cleared)
+//   - When verbose is false: restores the previous log level that was saved before
+//     enabling verbose mode (to LevelInfo if no previous level was saved)
+//   - The verbose flag is stored in the l.verbose field
+//   - Enabling verbose mode also clears the quiet flag (quiet and verbose are mutually exclusive)
 //
 // Use cases: implementing command-line --verbose flag, debugging during development,
 // troubleshooting production issues, providing detailed output when requested by users,
@@ -407,16 +445,20 @@ func (l *ConsoleLogger) SetOutput(w io.Writer) {
 //	log.Debug("Detailed debug information will now be shown")
 //	log.Info("Info messages will also be shown")
 //
-//	// Disable verbose mode (but keep current level)
+//	// Disable verbose mode (restores previous level)
 //	log.SetVerbose(false)
-//
-// Note: This method is designed for use with command-line interfaces where users
-// request verbose output. Use SetLevel() directly if you need finer control over log
-// levels or want to set a specific level other than LevelDebug.
 func (l *ConsoleLogger) SetVerbose(verbose bool) {
 	l.verbose = verbose
 	if verbose {
+		if l.level != LevelDebug {
+			l.previousLevel = l.level
+		}
 		l.level = LevelDebug
+		l.quiet = false
+	} else {
+		if l.level == LevelDebug && l.previousLevel != LevelQuiet {
+			l.level = l.previousLevel
+		}
 	}
 }
 
@@ -434,10 +476,11 @@ func (l *ConsoleLogger) SetVerbose(verbose bool) {
 //
 // Implementation details:
 //
-//   - When quiet is true: sets the log level to LevelQuiet and sets the quiet flag
-//   - When quiet is false: only clears the quiet flag (does not restore previous level)
+//   - When quiet is true: saves the current level as previous level and sets level to LevelQuiet
+//   - When quiet is false: restores the previous log level that was saved before
+//     enabling quiet mode (to LevelInfo if no previous level was saved)
 //   - The quiet flag is checked before writing any log message in all logging methods
-//   - Enabling quiet mode overrides verbose mode (verbose flag is not automatically cleared)
+//   - Enabling quiet mode also clears the verbose flag (quiet and verbose are mutually exclusive)
 //
 // Use cases: implementing command-line --quiet flag, running automated scripts that
 // should not produce output, reducing noise in production environments, enabling silent
@@ -450,18 +493,21 @@ func (l *ConsoleLogger) SetVerbose(verbose bool) {
 //	log.Info("This message will not be shown")
 //	log.Error("Even errors are suppressed")
 //
-//	// Disable quiet mode (but level remains at LevelQuiet)
+//	// Disable quiet mode (restores previous level)
 //	log.SetQuiet(false)
-//	// You may need to set a specific level after disabling quiet mode
-//	log.SetLevel(logger.LevelInfo)
-//
-// Note: When quiet mode is disabled using SetQuiet(false), the log level remains at
-// LevelQuiet by default. You should typically call SetLevel() after disabling quiet mode
-// to restore normal logging behavior.
+//	log.Info("Logging is now restored")
 func (l *ConsoleLogger) SetQuiet(quiet bool) {
 	l.quiet = quiet
 	if quiet {
+		if l.level != LevelQuiet {
+			l.previousLevel = l.level
+		}
 		l.level = LevelQuiet
+		l.verbose = false
+	} else {
+		if l.level == LevelQuiet && l.previousLevel != LevelQuiet {
+			l.level = l.previousLevel
+		}
 	}
 }
 
@@ -498,8 +544,21 @@ func (l *ConsoleLogger) SetQuiet(quiet bool) {
 //	}
 //
 // Note: This method returns the current l.level value, which may have been modified
-// by SetLevel(), SetVerbose(), or SetQuiet() calls. The returned value does not
-// directly reflect the quiet or verbose flags, but their effects on the log level.
+// by SetLevel(), SetVerbose(), or SetQuiet() calls. When SetVerbose(true) or SetQuiet(true)
+// are called, the previous level is stored internally and restored when the mode is disabled.
+// The returned value does not directly reflect the quiet or verbose flags, but their
+// effects on the log level.
 func (l *ConsoleLogger) GetLevel() LogLevel {
 	return l.level
+}
+
+// GetPreviousLevel returns the saved previous log level.
+//
+// This method allows inspection of the previously saved log level, which is used
+// internally by SetVerbose() and SetQuiet() to restore the level when those modes
+// are disabled. This is primarily useful for testing purposes.
+//
+// Returns: LogLevel - the previously stored log level value.
+func (l *ConsoleLogger) GetPreviousLevel() LogLevel {
+	return l.previousLevel
 }

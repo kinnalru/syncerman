@@ -1,7 +1,6 @@
 package rclone
 
 import (
-	"errors"
 	"fmt"
 	"os"
 	"os/exec"
@@ -35,29 +34,44 @@ const (
 //   - rclone binary not found in PATH
 func FindRcloneBinary() (string, error) {
 	if customPath := os.Getenv(RcloneEnvVar); customPath != "" {
-		if _, err := os.Stat(customPath); err == nil {
-			if !strings.Contains(customPath, string(filepath.Separator)) {
-				absPath, _ := exec.LookPath(customPath)
-				if absPath != "" {
-					return absPath, nil
-				}
-				return customPath, nil
-			}
-			absPath, err := filepath.Abs(customPath)
-			if err != nil {
-				return "", fmt.Errorf("invalid custom rclone path %s: %w", customPath, err)
-			}
-			return absPath, nil
+		if _, err := os.Stat(customPath); err != nil {
+			return "", fmt.Errorf("custom rclone binary not found: %w", err)
 		}
-		return "", fmt.Errorf("custom rclone binary not found at %s", customPath)
+
+		absPath, err := resolvePath(customPath)
+		if err != nil {
+			return "", fmt.Errorf("failed to resolve custom rclone path: %w", err)
+		}
+		return absPath, nil
 	}
 
 	path, err := exec.LookPath(RcloneBinaryName)
 	if err != nil {
-		return "", errors.New("rclone binary not found")
+		return "", fmt.Errorf("rclone binary not found in PATH: %w", err)
 	}
 
 	return path, nil
+}
+
+// resolvePath resolves a path to its absolute form.
+// For simple paths without separators, it uses exec.LookPath to find the binary.
+// For paths with separators, it uses filepath.Abs to resolve the absolute path.
+//
+// Parameters:
+//   - path: the path to resolve
+//
+// Returns:
+//   - string: the resolved absolute path
+//   - error: error if resolution fails
+func resolvePath(path string) (string, error) {
+	if !strings.Contains(path, string(filepath.Separator)) {
+		absPath, _ := exec.LookPath(path)
+		if absPath != "" {
+			return absPath, nil
+		}
+		return path, nil
+	}
+	return filepath.Abs(path)
 }
 
 // FindRcloneBinaryOrFatal locates rclone binary or logs a fatal error.

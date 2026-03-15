@@ -7,6 +7,10 @@ import (
 	"syncerman/internal/rclone"
 )
 
+const (
+	minMaxRetries = 1
+)
+
 // FirstRunHandler provides specialized handling for first-run errors.
 type FirstRunHandler struct {
 	maxRetries int
@@ -16,7 +20,7 @@ type FirstRunHandler struct {
 // NewFirstRunHandler creates a new handler with given max retries.
 func NewFirstRunHandler(maxRetries int, log Logger) *FirstRunHandler {
 	if maxRetries < 0 {
-		maxRetries = 1
+		maxRetries = minMaxRetries
 	}
 
 	return &FirstRunHandler{
@@ -57,7 +61,7 @@ func (h *FirstRunHandler) Handle(ctx context.Context, exec rclone.Executor, args
 
 		if retries > h.maxRetries {
 			h.logger.Error("First-run error detected but max retries exceeded")
-			return cmdResult, retries - 1, fmt.Errorf("first-run error after %d retries: %s", h.maxRetries+1, cmdResult.Stderr)
+			return cmdResult, retries, fmt.Errorf("first-run error after %d retries: %s", h.maxRetries+1, cmdResult.Stderr)
 		}
 
 		// First-run error: retry with --resync flag to initialize state files
@@ -66,40 +70,8 @@ func (h *FirstRunHandler) Handle(ctx context.Context, exec rclone.Executor, args
 	}
 }
 
-// ShouldRetry determines if a sync operation should be retried based on error.
-// Currently only retries first-run errors.
-func (h *FirstRunHandler) ShouldRetry(stderr string) bool {
-	return rclone.IsFirstRunError(stderr)
-}
-
-// ExtractFirstRunError extracts first-run error details from stderr.
-// Parses the error to retrieve the error message and affected paths.
-// Returns error with first-run details if pattern matches, nil otherwise.
-func ExtractFirstRunError(stderr string) error {
-	if !rclone.IsFirstRunError(stderr) {
-		return nil
-	}
-
-	err := rclone.ParseFirstRunError(stderr)
-	if err == nil {
-		return fmt.Errorf("first-run error detected but could not parse details: %s", stderr)
-	}
-
-	return fmt.Errorf("first-run sync error detected - %s. Paths: %v", err.Message, err.Paths)
-}
-
-// IsFirstRunSyncError checks if result indicates a first-run error.
-// This is a convenience wrapper around rclone.IsFirstRunError.
-func IsFirstRunSyncError(result *rclone.Result) bool {
-	if result == nil {
-		return false
-	}
-
-	return rclone.IsFirstRunError(result.Stderr)
-}
-
 // DefaultFirstRunHandler creates a handler with default settings.
-// Default max retries is 1, meaning one initial attempt + one retry.
+// Default max retries is minMaxRetries, meaning one initial attempt + one retry.
 func DefaultFirstRunHandler(log Logger) *FirstRunHandler {
-	return NewFirstRunHandler(1, log)
+	return NewFirstRunHandler(minMaxRetries, log)
 }

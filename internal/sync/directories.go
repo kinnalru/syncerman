@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"strings"
-
 	"syncerman/internal/config"
 	"syncerman/internal/rclone"
 )
@@ -72,10 +71,10 @@ func (e *Engine) mapKeys(m map[string]struct{}) []string {
 // For remote paths, returns the path portion after the colon.
 // For local paths, returns the path as-is.
 func ExtractDestinationPathFromTo(to string) string {
-	if strings.Contains(to, ":") {
+	if strings.Contains(to, remoteDelimiter) {
 		// Split on first colon only to handle paths that might contain colons
-		parts := strings.SplitN(to, ":", 2)
-		if len(parts) == 2 {
+		parts := strings.SplitN(to, remoteDelimiter, remoteSplitCount)
+		if len(parts) == remoteSplitCount {
 			return parts[1]
 		}
 	}

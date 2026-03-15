@@ -20,9 +20,8 @@ func TestNewConfig(t *testing.T) {
 }
 
 func TestConfigAddProvider(t *testing.T) {
-	config := NewConfig()
-	paths := PathMap{"./test": []Destination{}}
-	config.AddProvider("gdrive", paths)
+	config := createTestConfig()
+	addTestProvider(config, "gdrive", "./test")
 
 	if len(config.Providers) != 1 {
 		t.Errorf("expected 1 provider, got %d", len(config.Providers))
@@ -34,9 +33,8 @@ func TestConfigAddProvider(t *testing.T) {
 }
 
 func TestConfigGetProviders(t *testing.T) {
-	config := NewConfig()
-	paths := PathMap{"./test": []Destination{}}
-	config.AddProvider("gdrive", paths)
+	config := createTestConfig()
+	addTestProvider(config, "gdrive", "./test")
 
 	providers := config.GetProviders()
 	if len(providers) != 1 {
@@ -45,7 +43,7 @@ func TestConfigGetProviders(t *testing.T) {
 }
 
 func TestConfigGetPaths(t *testing.T) {
-	config := NewConfig()
+	config := createTestConfig()
 	paths := PathMap{"./test": []Destination{{To: "ydisk:test"}}}
 	config.AddProvider("gdrive", paths)
 
@@ -65,7 +63,7 @@ func TestConfigGetPaths(t *testing.T) {
 }
 
 func TestConfigGetDestinations(t *testing.T) {
-	config := NewConfig()
+	config := createTestConfig()
 	paths := PathMap{
 		"./test": []Destination{
 			{To: "ydisk:test"},
@@ -89,26 +87,6 @@ func TestConfigGetDestinations(t *testing.T) {
 	}
 }
 
-func TestConfigGetAllDestinations(t *testing.T) {
-	config := NewConfig()
-	paths := PathMap{
-		"./test": []Destination{
-			{To: "ydisk:test"},
-		},
-		"./other": []Destination{
-			{To: "dropbox:other"},
-		},
-	}
-	config.AddProvider("gdrive", paths)
-	config.AddProvider("local", PathMap{"./local": []Destination{{To: "gdrive:local"}}})
-
-	targets := config.GetAllDestinations()
-	expected := 3
-	if len(targets) != expected {
-		t.Errorf("expected %d targets, got %d", expected, len(targets))
-	}
-}
-
 func TestLoadConfig(t *testing.T) {
 	yamlContent := `
 gdrive:
@@ -118,20 +96,10 @@ gdrive:
       resync: false
 `
 
-	tmpfile, err := os.CreateTemp("", "config-*.yml")
-	if err != nil {
-		t.Fatal(err)
-	}
-	defer os.Remove(tmpfile.Name())
+	tmpfile := createTempConfigFile(yamlContent, t)
+	defer os.Remove(tmpfile)
 
-	if _, err := tmpfile.Write([]byte(yamlContent)); err != nil {
-		t.Fatal(err)
-	}
-	if err := tmpfile.Close(); err != nil {
-		t.Fatal(err)
-	}
-
-	config, err := LoadConfig(tmpfile.Name())
+	config, err := LoadConfig(tmpfile)
 	if err != nil {
 		t.Fatalf("LoadConfig() error = %v", err)
 	}
@@ -190,180 +158,158 @@ gdrive:
 	}
 }
 
-func TestConfigValidateEmptyConfig(t *testing.T) {
-	config := NewConfig()
-	err := config.Validate()
-	if err == nil {
-		t.Error("expected error for empty config")
-	}
-
-	if !errors.IsValidationError(err) {
-		t.Error("expected ValidationError")
-	}
-}
-
-func TestConfigValidateEmptyProviderName(t *testing.T) {
-	config := NewConfig()
-	config.Providers = ProviderMap{
-		"": PathMap{"./test": []Destination{{To: "ydisk:test"}}},
-	}
-
-	err := config.Validate()
-	if err == nil {
-		t.Error("expected error for empty provider name")
-	}
-
-	if !errors.IsValidationError(err) {
-		t.Error("expected ValidationError")
-	}
-}
-
-func TestConfigValidateEmptyPaths(t *testing.T) {
-	config := NewConfig()
-	config.Providers = ProviderMap{
-		"gdrive": PathMap{},
-	}
-
-	err := config.Validate()
-	if err == nil {
-		t.Error("expected error for empty paths")
-	}
-
-	if !errors.IsValidationError(err) {
-		t.Error("expected ValidationError")
-	}
-}
-
-func TestConfigValidateEmptyPath(t *testing.T) {
-	config := NewConfig()
-	config.Providers = ProviderMap{
-		"gdrive": PathMap{
-			"": []Destination{{To: "ydisk:test"}},
-		},
-	}
-
-	err := config.Validate()
-	if err == nil {
-		t.Error("expected error for empty path")
-	}
-
-	if !errors.IsValidationError(err) {
-		t.Error("expected ValidationError")
-	}
-}
-
-func TestConfigValidateEmptyDestinations(t *testing.T) {
-	config := NewConfig()
-	config.Providers = ProviderMap{
-		"gdrive": PathMap{
-			"./test": []Destination{},
-		},
-	}
-
-	err := config.Validate()
-	if err == nil {
-		t.Error("expected error for empty destinations")
-	}
-
-	if !errors.IsValidationError(err) {
-		t.Error("expected ValidationError")
-	}
-}
-
-func TestConfigValidateEmptyDestinationTo(t *testing.T) {
-	config := NewConfig()
-	config.Providers = ProviderMap{
-		"gdrive": PathMap{
-			"./test": []Destination{{To: ""}},
-		},
-	}
-
-	err := config.Validate()
-	if err == nil {
-		t.Error("expected error for empty destination to")
-	}
-
-	if !errors.IsValidationError(err) {
-		t.Error("expected ValidationError")
-	}
-}
-
-func TestConfigValidateInvalidDestinationFormat(t *testing.T) {
-	config := NewConfig()
-	config.Providers = ProviderMap{
-		"gdrive": PathMap{
-			"./test": []Destination{{To: "invalid"}},
-		},
-	}
-
-	err := config.Validate()
-	if err == nil {
-		t.Error("expected error for invalid destination format")
-	}
-
-	if !errors.IsValidationError(err) {
-		t.Error("expected ValidationError")
-	}
-}
-
-func TestConfigValidateEmptyArgument(t *testing.T) {
-	config := NewConfig()
-	config.Providers = ProviderMap{
-		"gdrive": PathMap{
-			"./test": []Destination{
-				{To: "ydisk:test", Args: []string{""}},
+func TestConfigValidateErrors(t *testing.T) {
+	tests := []struct {
+		name        string
+		setupConfig func() *Config
+		expectError bool
+	}{
+		{
+			name: "empty config",
+			setupConfig: func() *Config {
+				return NewConfig()
 			},
+			expectError: true,
 		},
-	}
-
-	err := config.Validate()
-	if err == nil {
-		t.Error("expected error for empty argument")
-	}
-
-	if !errors.IsValidationError(err) {
-		t.Error("expected ValidationError")
-	}
-}
-
-func TestConfigValidateValidConfig(t *testing.T) {
-	config := NewConfig()
-	config.Providers = ProviderMap{
-		"gdrive": PathMap{
-			"./test": []Destination{
-				{To: "ydisk:test", Args: []string{"--arg1"}},
+		{
+			name: "empty provider name",
+			setupConfig: func() *Config {
+				config := NewConfig()
+				config.Providers = ProviderMap{
+					"": PathMap{"./test": []Destination{{To: "ydisk:test"}}},
+				}
+				return config
 			},
+			expectError: true,
+		},
+		{
+			name: "empty paths",
+			setupConfig: func() *Config {
+				config := NewConfig()
+				config.Providers = ProviderMap{
+					"gdrive": PathMap{},
+				}
+				return config
+			},
+			expectError: true,
+		},
+		{
+			name: "empty path",
+			setupConfig: func() *Config {
+				config := NewConfig()
+				config.Providers = ProviderMap{
+					"gdrive": PathMap{
+						"": []Destination{{To: "ydisk:test"}},
+					},
+				}
+				return config
+			},
+			expectError: true,
+		},
+		{
+			name: "empty destinations",
+			setupConfig: func() *Config {
+				config := NewConfig()
+				config.Providers = ProviderMap{
+					"gdrive": PathMap{
+						"./test": []Destination{},
+					},
+				}
+				return config
+			},
+			expectError: true,
+		},
+		{
+			name: "empty destination to",
+			setupConfig: func() *Config {
+				config := NewConfig()
+				config.Providers = ProviderMap{
+					"gdrive": PathMap{
+						"./test": []Destination{{To: ""}},
+					},
+				}
+				return config
+			},
+			expectError: true,
+		},
+		{
+			name: "invalid destination format",
+			setupConfig: func() *Config {
+				config := NewConfig()
+				config.Providers = ProviderMap{
+					"gdrive": PathMap{
+						"./test": []Destination{{To: "invalid"}},
+					},
+				}
+				return config
+			},
+			expectError: true,
+		},
+		{
+			name: "empty argument",
+			setupConfig: func() *Config {
+				config := NewConfig()
+				config.Providers = ProviderMap{
+					"gdrive": PathMap{
+						"./test": []Destination{
+							{To: "ydisk:test", Args: []string{""}},
+						},
+					},
+				}
+				return config
+			},
+			expectError: true,
+		},
+		{
+			name: "valid config",
+			setupConfig: func() *Config {
+				config := NewConfig()
+				config.Providers = ProviderMap{
+					"gdrive": PathMap{
+						"./test": []Destination{
+							{To: "ydisk:test", Args: []string{"--arg1"}},
+						},
+					},
+				}
+				return config
+			},
+			expectError: false,
 		},
 	}
 
-	err := config.Validate()
-	if err != nil {
-		t.Errorf("unexpected error for valid config: %v", err)
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			config := tt.setupConfig()
+			err := config.Validate()
+
+			if tt.expectError {
+				if err == nil {
+					t.Error("expected error but got none")
+				}
+				if !errors.IsValidationError(err) {
+					t.Error("expected ValidationError")
+				}
+			} else {
+				if err != nil {
+					t.Errorf("unexpected error: %v", err)
+				}
+			}
+		})
 	}
 }
 
 func TestDiscoverConfigPathCustom(t *testing.T) {
 	yamlContent := `gdrive: {}`
-	tmpfile, err := os.CreateTemp("", "custom-config-*.yml")
-	if err != nil {
-		t.Fatal(err)
-	}
-	defer os.Remove(tmpfile.Name())
+	tmpfile := createTempConfigFile(yamlContent, t)
+	defer os.Remove(tmpfile)
 
-	if _, err := tmpfile.Write([]byte(yamlContent)); err != nil {
-		t.Fatal(err)
-	}
-	if err := tmpfile.Close(); err != nil {
-		t.Fatal(err)
-	}
-
-	path, err := DiscoverConfigPath(tmpfile.Name())
+	path, err := DiscoverConfigPath(tmpfile)
 	if err != nil {
 		t.Fatalf("DiscoverConfigPath() error = %v", err)
 	}
 
-	if path != tmpfile.Name() {
-		t.Errorf("expected %s, got %s", tmpfile.Name(), path)
+	if path != tmpfile {
+		t.Errorf("expected %s, got %s", tmpfile, path)
 	}
 }
 
@@ -379,98 +325,147 @@ func TestDiscoverConfigPathCustomNotFound(t *testing.T) {
 }
 
 func TestDiscoverConfigPathDefault(t *testing.T) {
-	originalWd, err := os.Getwd()
-	if err != nil {
-		t.Fatal(err)
-	}
-	defer os.Chdir(originalWd)
+	runInTempDir(func() {
+		yamlContent := `gdrive: {}`
+		if err := os.WriteFile("configuration.yml", []byte(yamlContent), 0644); err != nil {
+			t.Fatal(err)
+		}
 
-	tmpDir, err := os.MkdirTemp("", "test-config-*")
-	if err != nil {
-		t.Fatal(err)
-	}
-	defer os.RemoveAll(tmpDir)
+		path, err := DiscoverConfigPath("")
+		if err != nil {
+			t.Fatalf("DiscoverConfigPath() error = %v", err)
+		}
 
-	if err := os.Chdir(tmpDir); err != nil {
-		t.Fatal(err)
-	}
-
-	yamlContent := `gdrive: {}`
-	if err := os.WriteFile("configuration.yml", []byte(yamlContent), 0644); err != nil {
-		t.Fatal(err)
-	}
-
-	path, err := DiscoverConfigPath("")
-	if err != nil {
-		t.Fatalf("DiscoverConfigPath() error = %v", err)
-	}
-
-	if !strings.Contains(path, "configuration.yml") {
-		t.Errorf("expected configuration.yml in path, got %s", path)
-	}
+		if !strings.Contains(path, "configuration.yml") {
+			t.Errorf("expected configuration.yml in path, got %s", path)
+		}
+	})
 }
 
 func TestDiscoverConfigPathPriority(t *testing.T) {
-	originalWd, err := os.Getwd()
-	if err != nil {
-		t.Fatal(err)
-	}
-	defer os.Chdir(originalWd)
+	runInTempDir(func() {
+		yamlContent := `gdrive: {}`
+		if err := os.WriteFile(".syncerman.yml", []byte(yamlContent), 0644); err != nil {
+			t.Fatal(err)
+		}
+		if err := os.WriteFile("config.yml", []byte(yamlContent), 0644); err != nil {
+			t.Fatal(err)
+		}
 
-	tmpDir, err := os.MkdirTemp("", "test-config-*")
-	if err != nil {
-		t.Fatal(err)
-	}
-	defer os.RemoveAll(tmpDir)
+		path, err := DiscoverConfigPath("")
+		if err != nil {
+			t.Fatalf("DiscoverConfigPath() error = %v", err)
+		}
 
-	if err := os.Chdir(tmpDir); err != nil {
-		t.Fatal(err)
-	}
-
-	yamlContent := `gdrive: {}`
-	if err := os.WriteFile(".syncerman.yml", []byte(yamlContent), 0644); err != nil {
-		t.Fatal(err)
-	}
-	if err := os.WriteFile("config.yml", []byte(yamlContent), 0644); err != nil {
-		t.Fatal(err)
-	}
-
-	path, err := DiscoverConfigPath("")
-	if err != nil {
-		t.Fatalf("DiscoverConfigPath() error = %v", err)
-	}
-
-	expectedFile := "config.yml"
-	if filepath.Base(path) != expectedFile {
-		t.Errorf("expected %s, got %s", expectedFile, filepath.Base(path))
-	}
+		expectedFile := "config.yml"
+		if filepath.Base(path) != expectedFile {
+			t.Errorf("expected %s, got %s", expectedFile, filepath.Base(path))
+		}
+	})
 }
 
 func TestDiscoverConfigPathNotFound(t *testing.T) {
-	originalWd, err := os.Getwd()
+	runInTempDir(func() {
+		_, err := DiscoverConfigPath("")
+		if err == nil {
+			t.Error("expected error when no config found")
+		}
+
+		if !errors.IsConfigError(err) {
+			t.Error("expected ConfigError")
+		}
+	})
+}
+
+func TestFindDefaultConfigInParentDirectory(t *testing.T) {
+	runInTempDir(func() {
+		parentDir, err := os.Getwd()
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		subDir := filepath.Join(parentDir, "subdir")
+		if err := os.Mkdir(subDir, 0755); err != nil {
+			t.Fatal(err)
+		}
+
+		yamlContent := `gdrive: {}`
+		if err := os.WriteFile(filepath.Join(parentDir, "config.yml"), []byte(yamlContent), 0644); err != nil {
+			t.Fatal(err)
+		}
+
+		if err := os.Chdir(subDir); err != nil {
+			t.Fatal(err)
+		}
+
+		path, err := findDefaultConfig()
+		if err != nil {
+			t.Fatalf("findDefaultConfig() error = %v", err)
+		}
+
+		if !strings.Contains(path, "config.yml") {
+			t.Errorf("expected config.yml in path, got %s", path)
+		}
+	})
+}
+
+func TestValidateConfigPathValid(t *testing.T) {
+	tmpfile := createTempConfigFile(`gdrive: {}`, t)
+	defer os.Remove(tmpfile)
+
+	err := validateConfigPath(tmpfile)
 	if err != nil {
-		t.Fatal(err)
+		t.Errorf("validateConfigPath() error = %v", err)
 	}
-	defer os.Chdir(originalWd)
+}
 
-	tmpDir, err := os.MkdirTemp("", "test-config-*")
-	if err != nil {
-		t.Fatal(err)
-	}
-	defer os.RemoveAll(tmpDir)
-
-	if err := os.Chdir(tmpDir); err != nil {
-		t.Fatal(err)
-	}
-
-	_, err = DiscoverConfigPath("")
+func TestValidateConfigPathInvalid(t *testing.T) {
+	err := validateConfigPath("/nonexistent/path.yml")
 	if err == nil {
-		t.Error("expected error when no config found")
+		t.Error("expected error for nonexistent path")
 	}
 
 	if !errors.IsConfigError(err) {
 		t.Error("expected ConfigError")
 	}
+}
+
+func TestSearchInDirectory(t *testing.T) {
+	runInTempDir(func() {
+		yamlContent := `gdrive: {}`
+
+		if err := os.WriteFile("config.yml", []byte(yamlContent), 0644); err != nil {
+			t.Fatal(err)
+		}
+
+		cwd, err := os.Getwd()
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		path := searchInDirectory(cwd)
+		if path == "" {
+			t.Error("expected to find config file")
+		}
+
+		if !strings.Contains(path, "config.yml") {
+			t.Errorf("expected config.yml in path, got %s", path)
+		}
+	})
+}
+
+func TestSearchInDirectoryNotFound(t *testing.T) {
+	runInTempDir(func() {
+		cwd, err := os.Getwd()
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		path := searchInDirectory(cwd)
+		if path != "" {
+			t.Errorf("expected empty string, got %s", path)
+		}
+	})
 }
 
 func TestSyncTarget(t *testing.T) {
@@ -501,4 +496,277 @@ func TestSyncTarget(t *testing.T) {
 	if !target.Destination.Resync {
 		t.Error("expected resync to be true")
 	}
+}
+
+func TestConfigAddProviderWithNilProviders(t *testing.T) {
+	config := &Config{}
+	paths := PathMap{"./test": []Destination{{To: "ydisk:test"}}}
+	config.AddProvider("gdrive", paths)
+
+	if len(config.Providers) != 1 {
+		t.Errorf("expected 1 provider, got %d", len(config.Providers))
+	}
+}
+
+func TestConfigGetPathsWithNilProviders(t *testing.T) {
+	config := &Config{}
+	_, ok := config.GetPaths("gdrive")
+	if ok {
+		t.Error("expected false for nil providers")
+	}
+}
+
+func TestConfigGetDestinationsWithNonexistentProvider(t *testing.T) {
+	config := createTestConfig()
+	_, ok := config.GetDestinations("nonexistent", "./test")
+	if ok {
+		t.Error("expected false for nonexistent provider")
+	}
+}
+
+func TestConfigGetAllDestinations(t *testing.T) {
+	config := NewConfig()
+	paths := PathMap{
+		"./test": []Destination{
+			{To: "ydisk:test"},
+			{To: "dropbox:test"},
+		},
+		"./data": []Destination{
+			{To: "gdrive:backup"},
+		},
+	}
+	config.AddProvider("gdrive", paths)
+
+	paths2 := PathMap{
+		"./files": []Destination{
+			{To: "local:/backup"},
+		},
+	}
+	config.AddProvider("dropbox", paths2)
+
+	targets := config.GetAllDestinations()
+
+	expectedCount := 4
+	if len(targets) != expectedCount {
+		t.Errorf("expected %d targets, got %d", expectedCount, len(targets))
+	}
+
+	foundProviders := make(map[string]bool)
+	for _, target := range targets {
+		foundProviders[target.SourceProvider] = true
+	}
+
+	if !foundProviders["gdrive"] || !foundProviders["dropbox"] {
+		t.Error("expected to find both gdrive and dropbox providers")
+	}
+}
+
+func TestConfigGetAllDestinationsEmpty(t *testing.T) {
+	config := NewConfig()
+	targets := config.GetAllDestinations()
+
+	if len(targets) != 0 {
+		t.Errorf("expected 0 targets, got %d", len(targets))
+	}
+}
+
+func TestConfigGetAllDestinationsNilProviders(t *testing.T) {
+	config := &Config{}
+	targets := config.GetAllDestinations()
+
+	if len(targets) != 0 {
+		t.Errorf("expected 0 targets, got %d", len(targets))
+	}
+}
+
+func TestConfigCountTotalTargets(t *testing.T) {
+	config := NewConfig()
+	paths := PathMap{
+		"./test": []Destination{
+			{To: "ydisk:test"},
+			{To: "dropbox:test"},
+		},
+		"./data": []Destination{
+			{To: "gdrive:backup"},
+		},
+	}
+	config.AddProvider("gdrive", paths)
+
+	paths2 := PathMap{
+		"./files": []Destination{
+			{To: "local:/backup"},
+		},
+	}
+	config.AddProvider("dropbox", paths2)
+
+	total := config.countTotalTargets()
+	expected := 4
+	if total != expected {
+		t.Errorf("expected %d targets, got %d", expected, total)
+	}
+}
+
+func TestConfigCountTotalTargetsEmpty(t *testing.T) {
+	config := NewConfig()
+	total := config.countTotalTargets()
+
+	if total != 0 {
+		t.Errorf("expected 0 targets, got %d", total)
+	}
+}
+
+func TestConfigCountTotalTargetsNilProviders(t *testing.T) {
+	config := &Config{}
+	total := config.countTotalTargets()
+
+	if total != 0 {
+		t.Errorf("expected 0 targets, got %d", total)
+	}
+}
+
+func TestParseProviderMapValid(t *testing.T) {
+	yamlData := `
+gdrive:
+  "./test":
+    - to: ydisk:test
+dropbox:
+  "./files":
+    - to: local:/backup
+`
+
+	providerMap, err := parseProviderMap([]byte(yamlData))
+	if err != nil {
+		t.Fatalf("parseProviderMap() error = %v", err)
+	}
+
+	if len(providerMap) != 2 {
+		t.Errorf("expected 2 providers, got %d", len(providerMap))
+	}
+
+	if _, ok := providerMap["gdrive"]; !ok {
+		t.Error("gdrive provider not found")
+	}
+
+	if _, ok := providerMap["dropbox"]; !ok {
+		t.Error("dropbox provider not found")
+	}
+}
+
+func TestParseProviderMapInvalidYAML(t *testing.T) {
+	invalidYAML := `
+gdrive:
+  "./test":
+    - invalid: yaml: syntax: error
+`
+
+	_, err := parseProviderMap([]byte(invalidYAML))
+	if err == nil {
+		t.Error("expected error for invalid YAML")
+	}
+}
+
+func TestIsValidDestinationFormat(t *testing.T) {
+	tests := []struct {
+		name string
+		dest string
+		want bool
+	}{
+		{
+			name: "valid provider with path",
+			dest: "gdrive:test",
+			want: true,
+		},
+		{
+			name: "valid provider with nested path",
+			dest: "dropbox:backup/documents",
+			want: true,
+		},
+		{
+			name: "valid local relative path",
+			dest: "./backup",
+			want: true,
+		},
+		{
+			name: "valid local absolute path",
+			dest: "/backup/documents",
+			want: true,
+		},
+		{
+			name: "invalid no colon",
+			dest: "gdrivetest",
+			want: false,
+		},
+		{
+			name: "invalid simple string",
+			dest: "invalid",
+			want: false,
+		},
+		{
+			name: "valid provider with colon only",
+			dest: "provider:",
+			want: true,
+		},
+		{
+			name: "valid parent directory path",
+			dest: "../backup",
+			want: true,
+		},
+		{
+			name: "valid current directory",
+			dest: ".",
+			want: true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := isValidDestinationFormat(tt.dest)
+			if got != tt.want {
+				t.Errorf("isValidDestinationFormat(%q) = %v, want %v", tt.dest, got, tt.want)
+			}
+		})
+	}
+}
+
+func createTestConfig() *Config {
+	return NewConfig()
+}
+
+func addTestProvider(cfg *Config, name string, path string) {
+	paths := PathMap{path: []Destination{}}
+	cfg.AddProvider(name, paths)
+}
+
+func createTempConfigFile(content string, t *testing.T) string {
+	tmpfile, err := os.CreateTemp("", "config-*.yml")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := tmpfile.Write([]byte(content)); err != nil {
+		t.Fatal(err)
+	}
+	if err := tmpfile.Close(); err != nil {
+		t.Fatal(err)
+	}
+	return tmpfile.Name()
+}
+
+func runInTempDir(fn func()) {
+	originalWd, err := os.Getwd()
+	if err != nil {
+		panic(err)
+	}
+	defer os.Chdir(originalWd)
+
+	tmpDir, err := os.MkdirTemp("", "test-config-*")
+	if err != nil {
+		panic(err)
+	}
+	defer os.RemoveAll(tmpDir)
+
+	if err := os.Chdir(tmpDir); err != nil {
+		panic(err)
+	}
+
+	fn()
 }
