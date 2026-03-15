@@ -93,7 +93,10 @@ func (e *Engine) ExpandTargets(config *config.Config) ([]*SyncTarget, error) {
 		providerName := provider.Name
 		pathMap := provider.Data
 
-		for sourcePath, destinations := range pathMap {
+		for _, pathData := range pathMap {
+			sourcePath := pathData.Name
+			destinations := pathData.Values
+
 			if sourcePath == "" {
 				errs = append(errs, fmt.Errorf("source path cannot be empty for provider %s", providerName))
 				continue

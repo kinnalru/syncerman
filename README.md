@@ -43,6 +43,8 @@ GOOS=linux GOARCH=amd64 go build -ldflags "-s -w" -o bin/syncerman-linux-amd64
 GOOS=windows GOARCH=amd64 go build -ldflags "-s -w" -o bin/syncerman-windows-amd64
 ```
 
+**Note:** Manual build commands use simplified flags for size optimization only. The Makefile includes additional version embedding (GitCommit, BuildTime, GoVersion) via `-X` ldflags.
+
 ### Installing rclone
 
 rclone is essential for Syncerman to function. Install it following the official installation guide: https://rclone.org/install/
@@ -165,7 +167,7 @@ This command checks for:
 
 **Expected output:** All checks passed or detailed error messages if issues are found.
 
-### Step 5: Dry Run First Sync
+### Step 4: Dry Run First Sync
 
 Preview what will happen during synchronization without making any actual changes:
 
@@ -180,7 +182,7 @@ This dry run shows:
 
 **Important:** Always review dry-run output before executing actual syncs, especially for first use.
 
-### Step 6: Run First Sync
+### Step 5: Run First Sync
 
 After confirming the dry run output looks correct, execute the actual synchronization:
 

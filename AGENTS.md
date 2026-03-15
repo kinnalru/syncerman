@@ -31,6 +31,8 @@ GOOS=linux GOARCH=amd64 go build -ldflags "-s -w" -o bin/syncerman-linux-amd64
 GOOS=windows GOARCH=amd64 go build -ldflags "-s -w" -o bin/syncerman-windows-amd64
 ```
 
+**Note:** Manual build commands use simplified flags for size optimization only. The Makefile includes additional version embedding (GitCommit, BuildTime, GoVersion) via `-X` ldflags.
+
 ### Testing
 ```bash
 # Run all tests

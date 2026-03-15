@@ -6,12 +6,118 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
+// PathWithKey preserves path name and its destination configurations.
+// This structure is used internally to maintain YAML ordering while
+// providing backward-compatible accessor methods.
+type PathWithKey struct {
+	Name   string        `yaml:"-"`
+	Values []Destination `yaml:",inline"`
+}
+
+// PathMap maps source paths to their corresponding destination configurations.
+//
+// PathMap is a map type where each key is a source path string (relative to the provider's root)
+// and the value is a slice of Destination objects representing all targets for that source path.
+//
+// Keys:
+//   - source path: A string representing the path within the provider to sync from.
+//     This can be a file path, directory path, or empty string for the root.
+//     Examples: "", "documents", "projects/syncerman", "photos/vacation".
+//
+// Values:
+//   - slice of Destination: A collection of Destination objects that define where and how
+//     to synchronize the source path. Multiple destinations can be configured for a single
+//     source path, allowing for redundant backups or multi-site distribution.
+//
+// Example:
+//
+//	PathMap{
+//	    "documents": []Destination{
+//	        {To: "gdrive:backup/docs", Args: []string{"--fast-list"}},
+//	        {To: "local:/backup/documents", Resync: true},
+//	    },
+//	}
+type PathMap map[string][]Destination
+
+// OrderedPaths preserves path order from YAML configuration.
+//
+// This type implements yaml.Unmarshaler to ensure that when YAML is loaded,
+// the paths are stored in the exact order they appear in the configuration file.
+// This is critical for maintaining configuration order when multiple destinations
+// are configured within the same provider.
+//
+// Example:
+//
+//	yamlData:
+//	  provider1:
+//	    "path1":  # Should execute 1st
+//	      - to: "dest1"
+//	    "path2":  # Should execute 2nd
+//	      - to: "dest2"
+//
+//	After unmarshaling, OrderedPaths preserves [path1, path2] order
+type OrderedPaths []PathWithKey
+
+// UnmarshalYAML implements yaml.Unmarshaler to preserve path order from YAML.
+//
+// It parses the YAML mapping node and extracts path names in document order,
+// preserving the exact order from the configuration file. This ensures that
+// paths are iterated in the same order they appear in the configuration.
+//
+// If the YAML node is not a mapping, an error is returned.
+// Path configurations are decoded as slices of Destination objects.
+func (op *OrderedPaths) UnmarshalYAML(node *yaml.Node) error {
+	if node.Kind != yaml.MappingNode {
+		return fmt.Errorf("paths must be a mapping node")
+	}
+
+	*op = make(OrderedPaths, 0, len(node.Content)/2)
+
+	for i := 0; i < len(node.Content); i += 2 {
+		keyNode := node.Content[i]
+		valueNode := node.Content[i+1]
+
+		var destinations []Destination
+		if err := valueNode.Decode(&destinations); err != nil {
+			return fmt.Errorf("failed to decode path %s: %w", keyNode.Value, err)
+		}
+
+		*op = append(*op, PathWithKey{
+			Name:   keyNode.Value,
+			Values: destinations,
+		})
+	}
+
+	return nil
+}
+
+// toPathMap converts OrderedPaths to PathMap for backward compatibility.
+func (op OrderedPaths) toPathMap() PathMap {
+	result := make(PathMap, len(op))
+	for _, path := range op {
+		result[path.Name] = path.Values
+	}
+	return result
+}
+
+// toOrderedPaths converts PathMap to OrderedPaths.
+func toOrderedPaths(pm PathMap) OrderedPaths {
+	result := make(OrderedPaths, 0, len(pm))
+	for name, values := range pm {
+		result = append(result, PathWithKey{
+			Name:   name,
+			Values: values,
+		})
+	}
+	return result
+}
+
 // ProviderWithKey preserves provider name and its path configuration.
 // This structure is used internally to maintain YAML ordering while
 // providing backward-compatible accessor methods.
 type ProviderWithKey struct {
-	Name string  `yaml:"-"`
-	Data PathMap `yaml:",inline"`
+	Name string       `yaml:"-"`
+	Data OrderedPaths `yaml:",inline"`
 }
 
 // OrderedProviders preserves provider order from YAML configuration.
@@ -38,7 +144,7 @@ type OrderedProviders []ProviderWithKey
 // linear synchronization chains execute in the correct sequence.
 //
 // If the YAML node is not a mapping, an error is returned.
-// Provider configurations are decoded using the PathMap type.
+// Provider configurations are decoded using the OrderedPaths type to preserve order.
 func (op *OrderedProviders) UnmarshalYAML(node *yaml.Node) error {
 	if node.Kind != yaml.MappingNode {
 		return fmt.Errorf("providers must be a mapping node")
@@ -50,14 +156,14 @@ func (op *OrderedProviders) UnmarshalYAML(node *yaml.Node) error {
 		keyNode := node.Content[i]
 		valueNode := node.Content[i+1]
 
-		var provider PathMap
-		if err := valueNode.Decode(&provider); err != nil {
+		var paths OrderedPaths
+		if err := valueNode.Decode(&paths); err != nil {
 			return fmt.Errorf("failed to decode provider %s: %w", keyNode.Value, err)
 		}
 
 		*op = append(*op, ProviderWithKey{
 			Name: keyNode.Value,
-			Data: provider,
+			Data: paths,
 		})
 	}
 
@@ -92,31 +198,6 @@ type Destination struct {
 	Args   []string `yaml:"args"`
 	Resync bool     `yaml:"resync"`
 }
-
-// PathMap maps source paths to their corresponding destination configurations.
-//
-// PathMap is a map type where each key is a source path string (relative to the provider's root)
-// and the value is a slice of Destination objects representing all targets for that source path.
-//
-// Keys:
-//   - source path: A string representing the path within the provider to sync from.
-//     This can be a file path, directory path, or empty string for the root.
-//     Examples: "", "documents", "projects/syncerman", "photos/vacation".
-//
-// Values:
-//   - slice of Destination: A collection of Destination objects that define where and how
-//     to synchronize the source path. Multiple destinations can be configured for a single
-//     source path, allowing for redundant backups or multi-site distribution.
-//
-// Example:
-//
-//	PathMap{
-//	    "documents": []Destination{
-//	        {To: "gdrive:backup/docs", Args: []string{"--fast-list"}},
-//	        {To: "local:/backup/documents", Resync: true},
-//	    },
-//	}
-type PathMap map[string][]Destination
 
 // ProviderMap maps provider names to their path configurations.
 //
@@ -197,7 +278,7 @@ func (c *Config) AddProvider(name string, paths PathMap) {
 	}
 	c.Providers = append(c.Providers, ProviderWithKey{
 		Name: name,
-		Data: paths,
+		Data: toOrderedPaths(paths),
 	})
 }
 
@@ -227,7 +308,7 @@ func (c *Config) GetProvidersMap() ProviderMap {
 	}
 	result := make(ProviderMap, len(c.Providers))
 	for _, provider := range c.Providers {
-		result[provider.Name] = provider.Data
+		result[provider.Name] = provider.Data.toPathMap()
 	}
 	return result
 }
@@ -250,7 +331,7 @@ func (c *Config) GetPaths(provider string) (PathMap, bool) {
 	}
 	for _, p := range c.Providers {
 		if p.Name == provider {
-			return p.Data, true
+			return p.Data.toPathMap(), true
 		}
 	}
 	return nil, false
@@ -293,8 +374,8 @@ func (c *Config) countTotalTargets() int {
 
 	total := 0
 	for _, provider := range c.Providers {
-		for _, paths := range provider.Data {
-			total += len(paths)
+		for _, pathData := range provider.Data {
+			total += len(pathData.Values)
 		}
 	}
 	return total
@@ -307,7 +388,7 @@ func (c *Config) countTotalTargets() int {
 //
 // The implementation maintains the nested structure by flattening it:
 //   - Level 1: Iterates through all providers in OrderedProviders (preserves YAML order)
-//   - Level 2: For each provider, iterates through all source paths in PathMap
+//   - Level 2: For each provider, iterates through all source paths in OrderedPaths
 //   - Level 3: For each source path, iterates through all destinations in the slice
 //
 // Returns:
@@ -329,11 +410,11 @@ func (c *Config) GetAllDestinations() []SyncTarget {
 	targets := make([]SyncTarget, 0, total)
 
 	for _, provider := range c.Providers {
-		for path, destinations := range provider.Data {
-			for _, dest := range destinations {
+		for _, pathData := range provider.Data {
+			for _, dest := range pathData.Values {
 				targets = append(targets, SyncTarget{
 					SourceProvider: provider.Name,
-					SourcePath:     path,
+					SourcePath:     pathData.Name,
 					Destination:    dest,
 				})
 			}

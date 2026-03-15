@@ -79,15 +79,13 @@ provider1:
 		t.Fatalf("Expected %d paths, got %d", len(expectedPaths), len(paths))
 	}
 
-	i := 0
-	for pathStr := range paths {
+	for i, pathData := range paths {
 		if i >= len(expectedPaths) {
 			t.Fatalf("Path iteration length mismatch")
 		}
-		if pathStr != expectedPaths[i] {
-			t.Errorf("Expected path %d to be '%s', got '%s'", i+1, expectedPaths[i], pathStr)
+		if pathData.Name != expectedPaths[i] {
+			t.Errorf("Expected path %d to be '%s', got '%s'", i+1, expectedPaths[i], pathData.Name)
 		}
-		i++
 	}
 }
 

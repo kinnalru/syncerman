@@ -48,7 +48,10 @@ func (c *Config) Validate() error {
 			return errors.NewValidationError(fmt.Sprintf("provider %q has no paths defined", providerName), nil)
 		}
 
-		for path, destinations := range paths {
+		for _, pathData := range paths {
+			path := pathData.Name
+			destinations := pathData.Values
+
 			// Source paths must not be empty
 			if path == "" {
 				return errors.NewValidationError(fmt.Sprintf("path cannot be empty for provider %q", providerName), nil)
