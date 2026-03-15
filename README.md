@@ -12,7 +12,7 @@
 
 ### Prerequisites
 
-- **Go 1.21+** - Required for building Syncerman from source
+- **Go 1.25.5+** - Required for building Syncerman from source
 - **rclone CLI** - Required at runtime for all synchronization operations
 
 ### Building from Source

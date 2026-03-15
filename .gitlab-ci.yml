@@ -4,7 +4,7 @@ stages:
   - release
 
 variables:
-  GO_VERSION: "latest"
+  GO_VERSION: "1.25.5"
   BINARY_NAME: "syncerman"
 
 test:
