@@ -27,13 +27,18 @@ func (ve ValidationErrors) Error() string {
 	if len(ve) == 0 {
 		return ""
 	}
+	return fmt.Sprintf("validation errors: %s", joinErrorMessages(ve, "; "))
+}
 
-	messages := make([]string, len(ve))
-	for i, err := range ve {
+func joinErrorMessages(errors []error, separator string) string {
+	if len(errors) == 0 {
+		return ""
+	}
+	messages := make([]string, len(errors))
+	for i, err := range errors {
 		messages[i] = err.Error()
 	}
-
-	return fmt.Sprintf("validation errors: %s", strings.Join(messages, "; "))
+	return strings.Join(messages, separator)
 }
 
 // ValidateTargets checks that all providers and paths in config are valid.

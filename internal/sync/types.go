@@ -4,6 +4,7 @@ import (
 	"context"
 
 	"gitlab.com/kinnalru/syncerman/internal/config"
+	"gitlab.com/kinnalru/syncerman/internal/logger"
 	"gitlab.com/kinnalru/syncerman/internal/rclone"
 )
 
@@ -48,47 +49,15 @@ type SyncEngine interface {
 type Engine struct {
 	config *config.Config
 	rclone rclone.Executor
-	logger Logger
+	logger logger.Logger
 	dryRun bool
 }
-
-// Logger interface for sync engine logging.
-type Logger interface {
-	Debug(msg string, args ...interface{})
-	Info(msg string, args ...interface{})
-	Warn(msg string, args ...interface{})
-	Error(msg string, args ...interface{})
-	Command(cmd string)
-	CombinedOutput(output string)
-	Output(output string)
-	ErrorOutput(output string)
-	StageInfo(msg string, args ...interface{})
-	TargetInfo(msg string, args ...interface{})
-}
-
-// defaultLogger is a no-op logger used when nil logger is passed to NewEngine.
-// This prevents nil pointer panics in code paths that may not require actual logging.
-type defaultLogger struct{}
-
-func (l *defaultLogger) Debug(msg string, args ...interface{})      {}
-func (l *defaultLogger) Info(msg string, args ...interface{})       {}
-func (l *defaultLogger) Warn(msg string, args ...interface{})       {}
-func (l *defaultLogger) Error(msg string, args ...interface{})      {}
-func (l *defaultLogger) Command(cmd string)                         {}
-func (l *defaultLogger) CombinedOutput(output string)               {}
-func (l *defaultLogger) Output(output string)                       {}
-func (l *defaultLogger) ErrorOutput(output string)                  {}
-func (l *defaultLogger) StageInfo(msg string, args ...interface{})  {}
-func (l *defaultLogger) TargetInfo(msg string, args ...interface{}) {}
 
 func (e *Engine) SetDryRun(dryRun bool) {
 	e.dryRun = dryRun
 }
 
-func NewEngine(cfg *config.Config, exec rclone.Executor, log Logger) *Engine {
-	if log == nil {
-		log = &defaultLogger{}
-	}
+func NewEngine(cfg *config.Config, exec rclone.Executor, log logger.Logger) *Engine {
 	return &Engine{
 		config: cfg,
 		rclone: exec,
@@ -97,7 +66,7 @@ func NewEngine(cfg *config.Config, exec rclone.Executor, log Logger) *Engine {
 }
 
 // SyncEngineFromConfig creates a sync engine from configuration file path.
-func SyncEngineFromConfig(configPath string, exec rclone.Executor, log Logger) (*Engine, error) {
+func SyncEngineFromConfig(configPath string, exec rclone.Executor, log logger.Logger) (*Engine, error) {
 	cfg, err := config.LoadConfig(configPath)
 	if err != nil {
 		return nil, err

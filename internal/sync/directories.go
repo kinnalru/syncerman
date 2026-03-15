@@ -29,41 +29,33 @@ func (e *Engine) CreateAllDirectories(ctx context.Context, config *config.Config
 
 	totalPaths := len(sourcePaths) + len(destPaths)
 	if totalPaths == 0 {
-		e.logger.Info("No directories to create")
+		if e.logger != nil {
+			e.logger.Info("No directories to create")
+		}
 		return nil
 	}
 
 	if options.DryRun || e.dryRun {
-		e.logger.Info("Ensuring %d directories exist (required by rclone even in dry-run mode)...", totalPaths)
+		if e.logger != nil {
+			e.logger.Info("Ensuring %d directories exist (required by rclone even in dry-run mode)...", totalPaths)
+		}
 	} else {
-		e.logger.Info("Creating %d directories...", totalPaths)
-	}
-
-	for path := range sourcePaths {
 		if e.logger != nil {
-			e.logger.Debug("Creating source directory: %s", path)
-		}
-
-		err := rclone.Mkdir(ctx, e.rclone, path)
-		if err != nil {
-			e.logger.Error("Failed to create source directory %s: %v", path, err)
-			return fmt.Errorf("failed to create source directory %s: %w", path, err)
+			e.logger.Info("Creating %d directories...", totalPaths)
 		}
 	}
 
-	for path := range destPaths {
-		if e.logger != nil {
-			e.logger.Debug("Creating destination directory: %s", path)
-		}
-
-		err := rclone.Mkdir(ctx, e.rclone, path)
-		if err != nil {
-			e.logger.Error("Failed to create destination directory %s: %v", path, err)
-			return fmt.Errorf("failed to create destination directory %s: %w", path, err)
-		}
+	if err := e.createDirectories(ctx, sourcePaths, "source"); err != nil {
+		return err
 	}
 
-	e.logger.Info("Successfully created %d source and %d destination directories", len(sourcePaths), len(destPaths))
+	if err := e.createDirectories(ctx, destPaths, "destination"); err != nil {
+		return err
+	}
+
+	if e.logger != nil {
+		e.logger.Info("Successfully created %d source and %d destination directories", len(sourcePaths), len(destPaths))
+	}
 	return nil
 }
 
@@ -71,16 +63,6 @@ func (e *Engine) CreateAllDirectories(ctx context.Context, config *config.Config
 // This is part of the SyncEngine interface.
 func (e *Engine) Prepare(ctx context.Context, config *config.Config, options SyncOptions) error {
 	return e.CreateAllDirectories(ctx, config, options)
-}
-
-// mapKeys returns all keys from a map as a slice.
-// Used internally for logging unique destination paths.
-func (e *Engine) mapKeys(m map[string]struct{}) []string {
-	keys := make([]string, 0, len(m))
-	for k := range m {
-		keys = append(keys, k)
-	}
-	return keys
 }
 
 // ExtractDestinationPathFromTo extracts the destination path from 'to' field.
@@ -96,6 +78,22 @@ func ExtractDestinationPathFromTo(to string) string {
 		}
 	}
 	return to
+}
+
+func (e *Engine) createDirectories(ctx context.Context, paths map[string]struct{}, dirType string) error {
+	for path := range paths {
+		if e.logger != nil {
+			e.logger.Debug("Creating %s directory: %s", dirType, path)
+		}
+
+		if err := rclone.Mkdir(ctx, e.rclone, path); err != nil {
+			if e.logger != nil {
+				e.logger.Error("Failed to create %s directory %s: %v", dirType, path, err)
+			}
+			return fmt.Errorf("failed to create %s directory %s: %w", dirType, path, err)
+		}
+	}
+	return nil
 }
 
 // ValidateDestinationPaths checks if all destination paths in targets are valid.

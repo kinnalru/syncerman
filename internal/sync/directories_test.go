@@ -226,31 +226,6 @@ func TestPrepare_Directories(t *testing.T) {
 	require.NoError(t, err)
 }
 
-func TestMapKeys(t *testing.T) {
-	m := map[string]struct{}{
-		"key1": {},
-		"key2": {},
-		"key3": {},
-	}
-
-	engine := NewEngine(nil, nil, nil)
-	keys := engine.mapKeys(m)
-
-	assert.Len(t, keys, 3)
-	assert.Contains(t, keys, "key1")
-	assert.Contains(t, keys, "key2")
-	assert.Contains(t, keys, "key3")
-}
-
-func TestMapKeys_Empty(t *testing.T) {
-	m := map[string]struct{}{}
-
-	engine := NewEngine(nil, nil, nil)
-	keys := engine.mapKeys(m)
-
-	assert.Len(t, keys, 0)
-}
-
 func TestCreateAllDirectories_DryRunViaEngine(t *testing.T) {
 	mockExec := &mockMkdirExecutor{}
 

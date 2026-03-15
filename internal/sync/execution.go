@@ -11,7 +11,7 @@ import (
 // RunSync executes a single sync operation for the given target.
 // It builds the rclone bisync command with appropriate flags and executes it.
 func (e *Engine) RunSync(ctx context.Context, target SyncTarget, options SyncOptions) (*SyncResult, error) {
-	taskName := fmt.Sprintf("%s:%s → %s", target.Provider, target.SourcePath, StripProviderHash(target.Destination.To))
+	taskName := formatTaskName(target)
 
 	e.logger.StageInfo("Stage: Starting sync task")
 	e.logger.TargetInfo("Target: %s", taskName)
@@ -75,8 +75,7 @@ func (e *Engine) RunAll(ctx context.Context, config *config.Config, options Sync
 
 	e.logger.Debug("Execution order (preserving YAML configuration order):")
 	for i, target := range targets {
-		taskName := fmt.Sprintf("%s:%s → %s", target.Provider, target.SourcePath, StripProviderHash(target.Destination.To))
-		e.logger.Debug("  %d. %s", i+1, taskName)
+		e.logger.Debug("  %d. %s", i+1, formatTaskName(*target))
 	}
 
 	results := make([]*SyncResult, len(targets))
@@ -100,17 +99,7 @@ func (e *Engine) RunAll(ctx context.Context, config *config.Config, options Sync
 		}
 	}
 
-	successCount := 0
-	firstRunCount := 0
-
-	for _, result := range results {
-		if result.Success {
-			successCount++
-		}
-		if result.FirstRun {
-			firstRunCount++
-		}
-	}
+	successCount, firstRunCount := countResults(results)
 
 	e.logger.Info("Sync completed: %d/%d successful, %d first-runs", successCount, len(results), firstRunCount)
 
@@ -121,4 +110,20 @@ func (e *Engine) RunAll(ctx context.Context, config *config.Config, options Sync
 // This is the primary interface method implementation.
 func (e *Engine) Run(ctx context.Context, target SyncTarget, options SyncOptions) (*SyncResult, error) {
 	return e.RunSync(ctx, target, options)
+}
+
+func formatTaskName(target SyncTarget) string {
+	return fmt.Sprintf("%s:%s → %s", target.Provider, target.SourcePath, StripProviderHash(target.Destination.To))
+}
+
+func countResults(results []*SyncResult) (successCount int, firstRunCount int) {
+	for _, result := range results {
+		if result.Success {
+			successCount++
+		}
+		if result.FirstRun {
+			firstRunCount++
+		}
+	}
+	return
 }

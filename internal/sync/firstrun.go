@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 
+	"gitlab.com/kinnalru/syncerman/internal/logger"
 	"gitlab.com/kinnalru/syncerman/internal/rclone"
 )
 
@@ -14,11 +15,11 @@ const (
 // FirstRunHandler provides specialized handling for first-run errors.
 type FirstRunHandler struct {
 	maxRetries int
-	logger     Logger
+	logger     logger.Logger
 }
 
 // NewFirstRunHandler creates a new handler with given max retries.
-func NewFirstRunHandler(maxRetries int, log Logger) *FirstRunHandler {
+func NewFirstRunHandler(maxRetries int, log logger.Logger) *FirstRunHandler {
 	if maxRetries < 0 {
 		maxRetries = minMaxRetries
 	}
@@ -77,6 +78,6 @@ func (h *FirstRunHandler) Handle(ctx context.Context, exec rclone.Executor, args
 
 // DefaultFirstRunHandler creates a handler with default settings.
 // Default max retries is minMaxRetries, meaning one initial attempt + one retry.
-func DefaultFirstRunHandler(log Logger) *FirstRunHandler {
+func DefaultFirstRunHandler(log logger.Logger) *FirstRunHandler {
 	return NewFirstRunHandler(minMaxRetries, log)
 }
