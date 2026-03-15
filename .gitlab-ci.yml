@@ -35,7 +35,7 @@ build:linux:
     - BUILD_TIME=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
     - GO_VERSION_CI=$(go version | awk '{print $3}')
     - make linux GitCommit="${CI_COMMIT_SHORT_SHA}" BuildTime="${BUILD_TIME}" GoVersion="${GO_VERSION_CI}"
-    - echo "Built version: $(cat VERSION 2>/dev/null || echo 'dev')"
+    - echo "Built version $(cat VERSION 2>/dev/null || echo 'dev')"
   artifacts:
     paths:
       - bin/${BINARY_OUTPUT}
@@ -59,7 +59,7 @@ build:windows:
     - BUILD_TIME=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
     - GO_VERSION_CI=$(go version | awk '{print $3}')
     - make windows GitCommit="${CI_COMMIT_SHORT_SHA}" BuildTime="${BUILD_TIME}" GoVersion="${GO_VERSION_CI}"
-    - echo "Built version: $(cat VERSION 2>/dev/null || echo 'dev')"
+    - echo "Built version $(cat VERSION 2>/dev/null || echo 'dev')"
   artifacts:
     paths:
       - bin/${BINARY_OUTPUT}
