@@ -14,13 +14,20 @@ BINARY_NAME=syncerman
 LINUX_BINARY=$(BINARY_NAME)-linux-amd64
 WINDOWS_BINARY=$(BINARY_NAME)-windows-amd64
 
+# Version parameters
+VERSION ?= $(shell cat VERSION 2>/dev/null || echo "dev")
+GitCommit ?= $(shell git rev-parse HEAD 2>/dev/null || echo "unknown")
+BuildTime ?= $(shell date -u +"%Y-%m-%dT%H:%M:%SZ" 2>/dev/null || echo "unknown")
+GoVersion ?= $(shell go version 2>/dev/null | awk '{print $$3}' || echo "unknown")
+LDFLAGS ?= -s -w -X gitlab.com/kinnalru/syncerman/internal/version.Version=$(VERSION) -X gitlab.com/kinnalru/syncerman/internal/version.GitCommit=$(GitCommit) -X gitlab.com/kinnalru/syncerman/internal/version.BuildTime=$(BuildTime) -X gitlab.com/kinnalru/syncerman/internal/version.GoVersion=$(GoVersion)
+
 all: test build
 
 build:
 	# Build for Linux
-	GOOS=linux GOARCH=amd64 $(GOBUILD) -ldflags "-s -w" -o bin/$(LINUX_BINARY)
+	GOOS=linux GOARCH=amd64 $(GOBUILD) -ldflags "$(LDFLAGS)" -o bin/$(LINUX_BINARY)
 	# Build for Windows
-	GOOS=windows GOARCH=amd64 $(GOBUILD) -ldflags "-s -w" -o bin/$(WINDOWS_BINARY)
+	GOOS=windows GOARCH=amd64 $(GOBUILD) -ldflags "$(LDFLAGS)" -o bin/$(WINDOWS_BINARY)
 
 test:
 	$(GOTEST) -v -cover ./...

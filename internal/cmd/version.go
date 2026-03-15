@@ -3,6 +3,8 @@ package cmd
 import (
 	"fmt"
 
+	"gitlab.com/kinnalru/syncerman/internal/version"
+
 	"github.com/spf13/cobra"
 )
 
@@ -11,7 +13,12 @@ var versionCmd = &cobra.Command{
 	Short: "Print the version number",
 	Long:  `Version prints the version number of Syncerman.`,
 	Run: func(cmd *cobra.Command, args []string) {
-		fmt.Println("Syncerman version 0.1.0")
+		v := version.GetVersion()
+		if v == "dev" {
+			fmt.Printf("Syncerman version %s (%s)\n", v, version.GetGitCommit())
+		} else {
+			fmt.Printf("Syncerman version %s\n", v)
+		}
 	},
 }
 

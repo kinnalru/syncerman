@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"gitlab.com/kinnalru/syncerman/internal/logger"
+	"gitlab.com/kinnalru/syncerman/internal/version"
 
 	"github.com/spf13/cobra"
 )
@@ -67,8 +68,9 @@ func NewCommandConfig() *CommandConfig {
 var commandConfig *CommandConfig
 
 var rootCmd = &cobra.Command{
-	Use:   "syncerman",
-	Short: "Synchronizing targets using rclone",
+	Use:     "syncerman",
+	Short:   "Synchronizing targets using rclone",
+	Version: version.GetFullVersion(),
 	Long: `Syncerman is a CLI application for synchronizing targets
 (sources and destinations) based on rclone CLI.
 
@@ -108,7 +110,6 @@ Available Commands:
 
   # Dry-run with verbose output
   syncerman sync --dry-run --verbose`,
-	Version: "0.1.0",
 }
 
 // Execute is the main entry point for CLI execution.
@@ -125,6 +126,7 @@ func Execute() error {
 
 func init() {
 	commandConfig = NewCommandConfig()
+	rootCmd.Version = version.GetFullVersion()
 	cobra.OnInitialize(initCommandConfig)
 
 	rootCmd.PersistentFlags().StringVarP(&commandConfig.ConfigFile, "config", "c", "", "Path to configuration file")
