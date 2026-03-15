@@ -12,7 +12,7 @@ Refactoring
   - remove Logger from `Sync Package` (move needed functions to `Logger Package`)
   - убрать неиспользуемые функции
   - реализация должа удовлетворять спецификации пакета specs/PACKAGE_SYNC.md
-  - устростить код
+  - уптростить код
   - использовать DRY
 
 **Context:**

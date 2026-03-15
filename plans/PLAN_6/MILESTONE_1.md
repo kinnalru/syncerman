@@ -1,5 +1,5 @@
 ---
-status: completed
+status: in progress
 completion_date: 2026-03-15
 ---
 
@@ -23,10 +23,16 @@ The logger package already provides a complete Logger interface with all needed 
 
 ## Tasks
 
-### 1. Remove redundant Logger interface from sync package 
+### 1. Ensure logger always exits
 
-Remove the Logger interface and defaultLogger from `internal/sync/types.go`. The sync package should use the Logger interface from `internal/logger` package instead.
-
+Pass logger on initialize (constructor).
+remove nil check like:
+```
+		if e.logger != nil {
+			e.logger.Info("No directories to create")
+		}
+```
+But ensure logger always exists
 
 ### 2. Update sync package imports to use logger.Logger 
 
@@ -37,11 +43,7 @@ Update all files in sync package to import and use `logger.Logger` from `interna
 Identify and remove any unused functions from the sync package. Analyze each function to ensure it's actually being used.
 
 
-### 4. NOOP SKIP
-
-NOOP, SKIP
-
-### 5. Simplify code and apply DRY principles
+### 4. Simplify code and apply DRY principles
 
 Review the sync package code and identify opportunities to:
 - Reduce code duplication
@@ -49,11 +51,11 @@ Review the sync package code and identify opportunities to:
 - Extract common patterns into helper functions
 - Improve readability
 
-### 6. Verify all tests pass after refactoring
+### 5. Verify all tests pass after refactoring
 
 Run all tests to ensure the refactoring doesn't break functionality. Tests should maintain high coverage.
 
-### 7. Final code review and formatting
+### 6. Final code review and formatting
 
 Run linting, formatting, and static analysis to ensure code quality:
 - `go fmt ./...`
