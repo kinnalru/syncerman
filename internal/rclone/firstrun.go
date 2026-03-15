@@ -22,8 +22,8 @@ var FirstRunErrorPatternListings = regexp.MustCompile(`(?i)cannot find prior Pat
 // This regex pattern detects variations of the filename listing message that appears
 // alongside the "cannot find prior Path1 or Path2 listings" error.
 //
-// Pattern: "here are the filenames" or "here are filenames"
-// Matching: Case-insensitive (?i flag), optional "the" word
+// Pattern: "here are the filenames" or "here are filenames" or "here are the filenames we were looking for"
+// Matching: Case-insensitive (?i flag), optional "the" word, optional continuation
 // Reference: guides/OVERALL.md:317-326
 //
 // Use case: Combined with FirstRunErrorPatternListings to detect first-run errors

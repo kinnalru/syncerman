@@ -41,12 +41,12 @@ func TestRunSync_Success(t *testing.T) {
 }
 
 func TestRunSync_FirstRunError(t *testing.T) {
-	firstRunError := "ERROR: cannot find prior Path1 or Path2 listings...here are the filenames\n"
+	firstRunError := "ERROR: cannot find prior Path1 or Path2 listings...here are filenames\n"
 
 	mockExec := &mockExecutor{
 		results: []*rclone.Result{
-			{ExitCode: 1, Stdout: "", Stderr: firstRunError},
-			{ExitCode: 0, Stdout: "synced", Stderr: ""},
+			{ExitCode: 1, Stdout: "", Stderr: firstRunError, Combined: firstRunError},
+			{ExitCode: 0, Stdout: "synced", Stderr: "", Combined: "synced"},
 		},
 	}
 
@@ -102,7 +102,7 @@ func TestRunSync_DryRun(t *testing.T) {
 func TestRunSync_CommandFailure(t *testing.T) {
 	mockExec := &mockExecutor{
 		results: []*rclone.Result{
-			{ExitCode: 1, Stdout: "", Stderr: "permission denied"},
+			{ExitCode: 1, Stdout: "", Stderr: "permission denied", Combined: "permission denied"},
 		},
 	}
 
@@ -184,8 +184,8 @@ func TestRunAll_MultipleTargets(t *testing.T) {
 func TestRunAll_StopOnError(t *testing.T) {
 	mockExec := &mockExecutor{
 		results: []*rclone.Result{
-			{ExitCode: 0, Stdout: "synced", Stderr: ""},
-			{ExitCode: 1, Stdout: "", Stderr: "failed"},
+			{ExitCode: 0, Stdout: "synced", Stderr: "", Combined: "synced"},
+			{ExitCode: 1, Stdout: "", Stderr: "failed", Combined: "failed"},
 		},
 	}
 

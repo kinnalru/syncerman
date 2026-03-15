@@ -29,12 +29,12 @@ func TestHandle_Success(t *testing.T) {
 }
 
 func TestHandle_FirstRunRetry(t *testing.T) {
-	firstRunError := "ERROR: cannot find prior Path1 or Path2 listings...here are the filenames\n"
+	firstRunError := "ERROR: cannot find prior Path1 or Path2 listings...here are filenames\n"
 
 	mockExec := &mockExecutor{
 		results: []*rclone.Result{
-			{ExitCode: 1, Stdout: "", Stderr: firstRunError},
-			{ExitCode: 0, Stdout: "synced", Stderr: ""},
+			{ExitCode: 1, Stdout: "", Stderr: firstRunError, Combined: firstRunError},
+			{ExitCode: 0, Stdout: "synced", Stderr: "", Combined: "synced"},
 		},
 	}
 
@@ -53,12 +53,12 @@ func TestHandle_FirstRunRetry(t *testing.T) {
 }
 
 func TestHandle_MaxRetriesExceeded(t *testing.T) {
-	firstRunError := "ERROR: cannot find prior Path1 or Path2 listings...here are the filenames\n"
+	firstRunError := "ERROR: cannot find prior Path1 or Path2 listings...here are filenames\n"
 
 	mockExec := &mockExecutor{
 		results: []*rclone.Result{
-			{ExitCode: 1, Stdout: "", Stderr: firstRunError},
-			{ExitCode: 1, Stdout: "", Stderr: firstRunError},
+			{ExitCode: 1, Stdout: "", Stderr: firstRunError, Combined: firstRunError},
+			{ExitCode: 1, Stdout: "", Stderr: firstRunError, Combined: firstRunError},
 		},
 	}
 
@@ -80,7 +80,7 @@ func TestHandle_NonFirstRunError(t *testing.T) {
 
 	mockExec := &mockExecutor{
 		results: []*rclone.Result{
-			{ExitCode: 1, Stdout: "", Stderr: genericError},
+			{ExitCode: 1, Stdout: "", Stderr: genericError, Combined: genericError},
 		},
 	}
 
@@ -129,11 +129,11 @@ func TestDefaultFirstRunHandler(t *testing.T) {
 func TestHandle_WithZeroMaxRetries(t *testing.T) {
 	handler := NewFirstRunHandler(0, &mockLogger{})
 
-	firstRunError := "ERROR: cannot find prior Path1 or Path2 listings...here are the filenames\n"
+	firstRunError := "ERROR: cannot find prior Path1 or Path2 listings...here are filenames\n"
 
 	mockExec := &mockExecutor{
 		results: []*rclone.Result{
-			{ExitCode: 1, Stdout: "", Stderr: firstRunError},
+			{ExitCode: 1, Stdout: "", Stderr: firstRunError, Combined: firstRunError},
 		},
 	}
 

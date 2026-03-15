@@ -28,12 +28,10 @@ func (e *Engine) CreateDestinationDirectories(ctx context.Context, config *confi
 	}
 
 	if options.DryRun || e.dryRun {
-		e.logger.Info("Skipping directory creation in dry-run mode")
-		e.logger.Debug("Would create %d destination directories: %v", len(uniquePaths), e.mapKeys(uniquePaths))
-		return nil
+		e.logger.Info("Creating %d destination directories (even in dry-run mode for sync to work)...", len(uniquePaths))
+	} else {
+		e.logger.Info("Creating %d destination directories...", len(uniquePaths))
 	}
-
-	e.logger.Info("Creating %d destination directories...", len(uniquePaths))
 	for path := range uniquePaths {
 		if e.logger != nil {
 			e.logger.Debug("Creating directory: %s", path)

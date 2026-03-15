@@ -39,8 +39,8 @@ func (h *FirstRunHandler) Handle(ctx context.Context, exec rclone.Executor, args
 	for {
 		cmdResult, err := exec.Run(ctx, args.Build()...)
 
-		// Command execution failed (not sync operation error)
-		if err != nil {
+		if cmdResult == nil {
+			// Command execution failed (not sync operation error)
 			h.logger.Error("Sync command failed: %v", err)
 			return nil, retries, fmt.Errorf("sync command failed: %w", err)
 		}
@@ -52,9 +52,10 @@ func (h *FirstRunHandler) Handle(ctx context.Context, exec rclone.Executor, args
 		}
 
 		// Check if this is a recoverable first-run error
-		if !rclone.IsFirstRunError(cmdResult.Stderr) {
-			h.logger.Error("Sync failed with exit code %d: %s", cmdResult.ExitCode, cmdResult.Stderr)
-			return cmdResult, retries, fmt.Errorf("sync failed: %s", cmdResult.Stderr)
+		isFirstRun := rclone.IsFirstRunError(cmdResult.Combined)
+		if !isFirstRun {
+			h.logger.Error("Sync failed with exit code %d: %s", cmdResult.ExitCode, cmdResult.Combined)
+			return cmdResult, retries, fmt.Errorf("sync failed: %s", cmdResult.Combined)
 		}
 
 		retries++

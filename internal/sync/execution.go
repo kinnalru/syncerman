@@ -39,7 +39,7 @@ func (e *Engine) RunSync(ctx context.Context, target SyncTarget, options SyncOpt
 	handler := NewFirstRunHandler(maxRetries, e.logger)
 	cmdResult, retryCount, err := handler.Handle(ctx, e.rclone, args)
 
-	if options.Verbose {
+	if cmdResult != nil && options.Verbose {
 		e.logger.Debug("Sync output: %s", cmdResult.Combined)
 	}
 
