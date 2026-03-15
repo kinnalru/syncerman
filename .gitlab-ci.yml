@@ -30,11 +30,7 @@ build:linux:
       - vendor/
   script:
     - go mod download
-    - VERSION=$(cat VERSION 2>/dev/null || echo "dev")
-    - BUILD_TIME=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
-    - GO_VERSION_CI=$(go version | awk '{print $3}')
-    - GOOS=linux GOARCH=amd64 go build -ldflags "-s -w -X gitlab.com/kinnalru/syncerman/internal/version.Version=${VERSION} -X gitlab.com/kinnalru/syncerman/internal/version.GitCommit=${CI_COMMIT_SHORT_SHA} -X gitlab.com/kinnalru/syncerman/internal/version.BuildTime=${BUILD_TIME} -X gitlab.com/kinnalru/syncerman/internal/version.GoVersion=${GO_VERSION_CI}" -o bin/syncerman-linux-amd64
-    - echo "Built version: ${VERSION}"
+    - make linux
   artifacts:
     paths:
       - bin/syncerman-linux-amd64
@@ -53,21 +49,17 @@ build:windows:
       - vendor/
   script:
     - go mod download
-    - VERSION=$(cat VERSION 2>/dev/null || echo "dev")
-    - BUILD_TIME=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
-    - GO_VERSION_CI=$(go version | awk '{print $3}')
-    - GOOS=windows GOARCH=amd64 go build -ldflags "-s -w -X gitlab.com/kinnalru/syncerman/internal/version.Version=${VERSION} -X gitlab.com/kinnalru/syncerman/internal/version.GitCommit=${CI_COMMIT_SHORT_SHA} -X gitlab.com/kinnalru/syncerman/internal/version.BuildTime=${BUILD_TIME} -X gitlab.com/kinnalru/syncerman/internal/version.GoVersion=${GO_VERSION_CI}" -o bin/syncerman-windows-amd64.exe
-    - echo "Built version: ${VERSION}"
+    - make windows
   artifacts:
     paths:
-      - bin/syncerman-windows-amd64.exe
+      - bin/syncerman-windows-amd64
     expire_in: 1 week
   only:
     - branches
     - merge_requests
     - tags
 
-create_release:
+release:
   image: registry.gitlab.com/gitlab-org/cli:latest
   stage: release
   needs:
@@ -76,8 +68,8 @@ create_release:
   only:
     - /^v\d+\.\d+\.\d+$/
   script:
-    - VERSION=$(cat VERSION 2>/dev/null || echo "dev")
-    - echo "Releasing version: ${VERSION}"
+    - export VERSION=$(cat VERSION 2>/dev/null || echo dev)
+    - echo Releasing version ${VERSION}
   release:
     tag_name: $CI_COMMIT_TAG
     name: 'Syncerman $CI_COMMIT_TAG'

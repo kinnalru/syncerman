@@ -1,4 +1,4 @@
-.PHONY: all build test lint fmt clean
+.PHONY: all build linux windows test lint fmt clean
 
 # Go parameters
 GOCMD=go
@@ -23,10 +23,14 @@ LDFLAGS ?= -s -w -X gitlab.com/kinnalru/syncerman/internal/version.Version=$(VER
 
 all: test build
 
-build:
-	# Build for Linux
+build: linux windows
+
+build: linux windows
+
+linux:
 	GOOS=linux GOARCH=amd64 $(GOBUILD) -ldflags "$(LDFLAGS)" -o bin/$(LINUX_BINARY)
-	# Build for Windows
+
+windows:
 	GOOS=windows GOARCH=amd64 $(GOBUILD) -ldflags "$(LDFLAGS)" -o bin/$(WINDOWS_BINARY)
 
 test:
