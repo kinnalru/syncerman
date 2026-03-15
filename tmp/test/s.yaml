@@ -1,0 +1,15 @@
+local:
+  '/home/llm/agents/takopi/syncerman/tmp/test/f1':
+    -
+      to: 'gd:syncerman/test/'
+
+gd:
+  'syncerman/test/':
+    -
+      to: 'yd:syncerman/test/'
+
+yd:
+  'syncerman/test/':
+    -
+      to: '/home/llm/agents/takopi/syncerman/tmp/test/f2'
+

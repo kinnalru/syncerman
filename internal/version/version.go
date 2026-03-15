@@ -1,7 +1,19 @@
 package version
 
+import (
+	_ "embed"
+	"strings"
+)
+
+//go:embed VERSION
+var versionFile string
+
+func parseVersion(v string) string {
+	return strings.TrimSpace(v)
+}
+
 var (
-	Version   = "dev"
+	Version   = parseVersion(versionFile)
 	GitCommit = "unknown"
 	BuildTime = "unknown"
 	GoVersion = "unknown"

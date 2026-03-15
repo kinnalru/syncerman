@@ -28,12 +28,17 @@ build:linux:
     key: ${CI_COMMIT_REF_SLUG}
     paths:
       - vendor/
+  variables:
+    BINARY_OUTPUT: "syncerman-linux-amd64"
   script:
     - go mod download
-    - make linux
+    - BUILD_TIME=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
+    - GO_VERSION_CI=$(go version | awk '{print $3}')
+    - make linux GitCommit="${CI_COMMIT_SHORT_SHA}" BuildTime="${BUILD_TIME}" GoVersion="${GO_VERSION_CI}"
+    - echo "Built version: $(cat VERSION 2>/dev/null || echo 'dev')"
   artifacts:
     paths:
-      - bin/syncerman-linux-amd64
+      - bin/${BINARY_OUTPUT}
     expire_in: 1 week
   only:
     - branches
@@ -47,12 +52,17 @@ build:windows:
     key: ${CI_COMMIT_REF_SLUG}
     paths:
       - vendor/
+  variables:
+    BINARY_OUTPUT: "syncerman-windows-amd64"
   script:
     - go mod download
-    - make windows
+    - BUILD_TIME=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
+    - GO_VERSION_CI=$(go version | awk '{print $3}')
+    - make windows GitCommit="${CI_COMMIT_SHORT_SHA}" BuildTime="${BUILD_TIME}" GoVersion="${GO_VERSION_CI}"
+    - echo "Built version: $(cat VERSION 2>/dev/null || echo 'dev')"
   artifacts:
     paths:
-      - bin/syncerman-windows-amd64
+      - bin/${BINARY_OUTPUT}
     expire_in: 1 week
   only:
     - branches

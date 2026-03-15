@@ -1,0 +1,14 @@
+local:
+  '/home/llm/agents/takopi/syncerman/tmp/complex/scenario1/local':
+    -
+      to: 'gd:syncerman/scenario1/'
+
+gd:
+  'syncerman/scenario1/':
+    -
+      to: 'yd:syncerman/scenario1/'
+
+yd:
+  'syncerman/scenario1/':
+    -
+      to: '/home/llm/agents/takopi/syncerman/tmp/complex/scenario1/local2'
