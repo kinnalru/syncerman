@@ -294,14 +294,10 @@ TEST_DIR="/home/llm/agents/takopi/syncerman/tmp/complex/scenario5"
 CONFIG_FILE="$TEST_DIR/scenario5.yaml"
 SYNCERMAN_BIN="/home/llm/agents/takopi/syncerman/bin/syncerman"
 
-echo "=== Test Case 7: Dry-run with check commands ==="
+echo "=== Test Case 7: Dry-run with check command ==="
 echo ""
-echo "Testing dry-run with check config:"
-$SYNCERMAN_BIN check config --config "$CONFIG_FILE" --dry-run --verbose || echo "  (dry-run may not apply to check)"
-echo ""
-
-echo "Testing dry-run with check remotes:"
-$SYNCERMAN_BIN check remotes --config "$CONFIG_FILE" --dry-run --verbose || echo "  (dry-run may not apply to check)"
+echo "Testing dry-run with check:"
+$SYNCERMAN_BIN check --config "$CONFIG_FILE" --dry-run --verbose || echo "  (dry-run may not apply to check)"
 ```
 
 ### Test Case 8: Verify Dry-Run Output Contains Warnings

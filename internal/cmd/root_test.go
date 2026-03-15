@@ -168,14 +168,9 @@ func TestVersionCommand(t *testing.T) {
 func TestCheckCommands(t *testing.T) {
 	testRoot := rootCmd
 
-	checkSubCmd, _, _ := testRoot.Find([]string{"check", "config"})
+	checkSubCmd, _, _ := testRoot.Find([]string{"check"})
 	if checkSubCmd == nil {
-		t.Error("check config command not found")
-	}
-
-	checkRemotesSubCmd, _, _ := testRoot.Find([]string{"check", "remotes"})
-	if checkRemotesSubCmd == nil {
-		t.Error("check remotes command not found")
+		t.Error("check command not found")
 	}
 }
 
@@ -213,16 +208,6 @@ func TestCommandHelp(t *testing.T) {
 			name: "check help",
 			args: []string{"check", "--help"},
 			want: "Check configuration",
-		},
-		{
-			name: "check config help",
-			args: []string{"check", "config", "--help"},
-			want: "validators",
-		},
-		{
-			name: "check remotes help",
-			args: []string{"check", "remotes", "--help"},
-			want: "remotes",
 		},
 	}
 

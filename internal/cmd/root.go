@@ -96,18 +96,15 @@ Global Flags:
   -v, --verbose         Verbose output
   -q, --quiet          Quiet mode (suppress output)
 
-Examples:
+ Examples:
   # Sync all targets from configuration
   syncerman sync
 
   # Sync specific target
   syncerman sync gdrive:docs
 
-  # Check configuration validity
-  syncerman check config
-
-  # Check rclone remotes
-  syncerman check remotes
+  # Check configuration validity and rclone remotes
+  syncerman check
 
   # Dry-run with verbose output
   syncerman sync --dry-run --verbose`,

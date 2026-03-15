@@ -13,14 +13,9 @@ func TestScenario1_FirstTimeSetup(t *testing.T) {
 		want string
 	}{
 		{
-			name: "check config command",
-			args: []string{"check", "config", "--help"},
-			want: "check config",
-		},
-		{
-			name: "check remotes command",
-			args: []string{"check", "remotes", "--help"},
-			want: "check remotes",
+			name: "check command",
+			args: []string{"check", "--help"},
+			want: "check",
 		},
 		{
 			name: "sync dry-run",
@@ -128,9 +123,9 @@ func TestScenario4_CustomConfigFile(t *testing.T) {
 			want: "Sync executes",
 		},
 		{
-			name: "check config with custom config",
-			args: []string{"--config", "/home/user/.config/syncerman/config.yml", "check", "config", "--help"},
-			want: "check config",
+			name: "check with custom config",
+			args: []string{"--config", "/home/user/.config/syncerman/config.yml", "check", "--help"},
+			want: "check",
 		},
 	}
 
@@ -328,66 +323,26 @@ func TestSyncCommandVariants(t *testing.T) {
 	}
 }
 
-func TestCheckConfigCommand(t *testing.T) {
+func TestCheckCommand(t *testing.T) {
 	tests := []struct {
 		name string
 		args []string
 		want string
 	}{
 		{
-			name: "check config basic",
-			args: []string{"check", "config", "--help"},
-			want: "Config validates configuration file",
+			name: "check basic",
+			args: []string{"check", "--help"},
+			want: "check",
 		},
 		{
-			name: "check config with verbose",
-			args: []string{"check", "config", "--verbose", "--help"},
-			want: "Config validates configuration file",
+			name: "check with verbose",
+			args: []string{"check", "--verbose", "--help"},
+			want: "check",
 		},
 		{
-			name: "check config with custom config",
-			args: []string{"--config", "/path/to/config.yml", "check", "config", "--help"},
-			want: "Config validates configuration file",
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			buf := new(bytes.Buffer)
-			testRoot := rootCmd
-			testRoot.SetOut(buf)
-			testRoot.SetErr(buf)
-			testRoot.SetArgs(tt.args)
-
-			_ = testRoot.Execute()
-
-			if !strings.Contains(buf.String(), tt.want) {
-				t.Errorf("expected %q in output, got %q", tt.want, buf.String())
-			}
-		})
-	}
-}
-
-func TestCheckRemotesCommand(t *testing.T) {
-	tests := []struct {
-		name string
-		args []string
-		want string
-	}{
-		{
-			name: "check remotes basic",
-			args: []string{"check", "remotes", "--help"},
-			want: "remotes",
-		},
-		{
-			name: "check remotes with verbose",
-			args: []string{"check", "remotes", "--verbose", "--help"},
-			want: "remotes",
-		},
-		{
-			name: "check remotes with custom config",
-			args: []string{"--config", "/path/to/config.yml", "check", "remotes", "--help"},
-			want: "remotes",
+			name: "check with custom config",
+			args: []string{"--config", "/path/to/config.yml", "check", "--help"},
+			want: "check",
 		},
 	}
 
@@ -416,14 +371,11 @@ func TestAllCLIExamples(t *testing.T) {
 		"syncerman sync local:./cloud/docs",
 		"syncerman sync gdrive:folders/folder1 --verbose",
 		"syncerman sync ydisk:folders/folder1 --dry-run",
-		"syncerman check config",
-		"syncerman check config --config /path/to/config.yml",
-		"syncerman check config --verbose",
-		"syncerman check remotes",
-		"syncerman check remotes --config /path/to/config.yml",
-		"syncerman check remotes --verbose",
+		"syncerman check",
+		"syncerman check --config /path/to/config.yml",
+		"syncerman check --verbose",
 		"syncerman --config /home/user/.config/syncerman/config.yml sync",
-		"syncerman --config /home/user/.config/syncerman/config.yml check config",
+		"syncerman --config /home/user/.config/syncerman/config.yml check",
 	}
 
 	for _, example := range examples {

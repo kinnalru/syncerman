@@ -142,7 +142,7 @@ EOF
 
 ## Test Execution
 
-### Step 1: Verify Configuration
+### Step 1: Verify Configuration and Remotes
 
 ```bash
 #!/bin/bash
@@ -150,27 +150,13 @@ TEST_DIR="/home/llm/agents/takopi/syncerman/tmp/complex/scenario4"
 CONFIG_FILE="$TEST_DIR/scenario4.yaml"
 SYNCERMAN_BIN="/home/llm/agents/takopi/syncerman/bin/syncerman"
 
-echo "=== Step 1: Check configuration ==="
-$SYNCERMAN_BIN check config --config "$CONFIG_FILE" --verbose
+echo "=== Step 1: Check configuration and verify remotes ==="
+$SYNCERMAN_BIN check --config "$CONFIG_FILE" --verbose
 ```
 
 **Expected Output:**
 - Configuration is valid
 - Shows number of providers and paths
-
-### Step 2: Verify Remotes
-
-```bash
-#!/bin/bash
-TEST_DIR="/home/llm/agents/takopi/syncerman/tmp/complex/scenario4"
-CONFIG_FILE="$TEST_DIR/scenario4.yaml"
-SYNCERMAN_BIN="/home/llm/agents/takopi/syncerman/bin/syncerman"
-
-echo "=== Step 2: Check remotes ==="
-$SYNCERMAN_BIN check remotes --config "$CONFIG_FILE" --verbose
-```
-
-**Expected Output:**
 - All providers (local, gd, yd) are configured
 
 ### Step 3: Execute Synchronization
@@ -457,12 +443,9 @@ echo "Local only file 2" > "$LOCAL_OTHER/local2.txt"
 echo "Test data created"
 echo ""
 
-# Step 1-2: Check config and remotes
-echo "=== Check configuration ==="
-$SYNCERMAN_BIN check config --config "$CONFIG_FILE" --verbose
-echo ""
-echo "=== Check remotes ==="
-$SYNCERMAN_BIN check remotes --config "$CONFIG_FILE" --verbose
+# Step 1: Check configuration and verify remotes
+echo "=== Check configuration and verify remotes ==="
+$SYNCERMAN_BIN check --config "$CONFIG_FILE" --verbose
 echo ""
 
 # Step 3: Execute sync

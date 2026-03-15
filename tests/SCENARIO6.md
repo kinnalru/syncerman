@@ -82,8 +82,8 @@ local:
       invalid syntax here
 EOF
 
-echo "Attempting check config..."
-$SYNCERMAN_BIN check config --config "$INVALID_CONFIG" 2>&1 | tee "$TEST_DIR/test2_output.txt"
+echo "Attempting check..."
+$SYNCERMAN_BIN check --config "$INVALID_CONFIG" 2>&1 | tee "$TEST_DIR/test2_output.txt"
 
 EXIT_CODE=$?
 echo "Exit code: $EXIT_CODE"
@@ -126,8 +126,8 @@ local:
       args: []
 EOF
 
-echo "Attempting check config..."
-$SYNCERMAN_BIN check config --config "$INVALID_CONFIG" 2>&1 | tee "$TEST_DIR/test3_output.txt"
+echo "Attempting check..."
+$SYNCERMAN_BIN check --config "$INVALID_CONFIG" 2>&1 | tee "$TEST_DIR/test3_output.txt"
 
 EXIT_CODE=$?
 echo "Exit code: $EXIT_CODE"
@@ -170,8 +170,8 @@ nonexistent:
       to: 'gd:syncerman/scenario6/'
 EOF
 
-echo "Attempting check remotes..."
-$SYNCERMAN_BIN check remotes --config "$INVALID_CONFIG" 2>&1 | tee "$TEST_DIR/test4_output.txt"
+echo "Attempting check..."
+$SYNCERMAN_BIN check --config "$INVALID_CONFIG" 2>&1 | tee "$TEST_DIR/test4_output.txt"
 
 EXIT_CODE=$?
 echo "Exit code: $EXIT_CODE"
@@ -219,8 +219,8 @@ gd:
       to: 'also_invalid'
 EOF
 
-echo "Attempting check config..."
-$SYNCERMAN_BIN check config --config "$INVALID_CONFIG" 2>&1 | tee "$TEST_DIR/test5_output.txt"
+echo "Attempting check..."
+$SYNCERMAN_BIN check --config "$INVALID_CONFIG" 2>&1 | tee "$TEST_DIR/test5_output.txt"
 
 EXIT_CODE=$?
 echo "Exit code: $EXIT_CODE"
@@ -383,8 +383,8 @@ gd:
       to: '/home/llm/agents/takopi/syncerman/tmp/complex/scenario6/local2'
 EOF
 
-echo "Attempting check remotes..."
-$SYNCERMAN_BIN check remotes --config "$MIXED_CONFIG" 2>&1 | tee "$TEST_DIR/test9_output.txt"
+echo "Attempting check..."
+$SYNCERMAN_BIN check --config "$MIXED_CONFIG" 2>&1 | tee "$TEST_DIR/test9_output.txt"
 
 EXIT_CODE=$?
 echo "Exit code: $EXIT_CODE"
@@ -583,7 +583,7 @@ local:
     - to: 'gd:path'
       invalid syntax
 EOF
-$SYNCERMAN_BIN check config --config "$TEST_DIR/invalid.yaml" 2>/dev/null
+$SYNCERMAN_BIN check --config "$TEST_DIR/invalid.yaml" 2>/dev/null
 [ $? -ne 0 ] && echo "PASS: Failed as expected" || echo "FAIL: Should have failed"
 echo ""
 
@@ -595,7 +595,7 @@ local:
     -
       args: []
 EOF
-$SYNCERMAN_BIN check config --config "$TEST_DIR/missing_to.yaml" 2>/dev/null
+$SYNCERMAN_BIN check --config "$TEST_DIR/missing_to.yaml" 2>/dev/null
 [ $? -ne 0 ] && echo "PASS: Failed as expected" || echo "FAIL: Should have failed"
 echo ""
 
@@ -607,7 +607,7 @@ nonexistent:
     -
       to: 'gd:syncerman/scenario6/'
 EOF
-$SYNCERMAN_BIN check remotes --config "$TEST_DIR/invalid_provider.yaml" 2>/dev/null
+$SYNCERMAN_BIN check --config "$TEST_DIR/invalid_provider.yaml" 2>/dev/null
 [ $? -ne 0 ] && echo "PASS: Failed as expected" || echo "FAIL: Should have failed"
 echo ""
 
@@ -619,7 +619,7 @@ local:
     -
       to: 'invalid_no_colon'
 EOF
-$SYNCERMAN_BIN check config --config "$TEST_DIR/invalid_dest.yaml" 2>/dev/null
+$SYNCERMAN_BIN check --config "$TEST_DIR/invalid_dest.yaml" 2>/dev/null
 [ $? -ne 0 ] && echo "PASS: Failed as expected" || echo "INFO: May pass depending on validation"
 echo ""
 

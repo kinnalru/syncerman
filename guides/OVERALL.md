@@ -161,15 +161,15 @@ syncerman sync ydisk:folders/folder1 --dry-run
 - For local: `local:./path/to/folder` or `./path/to/folder`
 - For remotes: `<provider>:<path>`
 
-#### `check config [flags]` - Check Configuration
+#### `check [flags]` - Check Configuration and Remotes
 
-Validate the configuration file without performing any sync operations.
+Validate the configuration file and verify all rclone remotes.
 
 **Usage:**
 ```bash
-syncerman check config
-syncerman check config --config /path/to/config.yml
-syncerman check config --verbose
+syncerman check
+syncerman check --config /path/to/config.yml
+syncerman check --verbose
 ```
 
 **Options:**
@@ -182,22 +182,6 @@ syncerman check config --verbose
 - Source paths not empty
 - Destination format correct
 - Optional field types correct
-
-#### `check remotes [flags]` - Check Rclone Remotes
-
-Verify that all rclone remotes referenced in the configuration are properly configured.
-
-**Usage:**
-```bash
-syncerman check remotes
-syncerman check remotes --config /path/to/config.yml
-syncerman check remotes --verbose
-```
-
-**Options:**
-- Inherits all global flags
-
-**Checks:**
 - All provider names exist in rclone configuration
 - Rclone binary is accessible
 - Connection to each remote is possible
@@ -207,13 +191,10 @@ syncerman check remotes --verbose
 **Scenario 1: First-time setup and validation**
 
 ```bash
-# 1. Check your configuration file
-syncerman check config --verbose
+# 1. Check your configuration and verify rclone remotes
+syncerman check --verbose
 
-# 2. Verify all rclone remotes are configured
-syncerman check remotes --verbose
-
-# 3. Dry-run to see what would happen
+# 2. Dry-run to see what would happen
 syncerman sync --dry-run --verbose
 ```
 
@@ -243,8 +224,8 @@ syncerman sync gdrive:projects/main --dry-run
 # Use specific config file
 syncerman --config /home/user/.config/syncerman/config.yml sync
 
-# Check configuration with custom file
-syncerman --config /home/user/.config/syncerman/config.yml check config
+# Check with custom file
+syncerman --config /home/user/.config/syncerman/config.yml check
 ```
 
 ## Rclone Integration
@@ -340,12 +321,11 @@ Path2: /home/jerry/.cache/rclone/bisync/tmp_tools..kinnalru@yandex.ru_tools.path
 ### End-to-End Workflow
 
 1. **Initial Setup**
-   ```
-   a. Create configuration.yml in desired location: manual
-   b. Configure rclone remotes: rclone config
-   c. Validate configuration: syncerman check config
-   d. Verify remotes: syncerman check remotes
-   ```
+    ```
+    a. Create configuration.yml in desired location: manual
+    b. Configure rclone remotes: rclone config
+    c. Validate configuration and verify remotes: syncerman check
+    ```
 
 2. **Pre-Sync Verification**
    ```

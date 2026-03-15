@@ -145,12 +145,12 @@ gdrive:
 - `args` allows additional rclone arguments (optional)
 - `resync` forces initial sync to prefer source content (default: false)
 
-### Step 3: Validate Configuration
+### Step 3: Validate Configuration and Remotes
 
-Before running any sync, validate your configuration file:
+Before running any sync, validate your configuration file and verify rclone remotes:
 
 ```bash
-syncerman check config --verbose
+syncerman check --verbose
 ```
 
 This command checks for:
@@ -159,23 +159,11 @@ This command checks for:
 - Non-empty provider names and source paths
 - Correct destination format
 - Proper field types
-
-**Expected output:** Configuration is valid or detailed error messages if issues are found.
-
-### Step 4: Verify Rclone Remotes
-
-Ensure all rclone remotes referenced in your configuration are accessible:
-
-```bash
-syncerman check remotes --verbose
-```
-
-This command verifies:
 - All provider names exist in rclone configuration
 - Rclone binary is accessible
 - Connection to each remote is possible
 
-**Expected output:** All remotes are accessible or specific connection error details.
+**Expected output:** All checks passed or detailed error messages if issues are found.
 
 ### Step 5: Dry Run First Sync
 
@@ -328,15 +316,15 @@ syncerman sync ydisk:folders/folder1 --dry-run
 - For local: `local:./path/to/folder` or `./path/to/folder`
 - For remotes: `<provider>:<path>`
 
-#### check config [flags]
+#### check [flags]
 
-Validate the configuration file without performing any sync operations.
+Validate the configuration file and verify all rclone remotes.
 
 **Usage:**
 ```bash
-syncerman check config
-syncerman check config --config /path/to/config.yml
-syncerman check config --verbose
+syncerman check
+syncerman check --config /path/to/config.yml
+syncerman check --verbose
 ```
 
 This command validates:
@@ -346,19 +334,6 @@ This command validates:
 - Source paths not empty
 - Destination format correct
 - Optional field types correct
-
-#### check remotes [flags]
-
-Verify that all rclone remotes referenced in the configuration are properly configured.
-
-**Usage:**
-```bash
-syncerman check remotes
-syncerman check remotes --config /path/to/config.yml
-syncerman check remotes --verbose
-```
-
-This command checks:
 - All provider names exist in rclone configuration
 - Rclone binary is accessible
 - Connection to each remote is possible
@@ -370,16 +345,13 @@ This command checks:
 Setup Syncerman for the first time with proper validation:
 
 ```bash
-# 1. Check your configuration file
-syncerman check config --verbose
+# 1. Check your configuration and remotes
+syncerman check --verbose
 
-# 2. Verify all rclone remotes are configured
-syncerman check remotes --verbose
-
-# 3. Dry-run to see what would happen
+# 2. Dry-run to see what would happen
 syncerman sync --dry-run --verbose
 
-# 4. Run the actual sync
+# 3. Run the actual sync
 syncerman sync --verbose
 ```
 
@@ -425,8 +397,8 @@ syncerman --config /home/user/.config/syncerman/config.yml sync
 # Use custom config with verbose output
 syncerman -c ./my-config.yml sync --verbose
 
-# Check configuration with custom file
-syncerman --config /home/user/.config/syncerman/config.yml check config
+# Check with custom file
+syncerman --config /home/user/.config/syncerman/config.yml check
 ```
 
 ### Scenario 5: Automated Backup Setup
@@ -443,8 +415,8 @@ Set up automated daily backups using cron:
 When modifying your configuration, test it safely:
 
 ```bash
-# 1. Validate new configuration
-syncerman check config --verbose
+# 1. Validate new configuration and remotes
+syncerman check --verbose
 
 # 2. Dry-run to preview changes
 syncerman sync --dry-run --verbose

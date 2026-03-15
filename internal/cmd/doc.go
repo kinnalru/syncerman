@@ -12,13 +12,9 @@ package cmd
 //       Without arguments, syncs all targets from configuration file.
 //       With target argument (provider:path), syncs only that specific target.
 //
-//   syncerman check config [flags]
-//       Validates configuration file and checks that all configured
-//       providers and destinations are valid.
-//
-//   syncerman check remotes [flags]
-//       Verifies that all providers in configuration are properly
-//       configured in rclone.
+//   syncerman check [flags]
+//       Validates configuration file and verifies that all providers
+//       exist in rclone configuration.
 //
 //   syncerman version
 //       Prints version number of Syncerman.
@@ -45,11 +41,8 @@ package cmd
 //   # Sync specific target with dry-run
 //   syncerman sync gdrive:docs --dry-run
 //
-//   # Check configuration validity
-//   syncerman check config
-//
-//   # Check rclone remotes with verbose output
-//   syncerman check remotes --verbose
+//   # Check configuration validity and verify rclone remotes
+//   syncerman check
 //
 // Command Exit Codes:
 //

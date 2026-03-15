@@ -103,8 +103,8 @@ EOF
 TEST_DIR="/home/llm/agents/takopi/syncerman/tmp/complex/scenario1"
 CONFIG_FILE="$TEST_DIR/scenario1.yaml"
 
-echo "=== Step 1: Check configuration ==="
-/home/llm/agents/takopi/syncerman/bin/syncerman check config --config "$CONFIG_FILE" --verbose
+echo "=== Step 1: Check configuration and verify rclone remotes ==="
+/home/llm/agents/takopi/syncerman/bin/syncerman check --config "$CONFIG_FILE" --verbose
 ```
 
 **Expected Output:**
@@ -303,14 +303,9 @@ EOF
 echo "Configuration created"
 echo ""
 
-# Step 1: Check configuration
-echo "=== Step 1: Check configuration ==="
-$SYNCERMAN_BIN check config --config "$CONFIG_FILE" --verbose
-echo ""
-
-# Step 2: Check remotes
-echo "=== Step 2: Check remotes ==="
-$SYNCERMAN_BIN check remotes --config "$CONFIG_FILE" --verbose
+# Step 1: Check configuration and verify remotes
+echo "=== Step 1: Check configuration and verify remotes ==="
+$SYNCERMAN_BIN check --config "$CONFIG_FILE" --verbose
 echo ""
 
 # Step 3: Dry run
