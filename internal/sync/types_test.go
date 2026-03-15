@@ -63,7 +63,7 @@ func TestSyncEngineFromConfig_ValidationErrors(t *testing.T) {
 	assert.Error(t, err)
 }
 
-func TestCreateDestinationDirectories_AllFailureScenarios(t *testing.T) {
+func TestCreateAllDirectories_AllFailureScenarios(t *testing.T) {
 	tests := []struct {
 		name        string
 		results     []*rclone.Result
@@ -116,7 +116,7 @@ func TestCreateDestinationDirectories_AllFailureScenarios(t *testing.T) {
 
 			engine := NewEngine(cfg, mockExec, nil)
 			ctx := context.Background()
-			err := engine.CreateDestinationDirectories(ctx, cfg, SyncOptions{})
+			err := engine.CreateAllDirectories(ctx, cfg, SyncOptions{})
 
 			if tt.expectError {
 				assert.Error(t, err)

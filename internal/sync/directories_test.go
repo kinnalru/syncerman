@@ -33,7 +33,7 @@ func (m *mockMkdirExecutor) Run(ctx context.Context, args ...string) (*rclone.Re
 	return result, err
 }
 
-func TestCreateDestinationDirectories_Success(t *testing.T) {
+func TestCreateAllDirectories_Success(t *testing.T) {
 	mockExec := &mockMkdirExecutor{
 		results: []*rclone.Result{
 			{ExitCode: 0, Stdout: "", Stderr: ""},
@@ -56,12 +56,12 @@ func TestCreateDestinationDirectories_Success(t *testing.T) {
 	engine := NewEngine(cfg, mockExec, nil)
 	ctx := context.Background()
 
-	err := engine.CreateDestinationDirectories(ctx, cfg, SyncOptions{})
+	err := engine.CreateAllDirectories(ctx, cfg, SyncOptions{})
 
 	require.NoError(t, err)
 }
 
-func TestCreateDestinationDirectories_DryRun(t *testing.T) {
+func TestCreateAllDirectories_DryRun(t *testing.T) {
 	mockExec := &mockMkdirExecutor{}
 
 	cfg := config.NewConfig()
@@ -74,12 +74,12 @@ func TestCreateDestinationDirectories_DryRun(t *testing.T) {
 	engine := NewEngine(cfg, mockExec, nil)
 	ctx := context.Background()
 
-	err := engine.CreateDestinationDirectories(ctx, cfg, SyncOptions{DryRun: true})
+	err := engine.CreateAllDirectories(ctx, cfg, SyncOptions{DryRun: true})
 
 	require.NoError(t, err)
 }
 
-func TestCreateDestinationDirectories_Error(t *testing.T) {
+func TestCreateAllDirectories_Error(t *testing.T) {
 	mockExec := &mockMkdirExecutor{
 		results: []*rclone.Result{
 			{ExitCode: 0, Stdout: "", Stderr: ""},
@@ -102,13 +102,13 @@ func TestCreateDestinationDirectories_Error(t *testing.T) {
 	engine := NewEngine(cfg, mockExec, nil)
 	ctx := context.Background()
 
-	err := engine.CreateDestinationDirectories(ctx, cfg, SyncOptions{})
+	err := engine.CreateAllDirectories(ctx, cfg, SyncOptions{})
 
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "failed to create directory")
 }
 
-func TestCreateDestinationDirectories_NoDestinations(t *testing.T) {
+func TestCreateAllDirectories_NoDestinations(t *testing.T) {
 	mockExec := &mockMkdirExecutor{}
 
 	cfg := config.NewConfig()
@@ -116,7 +116,7 @@ func TestCreateDestinationDirectories_NoDestinations(t *testing.T) {
 	engine := NewEngine(cfg, mockExec, nil)
 	ctx := context.Background()
 
-	err := engine.CreateDestinationDirectories(ctx, cfg, SyncOptions{})
+	err := engine.CreateAllDirectories(ctx, cfg, SyncOptions{})
 
 	assert.Error(t, err)
 }
@@ -251,7 +251,7 @@ func TestMapKeys_Empty(t *testing.T) {
 	assert.Len(t, keys, 0)
 }
 
-func TestCreateDestinationDirectories_DryRunViaEngine(t *testing.T) {
+func TestCreateAllDirectories_DryRunViaEngine(t *testing.T) {
 	mockExec := &mockMkdirExecutor{}
 
 	cfg := config.NewConfig()
@@ -265,7 +265,76 @@ func TestCreateDestinationDirectories_DryRunViaEngine(t *testing.T) {
 	engine.SetDryRun(true)
 	ctx := context.Background()
 
-	err := engine.CreateDestinationDirectories(ctx, cfg, SyncOptions{})
+	err := engine.CreateAllDirectories(ctx, cfg, SyncOptions{})
 
 	require.NoError(t, err)
+}
+
+func TestCreateAllDirectories_CreatesSourceDirectories(t *testing.T) {
+	mockExec := &mockMkdirExecutor{
+		results: []*rclone.Result{
+			{ExitCode: 0, Stdout: "", Stderr: ""},
+			{ExitCode: 0, Stdout: "", Stderr: ""},
+		},
+	}
+
+	cfg := config.NewConfig()
+	cfg.AddProvider("gdrive", config.PathMap{
+		"source_folder": []config.Destination{
+			{To: "s3:backup/source_folder"},
+		},
+	})
+
+	engine := NewEngine(cfg, mockExec, nil)
+	ctx := context.Background()
+
+	err := engine.CreateAllDirectories(ctx, cfg, SyncOptions{})
+
+	require.NoError(t, err)
+}
+
+func TestCreateAllDirectories_SkipsLocalSource(t *testing.T) {
+	mockExec := &mockMkdirExecutor{
+		results: []*rclone.Result{
+			{ExitCode: 0, Stdout: "", Stderr: ""},
+		},
+	}
+
+	cfg := config.NewConfig()
+	cfg.AddProvider("local", config.PathMap{
+		"local_folder": []config.Destination{
+			{To: "gdrive:backup/local_folder"},
+		},
+	})
+
+	engine := NewEngine(cfg, mockExec, nil)
+	ctx := context.Background()
+
+	err := engine.CreateAllDirectories(ctx, cfg, SyncOptions{})
+
+	require.NoError(t, err)
+}
+
+func TestCreateAllDirectories_BothSourceAndDestination(t *testing.T) {
+	mockExec := &mockMkdirExecutor{
+		results: []*rclone.Result{
+			{ExitCode: 0, Stdout: "", Stderr: ""},
+			{ExitCode: 0, Stdout: "", Stderr: ""},
+		},
+	}
+
+	cfg := config.NewConfig()
+	cfg.AddProvider("gdrive", config.PathMap{
+		"source_folder": []config.Destination{
+			{To: "s3:backup/source_folder"},
+		},
+	})
+
+	engine := NewEngine(cfg, mockExec, nil)
+	ctx := context.Background()
+
+	err := engine.CreateAllDirectories(ctx, cfg, SyncOptions{})
+
+	require.NoError(t, err)
+	require.Equal(t, 2, mockExec.index, "should call mkdir for both source and destination")
 }

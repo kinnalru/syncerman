@@ -8,50 +8,71 @@ import (
 	"strings"
 )
 
-// CreateDestinationDirectories creates all destination directories from configuration.
-// It identifies unique destination paths and attempts to create them.
+// CreateAllDirectories creates all source and destination directories from configuration.
+// It identifies unique source and destination paths and attempts to create them.
 // Already-existing directories are handled gracefully (not an error).
-func (e *Engine) CreateDestinationDirectories(ctx context.Context, config *config.Config, options SyncOptions) error {
+// For local provider, directory creation is skipped as rclone cannot create local directories.
+func (e *Engine) CreateAllDirectories(ctx context.Context, config *config.Config, options SyncOptions) error {
 	targets, err := e.ExpandTargets(config)
 	if err != nil {
 		return fmt.Errorf("failed to expand targets for directory creation: %w", err)
 	}
 
-	uniquePaths := make(map[string]struct{})
+	sourcePaths := make(map[string]struct{})
+	destPaths := make(map[string]struct{})
+
 	for _, target := range targets {
-		uniquePaths[target.Destination.To] = struct{}{}
+		sourceRemote := FormatRemote(target.Provider, target.SourcePath)
+		if target.Provider != localProvider {
+			sourcePaths[sourceRemote] = struct{}{}
+		}
+		destPaths[target.Destination.To] = struct{}{}
 	}
 
-	if len(uniquePaths) == 0 {
-		e.logger.Info("No destinations to create")
+	totalPaths := len(sourcePaths) + len(destPaths)
+	if totalPaths == 0 {
+		e.logger.Info("No directories to create")
 		return nil
 	}
 
 	if options.DryRun || e.dryRun {
-		e.logger.Info("Ensuring %d destination directories exist (required by rclone even in dry-run mode)...", len(uniquePaths))
+		e.logger.Info("Ensuring %d directories exist (required by rclone even in dry-run mode)...", totalPaths)
 	} else {
-		e.logger.Info("Creating %d destination directories...", len(uniquePaths))
+		e.logger.Info("Creating %d directories...", totalPaths)
 	}
-	for path := range uniquePaths {
+
+	for path := range sourcePaths {
 		if e.logger != nil {
-			e.logger.Debug("Creating directory: %s", path)
+			e.logger.Debug("Creating source directory: %s", path)
 		}
 
 		err := rclone.Mkdir(ctx, e.rclone, path)
 		if err != nil {
-			e.logger.Error("Failed to create directory %s: %v", path, err)
-			return fmt.Errorf("failed to create directory %s: %w", path, err)
+			e.logger.Error("Failed to create source directory %s: %v", path, err)
+			return fmt.Errorf("failed to create source directory %s: %w", path, err)
 		}
 	}
 
-	e.logger.Info("Successfully created %d destination directories", len(uniquePaths))
+	for path := range destPaths {
+		if e.logger != nil {
+			e.logger.Debug("Creating destination directory: %s", path)
+		}
+
+		err := rclone.Mkdir(ctx, e.rclone, path)
+		if err != nil {
+			e.logger.Error("Failed to create destination directory %s: %v", path, err)
+			return fmt.Errorf("failed to create destination directory %s: %w", path, err)
+		}
+	}
+
+	e.logger.Info("Successfully created %d source and %d destination directories", len(sourcePaths), len(destPaths))
 	return nil
 }
 
 // Prepare performs pre-sync operations like directory creation.
 // This is part of the SyncEngine interface.
 func (e *Engine) Prepare(ctx context.Context, config *config.Config, options SyncOptions) error {
-	return e.CreateDestinationDirectories(ctx, config, options)
+	return e.CreateAllDirectories(ctx, config, options)
 }
 
 // mapKeys returns all keys from a map as a slice.
