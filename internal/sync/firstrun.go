@@ -36,8 +36,6 @@ func NewFirstRunHandler(maxRetries int, log Logger) *FirstRunHandler {
 func (h *FirstRunHandler) Handle(ctx context.Context, exec rclone.Executor, args *rclone.BisyncArgs) (*rclone.Result, int, error) {
 	retries := 0
 
-	h.logger.Command(args.String())
-
 	for {
 		cmdResult, err := exec.Run(ctx, args.Build()...)
 
