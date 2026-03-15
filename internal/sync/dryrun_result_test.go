@@ -13,9 +13,7 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestCollectResults_SuccessOnly(t *testing.T) {
-	engine := NewEngine(nil, nil, nil)
-
+func TestNewReport_SuccessOnly(t *testing.T) {
 	results := []*SyncResult{
 		{
 			Target:     SyncTarget{Provider: "gdrive", SourcePath: "docs", Destination: config.Destination{To: "s3:backup/docs"}},
@@ -33,7 +31,7 @@ func TestCollectResults_SuccessOnly(t *testing.T) {
 		},
 	}
 
-	report := engine.CollectResults(results)
+	report := NewReport(results)
 
 	assert.Equal(t, 2, report.TotalTargets)
 	assert.Equal(t, 2, report.SuccessCount)
@@ -43,9 +41,7 @@ func TestCollectResults_SuccessOnly(t *testing.T) {
 	assert.Equal(t, 0, report.ExitCode)
 }
 
-func TestCollectResults_WithFailures(t *testing.T) {
-	engine := NewEngine(nil, nil, nil)
-
+func TestNewReport_WithFailures(t *testing.T) {
 	results := []*SyncResult{
 		{
 			Target:     SyncTarget{Provider: "gdrive", SourcePath: "docs", Destination: config.Destination{To: "s3:backup/docs"}},
@@ -63,7 +59,7 @@ func TestCollectResults_WithFailures(t *testing.T) {
 		},
 	}
 
-	report := engine.CollectResults(results)
+	report := NewReport(results)
 
 	assert.Equal(t, 2, report.TotalTargets)
 	assert.Equal(t, 1, report.SuccessCount)
@@ -73,8 +69,7 @@ func TestCollectResults_WithFailures(t *testing.T) {
 	assert.Equal(t, 1, report.ExitCode)
 }
 
-func TestCollectResults_WithFirstRun(t *testing.T) {
-	engine := NewEngine(nil, nil, nil)
+func TestNewReport_WithFirstRun(t *testing.T) {
 
 	results := []*SyncResult{
 		{
@@ -93,7 +88,7 @@ func TestCollectResults_WithFirstRun(t *testing.T) {
 		},
 	}
 
-	report := engine.CollectResults(results)
+	report := NewReport(results)
 
 	assert.Equal(t, 2, report.TotalTargets)
 	assert.Equal(t, 2, report.SuccessCount)
@@ -103,8 +98,7 @@ func TestCollectResults_WithFirstRun(t *testing.T) {
 	assert.Equal(t, 0, report.ExitCode)
 }
 
-func TestCollectResults_NilValues(t *testing.T) {
-	engine := NewEngine(nil, nil, nil)
+func TestNewReport_NilValues(t *testing.T) {
 
 	results := []*SyncResult{
 		{
@@ -124,14 +118,13 @@ func TestCollectResults_NilValues(t *testing.T) {
 		},
 	}
 
-	report := engine.CollectResults(results)
+	report := NewReport(results)
 
 	assert.Equal(t, 2, report.TotalTargets)
 	assert.Equal(t, 2, report.SuccessCount)
 }
 
 func TestReportFormat_NonVerbose(t *testing.T) {
-	engine := NewEngine(nil, nil, nil)
 
 	results := []*SyncResult{
 		{
@@ -143,7 +136,7 @@ func TestReportFormat_NonVerbose(t *testing.T) {
 		},
 	}
 
-	report := engine.CollectResults(results)
+	report := NewReport(results)
 	output := report.Format(false)
 
 	assert.Contains(t, output, "=== Sync Summary ===")
@@ -154,7 +147,6 @@ func TestReportFormat_NonVerbose(t *testing.T) {
 }
 
 func TestReportFormat_Verbose(t *testing.T) {
-	engine := NewEngine(nil, nil, nil)
 
 	results := []*SyncResult{
 		{
@@ -166,7 +158,7 @@ func TestReportFormat_Verbose(t *testing.T) {
 		},
 	}
 
-	report := engine.CollectResults(results)
+	report := NewReport(results)
 	output := report.Format(true)
 
 	assert.Contains(t, output, "=== Sync Summary ===")
@@ -175,7 +167,6 @@ func TestReportFormat_Verbose(t *testing.T) {
 }
 
 func TestReportFormat_VerboseWithFailures(t *testing.T) {
-	engine := NewEngine(nil, nil, nil)
 
 	results := []*SyncResult{
 		{
@@ -194,7 +185,7 @@ func TestReportFormat_VerboseWithFailures(t *testing.T) {
 		},
 	}
 
-	report := engine.CollectResults(results)
+	report := NewReport(results)
 	output := report.Format(true)
 
 	assert.Contains(t, output, "=== Failed Targets ===")
@@ -203,7 +194,6 @@ func TestReportFormat_VerboseWithFailures(t *testing.T) {
 }
 
 func TestReportFormat_VerboseWithFirstRun(t *testing.T) {
-	engine := NewEngine(nil, nil, nil)
 
 	results := []*SyncResult{
 		{
@@ -215,7 +205,7 @@ func TestReportFormat_VerboseWithFirstRun(t *testing.T) {
 		},
 	}
 
-	report := engine.CollectResults(results)
+	report := NewReport(results)
 	output := report.Format(true)
 
 	assert.Contains(t, output, "=== First-Runs ===")
@@ -223,7 +213,6 @@ func TestReportFormat_VerboseWithFirstRun(t *testing.T) {
 }
 
 func TestReportFormatError_NoErrors(t *testing.T) {
-	engine := NewEngine(nil, nil, nil)
 
 	results := []*SyncResult{
 		{
@@ -235,14 +224,13 @@ func TestReportFormatError_NoErrors(t *testing.T) {
 		},
 	}
 
-	report := engine.CollectResults(results)
+	report := NewReport(results)
 	errMsg := report.FormatError()
 
 	assert.Equal(t, "sync completed successfully", errMsg)
 }
 
 func TestReportFormatError_WithErrors(t *testing.T) {
-	engine := NewEngine(nil, nil, nil)
 
 	results := []*SyncResult{
 		{
@@ -261,7 +249,7 @@ func TestReportFormatError_WithErrors(t *testing.T) {
 		},
 	}
 
-	report := engine.CollectResults(results)
+	report := NewReport(results)
 	errMsg := report.FormatError()
 
 	assert.Contains(t, errMsg, "sync failed with 2 error(s)")
@@ -270,7 +258,6 @@ func TestReportFormatError_WithErrors(t *testing.T) {
 }
 
 func TestCalculateExitCode_Success(t *testing.T) {
-	engine := NewEngine(nil, nil, nil)
 
 	results := []*SyncResult{
 		{
@@ -282,13 +269,12 @@ func TestCalculateExitCode_Success(t *testing.T) {
 		},
 	}
 
-	report := engine.CollectResults(results)
+	report := NewReport(results)
 
 	assert.Equal(t, 0, report.ExitCode)
 }
 
 func TestCalculateExitCode_Failure(t *testing.T) {
-	engine := NewEngine(nil, nil, nil)
 
 	results := []*SyncResult{
 		{
@@ -300,13 +286,12 @@ func TestCalculateExitCode_Failure(t *testing.T) {
 		},
 	}
 
-	report := engine.CollectResults(results)
+	report := NewReport(results)
 
 	assert.Equal(t, 1, report.ExitCode)
 }
 
 func TestCalculateExitCode_FirstRunNoFailure(t *testing.T) {
-	engine := NewEngine(nil, nil, nil)
 
 	results := []*SyncResult{
 		{
@@ -318,13 +303,12 @@ func TestCalculateExitCode_FirstRunNoFailure(t *testing.T) {
 		},
 	}
 
-	report := engine.CollectResults(results)
+	report := NewReport(results)
 
 	assert.Equal(t, 0, report.ExitCode)
 }
 
 func TestHasErrorsField_True(t *testing.T) {
-	engine := NewEngine(nil, nil, nil)
 
 	results := []*SyncResult{
 		{
@@ -336,12 +320,11 @@ func TestHasErrorsField_True(t *testing.T) {
 		},
 	}
 
-	report := engine.CollectResults(results)
+	report := NewReport(results)
 	assert.True(t, report.HasErrors)
 }
 
 func TestHasErrorsField_False(t *testing.T) {
-	engine := NewEngine(nil, nil, nil)
 
 	results := []*SyncResult{
 		{
@@ -353,7 +336,7 @@ func TestHasErrorsField_False(t *testing.T) {
 		},
 	}
 
-	report := engine.CollectResults(results)
+	report := NewReport(results)
 	assert.False(t, report.HasErrors)
 }
 

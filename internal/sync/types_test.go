@@ -114,7 +114,7 @@ func TestCreateAllDirectories_AllFailureScenarios(t *testing.T) {
 				})
 			}
 
-			engine := NewEngine(cfg, mockExec, nil)
+			engine := NewEngine(cfg, mockExec, &mockLogger{})
 			ctx := context.Background()
 			err := engine.CreateAllDirectories(ctx, cfg, SyncOptions{})
 

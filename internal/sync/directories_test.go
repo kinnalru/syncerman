@@ -53,7 +53,7 @@ func TestCreateAllDirectories_Success(t *testing.T) {
 		},
 	})
 
-	engine := NewEngine(cfg, mockExec, nil)
+	engine := NewEngine(cfg, mockExec, &mockLogger{})
 	ctx := context.Background()
 
 	err := engine.CreateAllDirectories(ctx, cfg, SyncOptions{})
@@ -71,7 +71,7 @@ func TestCreateAllDirectories_DryRun(t *testing.T) {
 		},
 	})
 
-	engine := NewEngine(cfg, mockExec, nil)
+	engine := NewEngine(cfg, mockExec, &mockLogger{})
 	ctx := context.Background()
 
 	err := engine.CreateAllDirectories(ctx, cfg, SyncOptions{DryRun: true})
@@ -99,7 +99,7 @@ func TestCreateAllDirectories_Error(t *testing.T) {
 		},
 	})
 
-	engine := NewEngine(cfg, mockExec, nil)
+	engine := NewEngine(cfg, mockExec, &mockLogger{})
 	ctx := context.Background()
 
 	err := engine.CreateAllDirectories(ctx, cfg, SyncOptions{})
@@ -113,43 +113,12 @@ func TestCreateAllDirectories_NoDestinations(t *testing.T) {
 
 	cfg := config.NewConfig()
 
-	engine := NewEngine(cfg, mockExec, nil)
+	engine := NewEngine(cfg, mockExec, &mockLogger{})
 	ctx := context.Background()
 
 	err := engine.CreateAllDirectories(ctx, cfg, SyncOptions{})
 
 	assert.Error(t, err)
-}
-
-func TestExtractDestinationPathFromTo(t *testing.T) {
-	tests := []struct {
-		to   string
-		want string
-	}{
-		{
-			to:   "gdrive:docs",
-			want: "docs",
-		},
-		{
-			to:   "/local/path",
-			want: "/local/path",
-		},
-		{
-			to:   "s3:bucket/path/to/file",
-			want: "bucket/path/to/file",
-		},
-		{
-			to:   "invalid format without colon",
-			want: "invalid format without colon",
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.to, func(t *testing.T) {
-			got := ExtractDestinationPathFromTo(tt.to)
-			assert.Equal(t, tt.want, got)
-		})
-	}
 }
 
 func TestValidateDestinationPaths_Valid(t *testing.T) {
@@ -166,7 +135,7 @@ func TestValidateDestinationPaths_Valid(t *testing.T) {
 		},
 	}
 
-	engine := NewEngine(nil, nil, nil)
+	engine := NewEngine(nil, nil, &mockLogger{})
 	err := engine.ValidateDestinationPaths(targets)
 
 	require.NoError(t, err)
@@ -181,7 +150,7 @@ func TestValidateDestinationPaths_InvalidFormat(t *testing.T) {
 		},
 	}
 
-	engine := NewEngine(nil, nil, nil)
+	engine := NewEngine(nil, nil, &mockLogger{})
 	err := engine.ValidateDestinationPaths(targets)
 
 	require.Error(t, err)
@@ -197,7 +166,7 @@ func TestValidateDestinationPaths_EmptyProvider(t *testing.T) {
 		},
 	}
 
-	engine := NewEngine(nil, nil, nil)
+	engine := NewEngine(nil, nil, &mockLogger{})
 	err := engine.ValidateDestinationPaths(targets)
 
 	require.Error(t, err)
@@ -218,7 +187,7 @@ func TestPrepare_Directories(t *testing.T) {
 		},
 	})
 
-	engine := NewEngine(cfg, mockExec, nil)
+	engine := NewEngine(cfg, mockExec, &mockLogger{})
 	ctx := context.Background()
 
 	err := engine.Prepare(ctx, cfg, SyncOptions{})
@@ -236,7 +205,7 @@ func TestCreateAllDirectories_DryRunViaEngine(t *testing.T) {
 		},
 	})
 
-	engine := NewEngine(cfg, mockExec, nil)
+	engine := NewEngine(cfg, mockExec, &mockLogger{})
 	engine.SetDryRun(true)
 	ctx := context.Background()
 
@@ -260,7 +229,7 @@ func TestCreateAllDirectories_CreatesSourceDirectories(t *testing.T) {
 		},
 	})
 
-	engine := NewEngine(cfg, mockExec, nil)
+	engine := NewEngine(cfg, mockExec, &mockLogger{})
 	ctx := context.Background()
 
 	err := engine.CreateAllDirectories(ctx, cfg, SyncOptions{})
@@ -283,7 +252,7 @@ func TestCreateAllDirectories_CreatesLocalSource(t *testing.T) {
 		},
 	})
 
-	engine := NewEngine(cfg, mockExec, nil)
+	engine := NewEngine(cfg, mockExec, &mockLogger{})
 	ctx := context.Background()
 
 	err := engine.CreateAllDirectories(ctx, cfg, SyncOptions{})
@@ -307,7 +276,7 @@ func TestCreateAllDirectories_BothSourceAndDestination(t *testing.T) {
 		},
 	})
 
-	engine := NewEngine(cfg, mockExec, nil)
+	engine := NewEngine(cfg, mockExec, &mockLogger{})
 	ctx := context.Background()
 
 	err := engine.CreateAllDirectories(ctx, cfg, SyncOptions{})

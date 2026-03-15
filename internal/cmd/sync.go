@@ -73,7 +73,7 @@ func syncAllTargets(ctx context.Context, engine *sync.Engine, cfg *config.Config
 
 	results, err := engine.RunAll(ctx, cfg, opts)
 	if err != nil {
-		report := engine.CollectResults(results)
+		report := sync.NewReport(results)
 		if !opts.Quiet {
 			log.Error("%s", report.FormatError())
 		}
@@ -84,7 +84,7 @@ func syncAllTargets(ctx context.Context, engine *sync.Engine, cfg *config.Config
 }
 
 func reportResults(engine *sync.Engine, results []*sync.SyncResult, opts sync.SyncOptions, log *logger.ConsoleLogger) error {
-	report := engine.CollectResults(results)
+	report := sync.NewReport(results)
 	if opts.Verbose || !opts.Quiet {
 		log.Info("%s", report.Format(opts.Verbose))
 	}

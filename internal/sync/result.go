@@ -24,12 +24,10 @@ type SyncReport struct {
 	Errors           []error      // Collection of errors from failed syncs
 }
 
-func (e *Engine) CollectResults(results []*SyncResult) *SyncReport {
+func collectResults(results []*SyncResult) *SyncReport {
 	nonNilResults := filterNilResults(results)
-
 	report := newEmptyReport()
 	report.TotalTargets = len(nonNilResults)
-
 	for _, result := range nonNilResults {
 		if result.Success {
 			report.SuccessCount++
@@ -42,17 +40,18 @@ func (e *Engine) CollectResults(results []*SyncResult) *SyncReport {
 			report.FailureCount++
 			report.FailedTargets = append(report.FailedTargets, result.Target)
 			report.HasErrors = true
-
 			if result.Error != nil {
 				report.Errors = append(report.Errors, fmt.Errorf("target %s:%s -> %s: %v",
 					result.Target.Provider, result.Target.SourcePath, result.Target.Destination.To, result.Error))
 			}
 		}
 	}
-
 	report.ExitCode = report.calculateExitCode()
-
 	return report
+}
+
+func (e *Engine) CollectResults(results []*SyncResult) *SyncReport {
+	return collectResults(results)
 }
 
 // calculateExitCode determines the appropriate exit code based on sync results.
@@ -126,13 +125,11 @@ func (r *SyncReport) FormatError() string {
 	if !r.HasErrors {
 		return "sync completed successfully"
 	}
-	return fmt.Sprintf("sync failed with %d error(s):\n%s", r.FailureCount, joinErrors(r.Errors, "\n---\n"))
+	return fmt.Sprintf("sync failed with %d error(s):\n%s", r.FailureCount, joinErrorMessages(r.Errors, "\n---\n"))
 }
 
-// NewReport creates a new SyncReport from sync results.
 func NewReport(results []*SyncResult) *SyncReport {
-	engine := NewEngine(nil, nil, nil)
-	return engine.CollectResults(results)
+	return collectResults(results)
 }
 
 func newEmptyReport() *SyncReport {
@@ -174,15 +171,4 @@ func filterNilResults(results []*SyncResult) []*SyncResult {
 		}
 	}
 	return nonNil
-}
-
-func joinErrors(errors []error, separator string) string {
-	if len(errors) == 0 {
-		return ""
-	}
-	strs := make([]string, len(errors))
-	for i, err := range errors {
-		strs[i] = err.Error()
-	}
-	return strings.Join(strs, separator)
 }

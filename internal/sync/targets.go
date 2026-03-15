@@ -209,11 +209,3 @@ func StripProviderHash(path string) string {
 
 	return path
 }
-
-// NormalizeOutputPaths removes provider hash suffixes from all paths in output text.
-// Pattern matches: provider{ALPHANUMERIC_HASH}:any_path anywhere in the text.
-// Returns output with all paths normalized to provider:any_path format.
-func NormalizeOutputPaths(output string) string {
-	re := regexp.MustCompile(`(\w+)\{[A-Za-z0-9]+\}(:[^\\s\\n]+)`)
-	return re.ReplaceAllString(output, "${1}${2}")
-}

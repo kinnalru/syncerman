@@ -3,7 +3,6 @@ package sync
 import (
 	"context"
 	"fmt"
-	"strings"
 
 	"gitlab.com/kinnalru/syncerman/internal/config"
 	"gitlab.com/kinnalru/syncerman/internal/rclone"
@@ -29,20 +28,14 @@ func (e *Engine) CreateAllDirectories(ctx context.Context, config *config.Config
 
 	totalPaths := len(sourcePaths) + len(destPaths)
 	if totalPaths == 0 {
-		if e.logger != nil {
-			e.logger.Info("No directories to create")
-		}
+		e.logger.Info("No directories to create")
 		return nil
 	}
 
 	if options.DryRun || e.dryRun {
-		if e.logger != nil {
-			e.logger.Info("Ensuring %d directories exist (required by rclone even in dry-run mode)...", totalPaths)
-		}
+		e.logger.Info("Ensuring %d directories exist (required by rclone even in dry-run mode)...", totalPaths)
 	} else {
-		if e.logger != nil {
-			e.logger.Info("Creating %d directories...", totalPaths)
-		}
+		e.logger.Info("Creating %d directories...", totalPaths)
 	}
 
 	if err := e.createDirectories(ctx, sourcePaths, "source"); err != nil {
@@ -53,9 +46,7 @@ func (e *Engine) CreateAllDirectories(ctx context.Context, config *config.Config
 		return err
 	}
 
-	if e.logger != nil {
-		e.logger.Info("Successfully created %d source and %d destination directories", len(sourcePaths), len(destPaths))
-	}
+	e.logger.Info("Successfully created %d source and %d destination directories", len(sourcePaths), len(destPaths))
 	return nil
 }
 
@@ -65,31 +56,12 @@ func (e *Engine) Prepare(ctx context.Context, config *config.Config, options Syn
 	return e.CreateAllDirectories(ctx, config, options)
 }
 
-// ExtractDestinationPathFromTo extracts the destination path from 'to' field.
-// Handles both 'provider:path' and '/path' formats.
-// For remote paths, returns the path portion after the colon.
-// For local paths, returns the path as-is.
-func ExtractDestinationPathFromTo(to string) string {
-	if strings.Contains(to, remoteDelimiter) {
-		// Split on first colon only to handle paths that might contain colons
-		parts := strings.SplitN(to, remoteDelimiter, remoteSplitCount)
-		if len(parts) == remoteSplitCount {
-			return parts[1]
-		}
-	}
-	return to
-}
-
 func (e *Engine) createDirectories(ctx context.Context, paths map[string]struct{}, dirType string) error {
 	for path := range paths {
-		if e.logger != nil {
-			e.logger.Debug("Creating %s directory: %s", dirType, path)
-		}
+		e.logger.Debug("Creating %s directory: %s", dirType, path)
 
 		if err := rclone.Mkdir(ctx, e.rclone, path); err != nil {
-			if e.logger != nil {
-				e.logger.Error("Failed to create %s directory %s: %v", dirType, path, err)
-			}
+			e.logger.Error("Failed to create %s directory %s: %v", dirType, path, err)
 			return fmt.Errorf("failed to create %s directory %s: %w", dirType, path, err)
 		}
 	}

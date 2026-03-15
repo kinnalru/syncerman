@@ -24,7 +24,7 @@
 //	cfg := config.LoadConfig("syncerman.yaml")
 //	results, err := engine.RunAll(ctx, cfg, sync.SyncOptions{})
 //	if len(results) > 0 {
-//	    report := engine.CollectResults(results)
+//	    report := sync.NewReport(results)
 //	    fmt.Println(report.Format(true))
 //	}
 //
