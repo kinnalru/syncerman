@@ -7,14 +7,6 @@ variables:
   GO_VERSION: "1.25.5"
   BINARY_NAME: "syncerman"
 
-# Read VERSION file for version information
-.version: &version
-  VERSION: $(cat VERSION 2>/dev/null || echo "dev")
-  GIT_COMMIT: ${CI_COMMIT_SHORT_SHA}
-  BUILD_TIME: $(date -u +"%Y-%m-%dT%H:%M:%SZ")
-  GO_VERSION_CI: $(go version | awk '{print $3}')
-  LDFLAGS: "-s -w -X gitlab.com/kinnalru/syncerman/internal/version.Version=${VERSION} -X gitlab.com/kinnalru/syncerman/internal/version.GitCommit=${GIT_COMMIT} -X gitlab.com/kinnalru/syncerman/internal/version.BuildTime=${BUILD_TIME} -X gitlab.com/kinnalru/syncerman/internal/version.GoVersion=${GO_VERSION_CI}"
-
 test:
   image: golang:${GO_VERSION}
   stage: test
@@ -36,8 +28,6 @@ build:linux:
     key: ${CI_COMMIT_REF_SLUG}
     paths:
       - vendor/
-  variables:
-    <<: *version
   script:
     - go mod download
     - VERSION=$(cat VERSION 2>/dev/null || echo "dev")
@@ -61,8 +51,6 @@ build:windows:
     key: ${CI_COMMIT_REF_SLUG}
     paths:
       - vendor/
-  variables:
-    <<: *version
   script:
     - go mod download
     - VERSION=$(cat VERSION 2>/dev/null || echo "dev")
