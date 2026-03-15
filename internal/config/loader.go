@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"os"
 
-	"syncerman/internal/errors"
+	"gitlab.com/kinnalru/syncerman/internal/errors"
 
 	"gopkg.in/yaml.v3"
 )

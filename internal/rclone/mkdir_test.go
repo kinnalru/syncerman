@@ -6,7 +6,7 @@ import (
 	"testing"
 	"time"
 
-	"syncerman/internal/logger"
+	"gitlab.com/kinnalru/syncerman/internal/logger"
 )
 
 func TestMkdir(t *testing.T) {

@@ -7,8 +7,8 @@ import (
 	"testing"
 	"time"
 
-	syncerman_errors "syncerman/internal/errors"
-	"syncerman/internal/logger"
+	syncerman_errors "gitlab.com/kinnalru/syncerman/internal/errors"
+	"gitlab.com/kinnalru/syncerman/internal/logger"
 )
 
 func TestResult_Success(t *testing.T) {

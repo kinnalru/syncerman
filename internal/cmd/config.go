@@ -3,7 +3,7 @@ package cmd
 import (
 	"os"
 
-	"syncerman/internal/config"
+	"gitlab.com/kinnalru/syncerman/internal/config"
 )
 
 func loadAndValidateConfig() (*config.Config, error) {

@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"strings"
 
-	"syncerman/internal/errors"
+	"gitlab.com/kinnalru/syncerman/internal/errors"
 )
 
 // Validate performs comprehensive validation of the configuration structure.

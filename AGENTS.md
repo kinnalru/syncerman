@@ -13,7 +13,7 @@ This document provides guidelines for autonomous coding agents working on this r
 
 ## Technology Stack
 
-- **Language**: Go 1.21+
+- **Language**: Go 1.25.5+
 - **Configuration Format**: YAML
 - **Sync Execution**: Direct exec.Command (rclone binary)
 

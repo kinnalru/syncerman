@@ -3,7 +3,7 @@ package sync
 import (
 	"context"
 
-	"syncerman/internal/rclone"
+	"gitlab.com/kinnalru/syncerman/internal/rclone"
 )
 
 type mockExecutor struct {

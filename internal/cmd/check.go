@@ -3,8 +3,8 @@ package cmd
 import (
 	"fmt"
 
-	"syncerman/internal/rclone"
-	"syncerman/internal/sync"
+	"gitlab.com/kinnalru/syncerman/internal/rclone"
+	"gitlab.com/kinnalru/syncerman/internal/sync"
 
 	"github.com/spf13/cobra"
 )

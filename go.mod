@@ -1,4 +1,4 @@
-module syncerman
+module gitlab.com/kinnalru/syncerman
 
 go 1.25.5
 

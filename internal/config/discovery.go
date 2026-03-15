@@ -5,7 +5,7 @@ import (
 	"os"
 	"path/filepath"
 
-	"syncerman/internal/errors"
+	"gitlab.com/kinnalru/syncerman/internal/errors"
 )
 
 const defaultConfigName = ".syncerman.yml"

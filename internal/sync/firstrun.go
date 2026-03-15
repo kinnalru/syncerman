@@ -4,7 +4,7 @@ import (
 	"context"
 	"fmt"
 
-	"syncerman/internal/rclone"
+	"gitlab.com/kinnalru/syncerman/internal/rclone"
 )
 
 const (

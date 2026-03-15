@@ -5,7 +5,7 @@ import (
 	"testing"
 	"time"
 
-	"syncerman/internal/logger"
+	"gitlab.com/kinnalru/syncerman/internal/logger"
 )
 
 func TestIntegration_EndToEnd_RcloneDetection(t *testing.T) {

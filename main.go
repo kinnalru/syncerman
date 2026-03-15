@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"os"
 
-	"syncerman/internal/cmd"
+	"gitlab.com/kinnalru/syncerman/internal/cmd"
 )
 
 func main() {

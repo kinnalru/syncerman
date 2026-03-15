@@ -6,7 +6,7 @@ import (
 	"strings"
 	"testing"
 
-	"syncerman/internal/errors"
+	"gitlab.com/kinnalru/syncerman/internal/errors"
 )
 
 func TestNewConfig(t *testing.T) {

@@ -4,10 +4,10 @@ import (
 	"context"
 	"fmt"
 
-	"syncerman/internal/config"
-	"syncerman/internal/logger"
-	"syncerman/internal/rclone"
-	"syncerman/internal/sync"
+	"gitlab.com/kinnalru/syncerman/internal/config"
+	"gitlab.com/kinnalru/syncerman/internal/logger"
+	"gitlab.com/kinnalru/syncerman/internal/rclone"
+	"gitlab.com/kinnalru/syncerman/internal/sync"
 
 	"github.com/spf13/cobra"
 )

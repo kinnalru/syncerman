@@ -6,7 +6,7 @@ import (
 	"os"
 	"time"
 
-	"syncerman/internal/logger"
+	"gitlab.com/kinnalru/syncerman/internal/logger"
 
 	"github.com/spf13/cobra"
 )

@@ -2,8 +2,8 @@ package sync
 
 import (
 	"context"
-	"syncerman/internal/config"
-	"syncerman/internal/rclone"
+	"gitlab.com/kinnalru/syncerman/internal/config"
+	"gitlab.com/kinnalru/syncerman/internal/rclone"
 )
 
 // SyncTarget represents a single synchronization operation between source and destinations.

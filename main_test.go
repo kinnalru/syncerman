@@ -4,7 +4,7 @@ import (
 	"os"
 	"testing"
 
-	"syncerman/internal/cmd"
+	"gitlab.com/kinnalru/syncerman/internal/cmd"
 )
 
 func TestRunIntegration(t *testing.T) {

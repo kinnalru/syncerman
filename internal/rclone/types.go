@@ -7,8 +7,8 @@ import (
 	"os/exec"
 	"strings"
 
-	syncerman_errors "syncerman/internal/errors"
-	"syncerman/internal/logger"
+	syncerman_errors "gitlab.com/kinnalru/syncerman/internal/errors"
+	"gitlab.com/kinnalru/syncerman/internal/logger"
 )
 
 // Config holds rclone command configuration for executing rclone commands.

@@ -3,9 +3,9 @@ package sync
 import (
 	"context"
 	"fmt"
+	"gitlab.com/kinnalru/syncerman/internal/config"
+	"gitlab.com/kinnalru/syncerman/internal/rclone"
 	"strings"
-	"syncerman/internal/config"
-	"syncerman/internal/rclone"
 )
 
 // CreateDestinationDirectories creates all destination directories from configuration.

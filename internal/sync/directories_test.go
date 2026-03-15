@@ -4,8 +4,8 @@ import (
 	"context"
 	"testing"
 
-	"syncerman/internal/config"
-	"syncerman/internal/rclone"
+	"gitlab.com/kinnalru/syncerman/internal/config"
+	"gitlab.com/kinnalru/syncerman/internal/rclone"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"

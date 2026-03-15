@@ -3,8 +3,8 @@ package sync
 import (
 	"context"
 	"fmt"
-	"syncerman/internal/config"
-	"syncerman/internal/rclone"
+	"gitlab.com/kinnalru/syncerman/internal/config"
+	"gitlab.com/kinnalru/syncerman/internal/rclone"
 )
 
 // RunSync executes a single sync operation for the given target.

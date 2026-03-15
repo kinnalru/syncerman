@@ -7,7 +7,7 @@ import (
 	"strings"
 	"testing"
 
-	"syncerman/internal/logger"
+	"gitlab.com/kinnalru/syncerman/internal/logger"
 )
 
 func TestListRemotes(t *testing.T) {
