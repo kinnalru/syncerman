@@ -39,6 +39,7 @@ func (ve ValidationErrors) Error() string {
 // ValidateTargets checks that all providers and paths in config are valid.
 // It verifies that providers exist in rclone configuration and paths are configured.
 // Validates each provider by querying rclone, except for 'local' which is always valid.
+// Validates providers in the order they appear in the YAML configuration.
 func (e *Engine) ValidateTargets(ctx context.Context, config *config.Config) error {
 	var errs ValidationErrors
 
@@ -47,24 +48,25 @@ func (e *Engine) ValidateTargets(ctx context.Context, config *config.Config) err
 		return fmt.Errorf("no providers configured")
 	}
 
-	for provider := range providers {
-		if provider == "" {
+	for _, provider := range providers {
+		providerName := provider.Name
+		if providerName == "" {
 			errs = append(errs, fmt.Errorf("provider name cannot be empty"))
 			continue
 		}
 
-		if provider == localProvider {
+		if providerName == localProvider {
 			continue
 		}
 
-		exists, err := rclone.RemoteExists(ctx, e.rclone, provider)
+		exists, err := rclone.RemoteExists(ctx, e.rclone, providerName)
 		if err != nil {
-			errs = append(errs, fmt.Errorf("failed to verify provider %s: %w", provider, err))
+			errs = append(errs, fmt.Errorf("failed to verify provider %s: %w", providerName, err))
 			continue
 		}
 
 		if !exists {
-			errs = append(errs, fmt.Errorf("provider %s not found in rclone configuration", provider))
+			errs = append(errs, fmt.Errorf("provider %s not found in rclone configuration", providerName))
 		}
 	}
 
@@ -80,33 +82,37 @@ func (e *Engine) ValidateTargets(ctx context.Context, config *config.Config) err
 // Validates source paths and destination targets, but does not validate rclone provider existence.
 // Provider validation should be done separately using ValidateTargets().
 // Returns error if any target is invalid, along with all validation errors found.
+// Targets are returned in the exact order from YAML configuration.
 func (e *Engine) ExpandTargets(config *config.Config) ([]*SyncTarget, error) {
 	var targets []*SyncTarget
 	var errs ValidationErrors
 
 	providers := config.GetProviders()
 
-	for provider, pathMap := range providers {
+	for _, provider := range providers {
+		providerName := provider.Name
+		pathMap := provider.Data
+
 		for sourcePath, destinations := range pathMap {
 			if sourcePath == "" {
-				errs = append(errs, fmt.Errorf("source path cannot be empty for provider %s", provider))
+				errs = append(errs, fmt.Errorf("source path cannot be empty for provider %s", providerName))
 				continue
 			}
 
 			if len(destinations) == 0 {
-				errs = append(errs, fmt.Errorf("no destinations configured for %s:%s", provider, sourcePath))
+				errs = append(errs, fmt.Errorf("no destinations configured for %s:%s", providerName, sourcePath))
 				continue
 			}
 
 			// Create a sync target for each destination
 			for _, dest := range destinations {
 				if dest.To == "" {
-					errs = append(errs, fmt.Errorf("destination 'to' cannot be empty for %s:%s", provider, sourcePath))
+					errs = append(errs, fmt.Errorf("destination 'to' cannot be empty for %s:%s", providerName, sourcePath))
 					continue
 				}
 
 				target := &SyncTarget{
-					Provider:    provider,
+					Provider:    providerName,
 					SourcePath:  sourcePath,
 					Destination: dest,
 					Resync:      dest.Resync,

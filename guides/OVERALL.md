@@ -140,7 +140,7 @@ syncerman sync --dry-run
 1. Validates configuration file
 2. Verifies all rclone remotes are configured
 3. Creates destination directories if needed
-4. Sequentially runs rclone bisync for each target
+4. Sequentially runs rclone bisync for each target in YAML configuration order
 5. Handles first-run errors automatically
 
 #### `sync <provider>:<path> [flags]` - Sync Specific Target
@@ -360,6 +360,47 @@ Syncerman processes sync targets sequentially, not in parallel, to:
 - Maintain clear error tracking and reporting
 - Avoid overwhelming system resources
 - Simplify troubleshooting
+
+### Configuration Order Preservation
+
+Syncerman preserves the exact order of sync targets from the YAML configuration file, which is critical for linear synchronization chains.
+
+**Implementation Details:**
+- Ordered data structures preserve YAML configuration order
+- Targets execute in the exact sequence they appear in the configuration file
+- Order is maintained throughout the entire sync pipeline (configuration loading → target expansion → execution)
+
+**Why Order Matters:**
+Linear synchronization chains require precise execution order to propagate files correctly through multiple destinations:
+```
+Configuration:
+  local:      # Target 1: local → gd
+    '/data':
+      - to: 'gd:syncerman/data/'
+  gd:         # Target 2: gd → yd
+    'syncerman/data/':
+      - to: 'yd:syncerman/data/'
+  yd:         # Target 3: yd → local2
+    'syncerman/data/':
+      - to: '/backup/yd_backup/'
+
+Execution order (preserved from YAML):
+  1. local:/data → gd:syncerman/data/   (Initial sync)
+  2. gd:syncerman/data/ → yd:syncerman/data/   (Files from gd)
+  3. yd:syncerman/data/ → /backup/yd_backup/   (Files from yd)
+```
+
+Without order preservation, targets would execute randomly, causing:
+- Empty destinations in the chain
+- Files not propagating through the entire chain
+- State file corruption errors on subsequent syncs
+
+**Order-Guaranteed Methods:**
+- `Config.GetProviders()` returns providers in YAML order
+- `ExpandTargets()` returns targets configuration order
+- `RunAll()` executes targets in the exact order returned by ExpandTargets()
+
+All configuration examples in this documentation assume order preservation for correct behavior.
 
 ### Error Handling Strategy
 

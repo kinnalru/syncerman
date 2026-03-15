@@ -1,5 +1,69 @@
 package config
 
+import (
+	"fmt"
+
+	"gopkg.in/yaml.v3"
+)
+
+// ProviderWithKey preserves provider name and its path configuration.
+// This structure is used internally to maintain YAML ordering while
+// providing backward-compatible accessor methods.
+type ProviderWithKey struct {
+	Name string  `yaml:"-"`
+	Data PathMap `yaml:",inline"`
+}
+
+// OrderedProviders preserves provider order from YAML configuration.
+//
+// This type implements yaml.Unmarshaler to ensure that when YAML is loaded,
+// the providers are stored in the exact order they appear in the configuration file.
+// This is critical for linear synchronization chains where execution order matters.
+//
+// Example:
+//
+//	yamlData:
+//	  local:  # Should execute 1st
+//	    '/path': [...]
+//	  gd:     # Should execute 2nd
+//	    '/path': [...]
+//
+//	After unmarshaling, OrderedProviders preserves [local, gd] order
+type OrderedProviders []ProviderWithKey
+
+// UnmarshalYAML implements yaml.Unmarshaler to preserve provider order from YAML.
+//
+// It parses the YAML mapping node and extracts provider names in document order,
+// preserving the exact order from the configuration file. This ensures that
+// linear synchronization chains execute in the correct sequence.
+//
+// If the YAML node is not a mapping, an error is returned.
+// Provider configurations are decoded using the PathMap type.
+func (op *OrderedProviders) UnmarshalYAML(node *yaml.Node) error {
+	if node.Kind != yaml.MappingNode {
+		return fmt.Errorf("providers must be a mapping node")
+	}
+
+	*op = make(OrderedProviders, 0, len(node.Content)/2)
+
+	for i := 0; i < len(node.Content); i += 2 {
+		keyNode := node.Content[i]
+		valueNode := node.Content[i+1]
+
+		var provider PathMap
+		if err := valueNode.Decode(&provider); err != nil {
+			return fmt.Errorf("failed to decode provider %s: %w", keyNode.Value, err)
+		}
+
+		*op = append(*op, ProviderWithKey{
+			Name: keyNode.Value,
+			Data: provider,
+		})
+	}
+
+	return nil
+}
+
 // Destination represents a sync destination configuration.
 //
 // Destination specifies where a source file or directory should be synchronized to,
@@ -87,64 +151,91 @@ type ProviderMap map[string]PathMap
 
 // Config represents the main configuration structure for synchronization targets.
 //
-// The Providers field holds a map of provider names to their associated path configurations.
+// The Providers field holds an ordered list of provider names and their path configurations.
 // Each provider can have multiple source paths, and each path can have multiple destinations.
+//
+// The ordered list preserves the exact order from the YAML configuration file, which is
+// critical for linear synchronization chains where execution order matters.
 //
 // The Config structure is validated to ensure all providers have valid path configurations
 // before synchronization operations are performed.
 //
 // Use NewConfig() to create a new Config instance rather than creating one directly.
 type Config struct {
-	// Providers maps provider names to their path configurations.
+	// Providers holds providers in YAML configuration order.
 	// The yaml:"-" tag indicates that this field is not unmarshaled directly from YAML.
 	// Instead, the LoadConfig and LoadConfigFromData functions manually unmarshal the
-	// ProviderMap to properly handle nested structures and provide better error messages.
-	Providers ProviderMap `yaml:"-"`
+	// OrderedProviders to preserve configuration order and provide better error messages.
+	Providers OrderedProviders `yaml:"-"`
 }
 
 // NewConfig creates and returns a new Config instance.
 //
-// It initializes an empty Providers map, allowing providers to be added later
+// It initializes an empty Providers slice, allowing providers to be added later
 // using the AddProvider method.
 //
 // Returns:
 //   - *Config: A pointer to the newly created Config instance
 func NewConfig() *Config {
 	return &Config{
-		Providers: make(ProviderMap),
+		Providers: make(OrderedProviders, 0),
 	}
 }
 
 // AddProvider adds a provider with its paths to the configuration.
 //
-// If the Providers map is nil, it will be initialized before adding the provider.
+// If the Providers slice is nil, it will be initialized before adding the provider.
 // This method allows for dynamic configuration of providers and their associated paths.
+// The provider is appended to the end of the ordered list.
 //
 // Parameters:
 //   - name: The unique identifier for the provider
 //   - paths: A PathMap containing the source paths and their destinations for this provider
 func (c *Config) AddProvider(name string, paths PathMap) {
 	if c.Providers == nil {
-		c.Providers = make(ProviderMap)
+		c.Providers = make(OrderedProviders, 0)
 	}
-	c.Providers[name] = paths
+	c.Providers = append(c.Providers, ProviderWithKey{
+		Name: name,
+		Data: paths,
+	})
 }
 
-// GetProviders returns all configured providers.
+// GetProviders returns all configured providers in YAML order.
 //
-// This method provides access to the complete ProviderMap, which contains
-// all providers and their associated path configurations.
+// This method provides access to the complete list of providers, which contains
+// all providers and their associated path configurations in the exact order
+// they appear in the YAML configuration file. This is critical for linear
+// synchronization chains where execution order must match configuration order.
+//
+// Returns:
+//   - OrderedProviders: A slice of all providers with their PathMap configurations
+func (c *Config) GetProviders() OrderedProviders {
+	return c.Providers
+}
+
+// GetProvidersMap returns a legacy map of all configured providers.
+//
+// DEPRECATED: Use GetProviders() instead for order-preserving access.
+// This method is provided for backward compatibility only.
 //
 // Returns:
 //   - ProviderMap: A map of all provider names to their PathMap configurations
-func (c *Config) GetProviders() ProviderMap {
-	return c.Providers
+func (c *Config) GetProvidersMap() ProviderMap {
+	if c.Providers == nil {
+		return make(ProviderMap)
+	}
+	result := make(ProviderMap, len(c.Providers))
+	for _, provider := range c.Providers {
+		result[provider.Name] = provider.Data
+	}
+	return result
 }
 
 // GetPaths retrieves paths for a specific provider.
 //
 // This method looks up a provider by name and returns its associated path map.
-// If the provider does not exist or the Providers map is nil, it returns false
+// If the provider does not exist or the Providers slice is nil, it returns false
 // as the second return value.
 //
 // Parameters:
@@ -157,8 +248,12 @@ func (c *Config) GetPaths(provider string) (PathMap, bool) {
 	if c.Providers == nil {
 		return nil, false
 	}
-	paths, ok := c.Providers[provider]
-	return paths, ok
+	for _, p := range c.Providers {
+		if p.Name == provider {
+			return p.Data, true
+		}
+	}
+	return nil, false
 }
 
 // GetDestinations retrieves destinations for a specific provider and path.
@@ -185,7 +280,7 @@ func (c *Config) GetDestinations(provider string, path string) ([]Destination, b
 
 // countTotalTargets returns the total number of sync targets across all providers.
 //
-// This helper method iterates through the Providers map counting all destinations
+// This helper method iterates through the Providers slice counting all destinations
 // for each provider and path combination. It's used by GetAllDestinations to
 // pre-allocate the result slice for better performance.
 //
@@ -197,9 +292,9 @@ func (c *Config) countTotalTargets() int {
 	}
 
 	total := 0
-	for _, paths := range c.Providers {
-		for _, destinations := range paths {
-			total += len(destinations)
+	for _, provider := range c.Providers {
+		for _, paths := range provider.Data {
+			total += len(paths)
 		}
 	}
 	return total
@@ -211,14 +306,14 @@ func (c *Config) countTotalTargets() int {
 // for each path, building a flat list of SyncTarget objects representing every configured sync operation.
 //
 // The implementation maintains the nested structure by flattening it:
-//   - Level 1: Iterates through all providers in ProviderMap
+//   - Level 1: Iterates through all providers in OrderedProviders (preserves YAML order)
 //   - Level 2: For each provider, iterates through all source paths in PathMap
 //   - Level 3: For each source path, iterates through all destinations in the slice
 //
 // Returns:
 //   - []SyncTarget: A slice containing all configured sync targets. Each SyncTarget contains
 //     the source provider name, source path, and destination configuration. The order follows
-//     the iteration order of the underlying maps, which is not guaranteed to be stable.
+//     the YAML configuration order thanks to OrderedProviders.
 //
 // Example usage:
 //
@@ -233,11 +328,11 @@ func (c *Config) GetAllDestinations() []SyncTarget {
 	total := c.countTotalTargets()
 	targets := make([]SyncTarget, 0, total)
 
-	for provider, paths := range c.Providers {
-		for path, destinations := range paths {
+	for _, provider := range c.Providers {
+		for path, destinations := range provider.Data {
 			for _, dest := range destinations {
 				targets = append(targets, SyncTarget{
-					SourceProvider: provider,
+					SourceProvider: provider.Name,
 					SourcePath:     path,
 					Destination:    dest,
 				})

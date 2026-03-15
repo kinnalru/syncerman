@@ -431,3 +431,58 @@ func TestRunAll_DryRunViaEngine(t *testing.T) {
 	assert.Len(t, results, 1)
 	assert.True(t, results[0].Success)
 }
+
+func TestRunAll_PreservesConfigurationOrder(t *testing.T) {
+	mockExec := &mockExecutor{
+		results: []*rclone.Result{
+			{ExitCode: 0, Stdout: "synced local to gd", Stderr: ""},
+			{ExitCode: 0, Stdout: "synced gd to yd", Stderr: ""},
+			{ExitCode: 0, Stdout: "synced yd to local2", Stderr: ""},
+		},
+	}
+
+	log := &mockLogger{}
+	engine := NewEngine(nil, mockExec, log)
+
+	cfg := config.NewConfig()
+	cfg.AddProvider("local", config.PathMap{
+		"/path/to/local": []config.Destination{
+			{To: "gd:syncerman/scenario1/"},
+		},
+	})
+	cfg.AddProvider("gd", config.PathMap{
+		"syncerman/scenario1/": []config.Destination{
+			{To: "yd:syncerman/scenario1/"},
+		},
+	})
+	cfg.AddProvider("yd", config.PathMap{
+		"syncerman/scenario1/": []config.Destination{
+			{To: "/path/to/local2"},
+		},
+	})
+
+	ctx := context.Background()
+	results, err := engine.RunAll(ctx, cfg, SyncOptions{Verbose: false})
+
+	require.NoError(t, err)
+	assert.Len(t, results, 3)
+
+	expectedSequence := []struct {
+		provider string
+		path     string
+		dest     string
+	}{
+		{"local", "/path/to/local", "gd:syncerman/scenario1/"},
+		{"gd", "syncerman/scenario1/", "yd:syncerman/scenario1/"},
+		{"yd", "syncerman/scenario1/", "/path/to/local2"},
+	}
+
+	for i, expected := range expectedSequence {
+		if i >= len(results) {
+			t.Fatalf("Expected result at index %d, but only %d results returned", i, len(results))
+		}
+		assert.Equal(t, expected.provider, results[i].Target.Provider)
+		assert.Equal(t, expected.path, results[i].Target.SourcePath)
+		assert.Equal(t, expected.dest, results[i].Target.Destination.To)
+	}
+}

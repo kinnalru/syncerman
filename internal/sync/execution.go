@@ -58,7 +58,9 @@ func (e *Engine) RunSync(ctx context.Context, target SyncTarget, options SyncOpt
 }
 
 // RunAll executes all sync operations defined in the configuration.
-// It processes targets sequentially and stops on first error, returning all results so far.
+// It processes targets sequentially in YAML configuration order and stops on first error,
+// returning all results so far. The order of execution is guaranteed to match the
+// configuration file order thanks to ordered data structures.
 func (e *Engine) RunAll(ctx context.Context, config *config.Config, options SyncOptions) ([]*SyncResult, error) {
 	targets, err := e.ExpandTargets(config)
 	if err != nil {
@@ -70,6 +72,12 @@ func (e *Engine) RunAll(ctx context.Context, config *config.Config, options Sync
 	}
 
 	e.logger.Info("Starting sync for %d target(s)", len(targets))
+
+	e.logger.Debug("Execution order (preserving YAML configuration order):")
+	for i, target := range targets {
+		taskName := fmt.Sprintf("%s:%s → %s", target.Provider, target.SourcePath, StripProviderHash(target.Destination.To))
+		e.logger.Debug("  %d. %s", i+1, taskName)
+	}
 
 	results := make([]*SyncResult, len(targets))
 

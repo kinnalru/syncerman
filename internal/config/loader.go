@@ -29,9 +29,10 @@ import (
 //   - Configuration structure errors (invalid provider format)
 //
 // Implementation details:
-//   - Uses gopkg.in/yaml.v3 for YAML parsing
+//   - Uses gopkg.in/yaml.v3 for YAML parsing with order preservation
 //   - Reads file into memory before parsing
 //   - Creates a new Config instance and populates Providers field
+//   - Preserves exact YAML document order in the OrderedProviders slice
 //
 // Example usage:
 //
@@ -46,13 +47,13 @@ func LoadConfig(path string) (*Config, error) {
 		return nil, errors.NewConfigError(fmt.Sprintf("failed to read configuration file: %s", path), err)
 	}
 
-	providerMap, err := parseProviderMap(data)
+	providers, err := parseProviders(data)
 	if err != nil {
 		return nil, errors.NewConfigError(fmt.Sprintf("failed to parse configuration file: %s", path), err)
 	}
 
 	config := NewConfig()
-	config.Providers = providerMap
+	config.Providers = providers
 
 	return config, nil
 }
@@ -78,9 +79,10 @@ func LoadConfig(path string) (*Config, error) {
 //   - Configuration structure errors (invalid provider format)
 //
 // Implementation details:
-//   - Uses gopkg.in/yaml.v3 for YAML parsing
+//   - Uses gopkg.in/yaml.v3 for YAML parsing with order preservation
 //   - Creates a new Config instance and populates Providers field
 //   - Does not perform file I/O operations
+//   - Preserves exact YAML document order in the OrderedProviders slice
 //
 // Example usage:
 //
@@ -91,21 +93,21 @@ func LoadConfig(path string) (*Config, error) {
 //	}
 //	fmt.Printf("Loaded %d providers\n", len(config.Providers))
 func LoadConfigFromData(data []byte) (*Config, error) {
-	providerMap, err := parseProviderMap(data)
+	providers, err := parseProviders(data)
 	if err != nil {
 		return nil, errors.NewConfigError("failed to parse configuration data", err)
 	}
 
 	config := NewConfig()
-	config.Providers = providerMap
+	config.Providers = providers
 
 	return config, nil
 }
 
-func parseProviderMap(data []byte) (ProviderMap, error) {
-	var providerMap ProviderMap
-	if err := yaml.Unmarshal(data, &providerMap); err != nil {
+func parseProviders(data []byte) (OrderedProviders, error) {
+	var providers OrderedProviders
+	if err := yaml.Unmarshal(data, &providers); err != nil {
 		return nil, err
 	}
-	return providerMap, nil
+	return providers, nil
 }

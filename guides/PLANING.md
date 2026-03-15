@@ -107,7 +107,13 @@ Robust state management and error handling are critical for autonomous progress.
 
 ## 6. subagents spawning
 
+**When planing:**
 You MUST use tool with subagents → Use OpenCode's subagent system (@mention `@plan`)
+I should use the task tool with subagent_type set to "plan" and pass the task description.
+
+**When building/executing tasks:**
+You MUST use tool with subagents → Use OpenCode's subagent system (@mention `@build`)
+I should use the task tool with subagent_type set to "build" and pass the task description.
 
 
 ## 7. Persistant planing structure example:

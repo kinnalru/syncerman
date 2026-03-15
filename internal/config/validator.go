@@ -15,7 +15,7 @@ import (
 //     nil if the configuration is valid.
 //
 // Validation checks performed:
-//   - Configuration is not empty (Providers map must contain at least one entry)
+//   - Configuration is not empty (Providers slice must contain at least one entry)
 //   - Provider names are not empty
 //   - Providers have at least one path defined
 //   - Paths are not empty
@@ -34,7 +34,10 @@ func (c *Config) Validate() error {
 		return errors.NewValidationError("configuration is empty", nil)
 	}
 
-	for providerName, paths := range c.Providers {
+	for _, provider := range c.Providers {
+		providerName := provider.Name
+		paths := provider.Data
+
 		// Provider names must not be empty
 		if providerName == "" {
 			return errors.NewValidationError("provider name cannot be empty", nil)

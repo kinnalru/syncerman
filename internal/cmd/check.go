@@ -47,27 +47,28 @@ Examples:
 		log.Info("Configuration is valid")
 		providers := cfg.GetProviders()
 		log.Info("Found %d provider(s):", len(providers))
-		for provider, paths := range providers {
-			log.Info("  %s: %d path(s)", provider, len(paths))
+		for _, provider := range providers {
+			log.Info("  %s: %d path(s)", provider.Name, len(provider.Data))
 		}
 
 		allValid := true
 		log.Info("Checking rclone remotes...")
-		for provider := range providers {
+		for _, provider := range providers {
+			providerName := provider.Name
 			executor := rclone.NewExecutor(rclone.NewConfig())
 			engine := sync.NewEngine(nil, executor, log)
 
-			exists, err := engine.RemoteProviderExists(ctx, provider)
+			exists, err := engine.RemoteProviderExists(ctx, providerName)
 			if err != nil {
-				log.Error("Failed to verify provider %s: %v", provider, err)
+				log.Error("Failed to verify provider %s: %v", providerName, err)
 				allValid = false
 				continue
 			}
 
 			if exists {
-				log.Info("  %s: OK", provider)
+				log.Info("  %s: OK", providerName)
 			} else {
-				log.Error("  %s: NOT FOUND", provider)
+				log.Error("  %s: NOT FOUND", providerName)
 				allValid = false
 			}
 		}

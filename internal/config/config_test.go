@@ -27,7 +27,8 @@ func TestConfigAddProvider(t *testing.T) {
 		t.Errorf("expected 1 provider, got %d", len(config.Providers))
 	}
 
-	if _, ok := config.GetProviders()["gdrive"]; !ok {
+	providers := config.GetProviders()
+	if providers[0].Name != "gdrive" {
 		t.Error("gdrive provider not found")
 	}
 }
@@ -175,9 +176,7 @@ func TestConfigValidateErrors(t *testing.T) {
 			name: "empty provider name",
 			setupConfig: func() *Config {
 				config := NewConfig()
-				config.Providers = ProviderMap{
-					"": PathMap{"./test": []Destination{{To: "ydisk:test"}}},
-				}
+				config.AddProvider("", PathMap{"./test": []Destination{{To: "ydisk:test"}}})
 				return config
 			},
 			expectError: true,
@@ -186,9 +185,7 @@ func TestConfigValidateErrors(t *testing.T) {
 			name: "empty paths",
 			setupConfig: func() *Config {
 				config := NewConfig()
-				config.Providers = ProviderMap{
-					"gdrive": PathMap{},
-				}
+				config.AddProvider("gdrive", PathMap{})
 				return config
 			},
 			expectError: true,
@@ -197,11 +194,9 @@ func TestConfigValidateErrors(t *testing.T) {
 			name: "empty path",
 			setupConfig: func() *Config {
 				config := NewConfig()
-				config.Providers = ProviderMap{
-					"gdrive": PathMap{
-						"": []Destination{{To: "ydisk:test"}},
-					},
-				}
+				config.AddProvider("gdrive", PathMap{
+					"": []Destination{{To: "ydisk:test"}},
+				})
 				return config
 			},
 			expectError: true,
@@ -210,11 +205,9 @@ func TestConfigValidateErrors(t *testing.T) {
 			name: "empty destinations",
 			setupConfig: func() *Config {
 				config := NewConfig()
-				config.Providers = ProviderMap{
-					"gdrive": PathMap{
-						"./test": []Destination{},
-					},
-				}
+				config.AddProvider("gdrive", PathMap{
+					"./test": []Destination{},
+				})
 				return config
 			},
 			expectError: true,
@@ -223,11 +216,9 @@ func TestConfigValidateErrors(t *testing.T) {
 			name: "empty destination to",
 			setupConfig: func() *Config {
 				config := NewConfig()
-				config.Providers = ProviderMap{
-					"gdrive": PathMap{
-						"./test": []Destination{{To: ""}},
-					},
-				}
+				config.AddProvider("gdrive", PathMap{
+					"./test": []Destination{{To: ""}},
+				})
 				return config
 			},
 			expectError: true,
@@ -236,11 +227,9 @@ func TestConfigValidateErrors(t *testing.T) {
 			name: "invalid destination format",
 			setupConfig: func() *Config {
 				config := NewConfig()
-				config.Providers = ProviderMap{
-					"gdrive": PathMap{
-						"./test": []Destination{{To: "invalid"}},
-					},
-				}
+				config.AddProvider("gdrive", PathMap{
+					"./test": []Destination{{To: "invalid"}},
+				})
 				return config
 			},
 			expectError: true,
@@ -249,13 +238,11 @@ func TestConfigValidateErrors(t *testing.T) {
 			name: "empty argument",
 			setupConfig: func() *Config {
 				config := NewConfig()
-				config.Providers = ProviderMap{
-					"gdrive": PathMap{
-						"./test": []Destination{
-							{To: "ydisk:test", Args: []string{""}},
-						},
+				config.AddProvider("gdrive", PathMap{
+					"./test": []Destination{
+						{To: "ydisk:test", Args: []string{""}},
 					},
-				}
+				})
 				return config
 			},
 			expectError: true,
@@ -264,13 +251,11 @@ func TestConfigValidateErrors(t *testing.T) {
 			name: "valid config",
 			setupConfig: func() *Config {
 				config := NewConfig()
-				config.Providers = ProviderMap{
-					"gdrive": PathMap{
-						"./test": []Destination{
-							{To: "ydisk:test", Args: []string{"--arg1"}},
-						},
+				config.AddProvider("gdrive", PathMap{
+					"./test": []Destination{
+						{To: "ydisk:test", Args: []string{"--arg1"}},
 					},
-				}
+				})
 				return config
 			},
 			expectError: false,
@@ -631,20 +616,20 @@ dropbox:
     - to: local:/backup
 `
 
-	providerMap, err := parseProviderMap([]byte(yamlData))
+	providers, err := parseProviders([]byte(yamlData))
 	if err != nil {
-		t.Fatalf("parseProviderMap() error = %v", err)
+		t.Fatalf("parseProviders() error = %v", err)
 	}
 
-	if len(providerMap) != 2 {
-		t.Errorf("expected 2 providers, got %d", len(providerMap))
+	if len(providers) != 2 {
+		t.Errorf("expected 2 providers, got %d", len(providers))
 	}
 
-	if _, ok := providerMap["gdrive"]; !ok {
+	if providers[0].Name != "gdrive" {
 		t.Error("gdrive provider not found")
 	}
 
-	if _, ok := providerMap["dropbox"]; !ok {
+	if providers[1].Name != "dropbox" {
 		t.Error("dropbox provider not found")
 	}
 }
@@ -656,7 +641,7 @@ gdrive:
     - invalid: yaml: syntax: error
 `
 
-	_, err := parseProviderMap([]byte(invalidYAML))
+	_, err := parseProviders([]byte(invalidYAML))
 	if err == nil {
 		t.Error("expected error for invalid YAML")
 	}
