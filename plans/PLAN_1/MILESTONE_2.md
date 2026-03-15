@@ -50,8 +50,8 @@ Implement YAML configuration loading and validation for the Syncerman applicatio
 
 ### 2.4 Add Configuration File Discovery - COMPLETED
 - Implemented DiscoverConfigPath() for configuration file discovery
-- Supports default config files: configuration.yml, config.yml, .syncerman.yml
-- Searches current directory and parent directories
+- Supports default config file: .syncerman.yml
+- Searches current directory only
 - Supports explicit config file path via argument
 - Proper error handling when no config found
 - Created internal/config/discovery.go

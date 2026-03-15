@@ -15,7 +15,7 @@ This document provides guidelines for autonomous coding agents working on this r
 
 - **Language**: Go 1.21+
 - **Configuration Format**: YAML
-- **Sync Execution**: Direct exec.Command (Unison binary)
+- **Sync Execution**: Direct exec.Command (rclone binary)
 
 ## Build Commands
 

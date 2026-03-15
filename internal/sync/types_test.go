@@ -16,7 +16,7 @@ import (
 func TestSyncEngineFromConfig(t *testing.T) {
 	tmpDir, err := os.MkdirTemp("", "config-*")
 	require.NoError(t, err)
-	defer os.RemoveAll(tmpDir)
+	defer func() { _ = os.RemoveAll(tmpDir) }()
 
 	configPath := tmpDir + "/test-config.yaml"
 	createTestConfigFile(t, configPath)
@@ -38,7 +38,7 @@ func TestSyncEngineFromConfig_InvalidPath(t *testing.T) {
 func TestSyncEngineFromConfig_InvalidYAML(t *testing.T) {
 	tmpDir, err := os.MkdirTemp("", "config-*")
 	require.NoError(t, err)
-	defer os.RemoveAll(tmpDir)
+	defer func() { _ = os.RemoveAll(tmpDir) }()
 
 	configPath := tmpDir + "/invalid-config.yaml"
 	err = os.WriteFile(configPath, []byte("invalid: yaml: content:\n  - broken"), 0644)
@@ -52,7 +52,7 @@ func TestSyncEngineFromConfig_InvalidYAML(t *testing.T) {
 func TestSyncEngineFromConfig_ValidationErrors(t *testing.T) {
 	tmpDir, err := os.MkdirTemp("", "config-*")
 	require.NoError(t, err)
-	defer os.RemoveAll(tmpDir)
+	defer func() { _ = os.RemoveAll(tmpDir) }()
 
 	configPath := tmpDir + "/invalid-config.yaml"
 	err = os.WriteFile(configPath, []byte(""), 0644)

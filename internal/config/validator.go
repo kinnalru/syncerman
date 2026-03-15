@@ -30,7 +30,7 @@ import (
 //	}
 func (c *Config) Validate() error {
 	// Ensure configuration has at least one provider defined
-	if c.Providers == nil || len(c.Providers) == 0 {
+	if len(c.Providers) == 0 {
 		return errors.NewValidationError("configuration is empty", nil)
 	}
 

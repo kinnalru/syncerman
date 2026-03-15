@@ -94,10 +94,10 @@ gdrive:
     - to: ydisk:test
       args: []
       resync: false
-`
+  `
 
 	tmpfile := createTempConfigFile(yamlContent, t)
-	defer os.Remove(tmpfile)
+	defer func() { _ = os.Remove(tmpfile) }()
 
 	config, err := LoadConfig(tmpfile)
 	if err != nil {
@@ -301,7 +301,7 @@ func TestConfigValidateErrors(t *testing.T) {
 func TestDiscoverConfigPathCustom(t *testing.T) {
 	yamlContent := `gdrive: {}`
 	tmpfile := createTempConfigFile(yamlContent, t)
-	defer os.Remove(tmpfile)
+	defer func() { _ = os.Remove(tmpfile) }()
 
 	path, err := DiscoverConfigPath(tmpfile)
 	if err != nil {
@@ -327,7 +327,7 @@ func TestDiscoverConfigPathCustomNotFound(t *testing.T) {
 func TestDiscoverConfigPathDefault(t *testing.T) {
 	runInTempDir(func() {
 		yamlContent := `gdrive: {}`
-		if err := os.WriteFile("configuration.yml", []byte(yamlContent), 0644); err != nil {
+		if err := os.WriteFile(".syncerman.yml", []byte(yamlContent), 0644); err != nil {
 			t.Fatal(err)
 		}
 
@@ -336,28 +336,25 @@ func TestDiscoverConfigPathDefault(t *testing.T) {
 			t.Fatalf("DiscoverConfigPath() error = %v", err)
 		}
 
-		if !strings.Contains(path, "configuration.yml") {
-			t.Errorf("expected configuration.yml in path, got %s", path)
+		if !strings.Contains(path, ".syncerman.yml") {
+			t.Errorf("expected .syncerman.yml in path, got %s", path)
 		}
 	})
 }
 
-func TestDiscoverConfigPathPriority(t *testing.T) {
+func TestDiscoverConfigPathDefaultOnly(t *testing.T) {
 	runInTempDir(func() {
 		yamlContent := `gdrive: {}`
 		if err := os.WriteFile(".syncerman.yml", []byte(yamlContent), 0644); err != nil {
 			t.Fatal(err)
 		}
-		if err := os.WriteFile("config.yml", []byte(yamlContent), 0644); err != nil {
-			t.Fatal(err)
-		}
 
 		path, err := DiscoverConfigPath("")
 		if err != nil {
 			t.Fatalf("DiscoverConfigPath() error = %v", err)
 		}
 
-		expectedFile := "config.yml"
+		expectedFile := ".syncerman.yml"
 		if filepath.Base(path) != expectedFile {
 			t.Errorf("expected %s, got %s", expectedFile, filepath.Base(path))
 		}
@@ -377,7 +374,7 @@ func TestDiscoverConfigPathNotFound(t *testing.T) {
 	})
 }
 
-func TestFindDefaultConfigInParentDirectory(t *testing.T) {
+func TestFindDefaultConfigNotInParentDirectory(t *testing.T) {
 	runInTempDir(func() {
 		parentDir, err := os.Getwd()
 		if err != nil {
@@ -390,7 +387,7 @@ func TestFindDefaultConfigInParentDirectory(t *testing.T) {
 		}
 
 		yamlContent := `gdrive: {}`
-		if err := os.WriteFile(filepath.Join(parentDir, "config.yml"), []byte(yamlContent), 0644); err != nil {
+		if err := os.WriteFile(filepath.Join(parentDir, ".syncerman.yml"), []byte(yamlContent), 0644); err != nil {
 			t.Fatal(err)
 		}
 
@@ -398,20 +395,20 @@ func TestFindDefaultConfigInParentDirectory(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		path, err := findDefaultConfig()
-		if err != nil {
-			t.Fatalf("findDefaultConfig() error = %v", err)
+		_, err = findDefaultConfig()
+		if err == nil {
+			t.Fatal("expected error when config not found in current directory")
 		}
 
-		if !strings.Contains(path, "config.yml") {
-			t.Errorf("expected config.yml in path, got %s", path)
+		if !errors.IsConfigError(err) {
+			t.Error("expected ConfigError")
 		}
 	})
 }
 
 func TestValidateConfigPathValid(t *testing.T) {
 	tmpfile := createTempConfigFile(`gdrive: {}`, t)
-	defer os.Remove(tmpfile)
+	defer func() { _ = os.Remove(tmpfile) }()
 
 	err := validateConfigPath(tmpfile)
 	if err != nil {
@@ -434,7 +431,7 @@ func TestSearchInDirectory(t *testing.T) {
 	runInTempDir(func() {
 		yamlContent := `gdrive: {}`
 
-		if err := os.WriteFile("config.yml", []byte(yamlContent), 0644); err != nil {
+		if err := os.WriteFile(".syncerman.yml", []byte(yamlContent), 0644); err != nil {
 			t.Fatal(err)
 		}
 
@@ -448,8 +445,8 @@ func TestSearchInDirectory(t *testing.T) {
 			t.Error("expected to find config file")
 		}
 
-		if !strings.Contains(path, "config.yml") {
-			t.Errorf("expected config.yml in path, got %s", path)
+		if !strings.Contains(path, ".syncerman.yml") {
+			t.Errorf("expected .syncerman.yml in path, got %s", path)
 		}
 	})
 }
@@ -756,13 +753,13 @@ func runInTempDir(fn func()) {
 	if err != nil {
 		panic(err)
 	}
-	defer os.Chdir(originalWd)
+	defer func() { _ = os.Chdir(originalWd) }()
 
 	tmpDir, err := os.MkdirTemp("", "test-config-*")
 	if err != nil {
 		panic(err)
 	}
-	defer os.RemoveAll(tmpDir)
+	defer func() { _ = os.RemoveAll(tmpDir) }()
 
 	if err := os.Chdir(tmpDir); err != nil {
 		panic(err)

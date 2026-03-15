@@ -24,7 +24,7 @@ This command verifies:
 
 Examples:
   syncerman check
-  syncerman check --config /path/to/config.yml
+  syncerman check --config /path/to/.syncerman.yml
   syncerman check --verbose`,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		log := GetLogger()

@@ -323,7 +323,7 @@ Validate the configuration file and verify all rclone remotes.
 **Usage:**
 ```bash
 syncerman check
-syncerman check --config /path/to/config.yml
+syncerman check --config /path/to/.syncerman.yml
 syncerman check --verbose
 ```
 
@@ -392,13 +392,13 @@ Use a configuration file from a different location:
 
 ```bash
 # Use specific config file from home directory
-syncerman --config /home/user/.config/syncerman/config.yml sync
+syncerman --config /home/user/.config/syncerman/.syncerman.yml sync
 
 # Use custom config with verbose output
-syncerman -c ./my-config.yml sync --verbose
+syncerman -c ./my-sync-config.yml sync --verbose
 
 # Check with custom file
-syncerman --config /home/user/.config/syncerman/config.yml check
+syncerman --config /home/user/.config/syncerman/.syncerman.yml check
 ```
 
 ### Scenario 5: Automated Backup Setup
@@ -433,7 +433,7 @@ syncerman sync --verbose
 - **Cause**: Syncerman cannot locate the `.syncerman.yml` file
 - **Solution**: 
   - Ensure `.syncerman.yml` exists in your current directory
-  - Or specify config path with `--config /path/to/config.yml`
+  - Or specify config path with `--config /path/to/.syncerman.yml`
 
 **Error: "Invalid YAML syntax"**
 - **Cause**: Malformed YAML in configuration file

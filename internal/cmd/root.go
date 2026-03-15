@@ -90,8 +90,8 @@ Available Commands:
   check      Check configuration and verify rclone remotes
   version     Print version number
 
-Global Flags:
-  -c, --config string   Path to configuration file (default: ./syncerman.yaml)
+  Global Flags:
+   -c, --config string   Path to configuration file
   -d, --dry-run        Dry run mode (show what would be done)
   -v, --verbose         Verbose output
   -q, --quiet          Quiet mode (suppress output)
@@ -169,15 +169,9 @@ func discoverConfigPath() string {
 		return commandConfig.ConfigFile
 	}
 
-	defaultPaths := []string{
-		"./syncerman.yaml",
-		"./syncerman.yml",
-	}
-
-	for _, path := range defaultPaths {
-		if _, err := os.Stat(path); err == nil {
-			return path
-		}
+	configPath := "./.syncerman.yml"
+	if _, err := os.Stat(configPath); err == nil {
+		return configPath
 	}
 
 	return ""

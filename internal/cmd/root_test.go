@@ -2,39 +2,9 @@ package cmd
 
 import (
 	"bytes"
-	"context"
-	"fmt"
 	"strings"
 	"testing"
-
-	"syncerman/internal/rclone"
 )
-
-type mockLogger struct {
-	logs []string
-}
-
-func (m *mockLogger) Debug(msg string, args ...interface{}) {
-	m.logs = append(m.logs, "DEBUG: "+fmt.Sprintf(msg, args...))
-}
-
-func (m *mockLogger) Info(msg string, args ...interface{}) {
-	m.logs = append(m.logs, "INFO: "+fmt.Sprintf(msg, args...))
-}
-
-func (m *mockLogger) Warn(msg string, args ...interface{}) {
-	m.logs = append(m.logs, "WARN: "+fmt.Sprintf(msg, args...))
-}
-
-func (m *mockLogger) Error(msg string, args ...interface{}) {
-	m.logs = append(m.logs, "ERROR: "+fmt.Sprintf(msg, args...))
-}
-
-type mockExecutor struct{}
-
-func (m *mockExecutor) Run(ctx context.Context, args ...string) (*rclone.Result, error) {
-	return &rclone.Result{ExitCode: 0, Stdout: "", Stderr: ""}, nil
-}
 
 func TestRootCmd(t *testing.T) {
 	tests := []struct {

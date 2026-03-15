@@ -25,11 +25,11 @@ func TestFindRcloneBinary(t *testing.T) {
 				if err := os.WriteFile(binaryPath, []byte("#!/bin/sh\necho 'rclone'\n"), 0o755); err != nil {
 					t.Fatalf("Failed to create fake rclone: %v", err)
 				}
-				os.Setenv("PATH", tempDir+string(filepath.ListSeparator)+originalPath)
-				os.Unsetenv(RcloneEnvVar)
+				_ = os.Setenv("PATH", tempDir+string(filepath.ListSeparator)+originalPath)
+				_ = os.Unsetenv(RcloneEnvVar)
 				return func() {
-					os.Setenv("PATH", originalPath)
-					os.Remove(binaryPath)
+					_ = os.Setenv("PATH", originalPath)
+					_ = os.Remove(binaryPath)
 				}
 			},
 			wantErr: false,
@@ -42,10 +42,10 @@ func TestFindRcloneBinary(t *testing.T) {
 				if err := os.WriteFile(binaryPath, []byte("#!/bin/sh\necho 'rclone'\n"), 0o755); err != nil {
 					t.Fatalf("Failed to create fake rclone: %v", err)
 				}
-				os.Setenv(RcloneEnvVar, binaryPath)
+				_ = os.Setenv(RcloneEnvVar, binaryPath)
 				return func() {
-					os.Unsetenv(RcloneEnvVar)
-					os.Remove(binaryPath)
+					_ = os.Unsetenv(RcloneEnvVar)
+					_ = os.Remove(binaryPath)
 				}
 			},
 			wantErr: false,
@@ -59,10 +59,10 @@ func TestFindRcloneBinary(t *testing.T) {
 					t.Fatalf("Failed to create fake rclone: %v", err)
 				}
 				absPath, _ := filepath.Abs(binaryPath)
-				os.Setenv(RcloneEnvVar, absPath)
+				_ = os.Setenv(RcloneEnvVar, absPath)
 				return func() {
-					os.Unsetenv(RcloneEnvVar)
-					os.Remove(binaryPath)
+					_ = os.Unsetenv(RcloneEnvVar)
+					_ = os.Remove(binaryPath)
 				}
 			},
 			wantErr: false,
@@ -70,9 +70,9 @@ func TestFindRcloneBinary(t *testing.T) {
 		{
 			name: "custom path does not exist",
 			setupFunc: func() func() {
-				os.Setenv(RcloneEnvVar, "/nonexistent/path/to/rclone")
+				_ = os.Setenv(RcloneEnvVar, "/nonexistent/path/to/rclone")
 				return func() {
-					os.Unsetenv(RcloneEnvVar)
+					_ = os.Unsetenv(RcloneEnvVar)
 				}
 			},
 			wantErr:     true,
@@ -82,10 +82,10 @@ func TestFindRcloneBinary(t *testing.T) {
 			name: "not found in PATH",
 			setupFunc: func() func() {
 				emptyDir := t.TempDir()
-				os.Setenv("PATH", emptyDir)
-				os.Unsetenv(RcloneEnvVar)
+				_ = os.Setenv("PATH", emptyDir)
+				_ = os.Unsetenv(RcloneEnvVar)
 				return func() {
-					os.Setenv("PATH", originalPath)
+					_ = os.Setenv("PATH", originalPath)
 				}
 			},
 			wantErr: true,
@@ -129,7 +129,7 @@ func TestConfigFromEnv(t *testing.T) {
 		{
 			name: "valid rclone in PATH",
 			setup: func() {
-				os.Unsetenv(RcloneEnvVar)
+				_ = os.Unsetenv(RcloneEnvVar)
 			},
 			wantErr: false,
 		},
@@ -141,7 +141,7 @@ func TestConfigFromEnv(t *testing.T) {
 				if err := os.WriteFile(binaryPath, []byte("#!/bin/sh\necho 'rclone'\n"), 0o755); err != nil {
 					t.Fatalf("Failed to create fake rclone: %v", err)
 				}
-				os.Setenv(RcloneEnvVar, binaryPath)
+				_ = os.Setenv(RcloneEnvVar, binaryPath)
 			},
 			wantErr: false,
 		},
@@ -150,7 +150,7 @@ func TestConfigFromEnv(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			tt.setup()
-			defer os.Unsetenv(RcloneEnvVar)
+			defer func() { _ = os.Unsetenv(RcloneEnvVar) }()
 
 			config, err := ConfigFromEnv()
 			if (err != nil) != tt.wantErr {

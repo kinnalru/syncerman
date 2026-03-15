@@ -8,34 +8,27 @@ import (
 	"syncerman/internal/errors"
 )
 
-const defaultConfigName = "configuration.yml"
-
-const alternateConfigName = "config.yml"
-
-const hiddenConfigName = ".syncerman.yml"
+const defaultConfigName = ".syncerman.yml"
 
 var defaultConfigFiles = []string{
 	defaultConfigName,
-	alternateConfigName,
-	hiddenConfigName,
 }
 
 // DiscoverConfigPath discovers and validates the configuration file path.
 //
 // If a custom path is provided, it validates that the file exists at that location.
-// Otherwise, it searches for default configuration files in the current directory
-// and parent directories.
+// Otherwise, it searches for the default configuration file .syncerman.yml in the
+// current directory only.
 //
 // Parameters:
 //   - customPath: optional custom path to a configuration file. If empty,
-//     the function searches for default configuration files.
+//     the function searches for .syncerman.yml in the current directory.
 //
 // Returns:
 //   - string: the resolved configuration file path
 //   - error: error if configuration file is not found
 //
-// Default search order: current directory and parent directories for .syncerman.yml,
-// config.yml, configuration.yml
+// Default search: current directory for .syncerman.yml
 func DiscoverConfigPath(customPath string) (string, error) {
 	if customPath != "" {
 		if err := validateConfigPath(customPath); err != nil {
@@ -47,20 +40,16 @@ func DiscoverConfigPath(customPath string) (string, error) {
 	return findDefaultConfig()
 }
 
-// findDefaultConfig searches for default configuration files in current and parent directories.
+// findDefaultConfig searches for the default configuration file .syncerman.yml in the current directory.
 //
-// The search starts in the current working directory and travels upward through
-// the directory tree until reaching the root directory. For each directory visited,
-// it checks for the presence of any default configuration file.
+// The search is limited to the current working directory only - it does not traverse
+// parent directories.
 //
 // Returns:
 //   - string: the found configuration file path
-//   - error: error if no configuration file is found in the search path
+//   - error: error if no configuration file is found in the current directory
 //
-// Default configuration files searched (in order):
-//   - configuration.yml
-//   - config.yml
-//   - .syncerman.yml
+// Default configuration file searched: .syncerman.yml
 func findDefaultConfig() (string, error) {
 	cwd, err := os.Getwd()
 	if err != nil {
@@ -72,23 +61,10 @@ func findDefaultConfig() (string, error) {
 		return configPath, nil
 	}
 
-	parent := filepath.Dir(cwd)
-	for parent != cwd && filepath.Dir(parent) != parent {
-		configPath = searchInDirectory(parent)
-		if configPath != "" {
-			return configPath, nil
-		}
-		cwd = parent
-		parent = filepath.Dir(cwd)
-	}
-
-	return "", errors.NewConfigError(fmt.Sprintf("no configuration file found in current or parent directories (searching for: %s)", defaultConfigFiles), nil)
+	return "", errors.NewConfigError(fmt.Sprintf("no configuration file found in current directory (searching for: %s)", defaultConfigName), nil)
 }
 
-// searchInDirectory searches for any default config file in a specific directory.
-//
-// It checks each default configuration file name in the predefined order
-// and returns the path to the first file found.
+// searchInDirectory searches for .syncerman.yml in the specified directory.
 //
 // Parameters:
 //   - dir: directory path to search in
@@ -96,10 +72,7 @@ func findDefaultConfig() (string, error) {
 // Returns:
 //   - string: the found config file path, or empty string if not found
 //
-// The function checks files in this order:
-//   - configuration.yml
-//   - config.yml
-//   - .syncerman.yml
+// The function checks for .syncerman.yml only.
 func searchInDirectory(dir string) string {
 	for _, configFile := range defaultConfigFiles {
 		path := filepath.Join(dir, configFile)

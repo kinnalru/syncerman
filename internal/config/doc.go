@@ -11,9 +11,7 @@ package config
 // Syncerman searches for configuration files using a priority-based discovery mechanism:
 //
 // 1. Explicit path: If a path is provided via command-line --config flag, that file is used
-// 2. Default search: When no explicit path is given, the following search order is used:
-//    - Current directory first, then parent directories up the filesystem tree
-//    - In each directory, searches for files in this order: configuration.yml, config.yml, .syncerman.yml
+// 2. Default search: When no explicit path is given, searches for .syncerman.yml in the current directory only
 //
 // The discover process stops at the first valid configuration file found. If no file is located,
 // a configuration error is returned describing the search locations.
