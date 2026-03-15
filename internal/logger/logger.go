@@ -713,7 +713,14 @@ func (l *ConsoleLogger) CombinedOutput(output string) {
 	}
 
 	lines := strings.Split(strings.TrimSpace(output), "\n")
-	l.formatBlock(colorGreen, "", lines)
+	filtered := make([]string, 0, len(lines))
+	for _, line := range lines {
+		if strings.Contains(line, "Elapsed time:") || strings.Contains(line, "Checks:") {
+			continue
+		}
+		filtered = append(filtered, line)
+	}
+	l.formatBlock(colorGreen, "", filtered)
 }
 
 func (l *ConsoleLogger) ErrorOutput(output string) {
