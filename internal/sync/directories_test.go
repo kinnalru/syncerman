@@ -293,9 +293,10 @@ func TestCreateAllDirectories_CreatesSourceDirectories(t *testing.T) {
 	require.NoError(t, err)
 }
 
-func TestCreateAllDirectories_SkipsLocalSource(t *testing.T) {
+func TestCreateAllDirectories_CreatesLocalSource(t *testing.T) {
 	mockExec := &mockMkdirExecutor{
 		results: []*rclone.Result{
+			{ExitCode: 0, Stdout: "", Stderr: ""},
 			{ExitCode: 0, Stdout: "", Stderr: ""},
 		},
 	}
@@ -313,6 +314,7 @@ func TestCreateAllDirectories_SkipsLocalSource(t *testing.T) {
 	err := engine.CreateAllDirectories(ctx, cfg, SyncOptions{})
 
 	require.NoError(t, err)
+	require.Equal(t, 2, mockExec.index, "should call mkdir for both local source and destination")
 }
 
 func TestCreateAllDirectories_BothSourceAndDestination(t *testing.T) {

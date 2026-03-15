@@ -12,7 +12,6 @@ import (
 // CreateAllDirectories creates all source and destination directories from configuration.
 // It identifies unique source and destination paths and attempts to create them.
 // Already-existing directories are handled gracefully (not an error).
-// For local provider, directory creation is skipped as rclone cannot create local directories.
 func (e *Engine) CreateAllDirectories(ctx context.Context, config *config.Config, options SyncOptions) error {
 	targets, err := e.ExpandTargets(config)
 	if err != nil {
@@ -24,9 +23,7 @@ func (e *Engine) CreateAllDirectories(ctx context.Context, config *config.Config
 
 	for _, target := range targets {
 		sourceRemote := FormatRemote(target.Provider, target.SourcePath)
-		if target.Provider != localProvider {
-			sourcePaths[sourceRemote] = struct{}{}
-		}
+		sourcePaths[sourceRemote] = struct{}{}
 		destPaths[target.Destination.To] = struct{}{}
 	}
 
