@@ -33,6 +33,9 @@ type mockLogger struct {
 	warn     []string
 	errorLog []string
 	debugLog []string
+	command  []string
+	stage    []string
+	target   []string
 }
 
 func (m *mockLogger) Info(msg string, args ...interface{}) {
@@ -49,4 +52,18 @@ func (m *mockLogger) Error(msg string, args ...interface{}) {
 
 func (m *mockLogger) Debug(msg string, args ...interface{}) {
 	m.debugLog = append(m.debugLog, msg)
+}
+
+func (m *mockLogger) Command(cmd string) {
+	m.command = append(m.command, cmd)
+}
+
+func (m *mockLogger) Output(output string)         {}
+func (m *mockLogger) ErrorOutput(output string)    {}
+func (m *mockLogger) CombinedOutput(output string) {}
+func (m *mockLogger) StageInfo(msg string, args ...interface{}) {
+	m.stage = append(m.stage, msg)
+}
+func (m *mockLogger) TargetInfo(msg string, args ...interface{}) {
+	m.target = append(m.target, msg)
 }

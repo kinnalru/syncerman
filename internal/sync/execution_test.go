@@ -69,7 +69,14 @@ func TestRunSync_FirstRunError(t *testing.T) {
 	assert.True(t, result.FirstRun)
 	assert.Equal(t, 1, result.RetryCount)
 	assert.Nil(t, result.Error)
-	assert.Contains(t, log.info, "First-run detected, retrying with --resync (attempt %d/%d)")
+	containsFirstRunRetry := false
+	for _, msg := range log.stage {
+		if msg == "Stage: First-run detected, retrying with --resync (attempt %d/%d)" {
+			containsFirstRunRetry = true
+			break
+		}
+	}
+	assert.True(t, containsFirstRunRetry, "Expected log message about first-run retry missing")
 }
 
 func TestRunSync_DryRun(t *testing.T) {

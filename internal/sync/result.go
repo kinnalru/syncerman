@@ -77,22 +77,22 @@ func (r *SyncReport) Format(verbose bool) string {
 	r.formatSuccessfulTargets(&builder, verbose)
 	r.formatFailedTargets(&builder, verbose)
 	r.formatFirstRunTargets(&builder, verbose)
-	builder.WriteString(fmt.Sprintf("Exit code: %d\n", r.ExitCode))
+	fmt.Fprintf(&builder, "Exit code: %d\n", r.ExitCode)
 
 	return builder.String()
 }
 
 func (r *SyncReport) formatHeader(builder *strings.Builder) {
 	builder.WriteString("=== Sync Summary ===\n")
-	builder.WriteString(fmt.Sprintf("Total targets:   %d\n", r.TotalTargets))
-	builder.WriteString(fmt.Sprintf("Successful:     %d\n", r.SuccessCount))
+	fmt.Fprintf(builder, "Total targets:   %d\n", r.TotalTargets)
+	fmt.Fprintf(builder, "Successful:     %d\n", r.SuccessCount)
 
 	if r.FailureCount > 0 {
-		builder.WriteString(fmt.Sprintf("Failed:         %d\n", r.FailureCount))
+		fmt.Fprintf(builder, "Failed:         %d\n", r.FailureCount)
 	}
 
 	if r.FirstRunCount > 0 {
-		builder.WriteString(fmt.Sprintf("First-runs:     %d\n", r.FirstRunCount))
+		fmt.Fprintf(builder, "First-runs:     %d\n", r.FirstRunCount)
 	}
 
 	builder.WriteString("\n")
@@ -102,7 +102,7 @@ func (r *SyncReport) formatSuccessfulTargets(builder *strings.Builder, verbose b
 	if r.SuccessCount > 0 && verbose {
 		builder.WriteString("=== Successful Targets ===\n")
 		for i, target := range r.SucceededTargets {
-			builder.WriteString(fmt.Sprintf("%d. %s:%s -> %s\n", i+1, target.Provider, target.SourcePath, target.Destination.To))
+			fmt.Fprintf(builder, "%d. %s:%s -> %s\n", i+1, target.Provider, target.SourcePath, target.Destination.To)
 		}
 		builder.WriteString("\n")
 	}
@@ -112,10 +112,10 @@ func (r *SyncReport) formatFailedTargets(builder *strings.Builder, verbose bool)
 	if r.FailureCount > 0 && verbose {
 		builder.WriteString("=== Failed Targets ===\n")
 		for i, target := range r.FailedTargets {
-			builder.WriteString(fmt.Sprintf("%d. %s:%s -> %s\n", i+1, target.Provider, target.SourcePath, target.Destination.To))
+			fmt.Fprintf(builder, "%d. %s:%s -> %s\n", i+1, target.Provider, target.SourcePath, target.Destination.To)
 
 			if i < len(r.Errors) {
-				builder.WriteString(fmt.Sprintf("   Error: %v\n", r.Errors[i]))
+				fmt.Fprintf(builder, "   Error: %v\n", r.Errors[i])
 			}
 		}
 		builder.WriteString("\n")
@@ -126,7 +126,7 @@ func (r *SyncReport) formatFirstRunTargets(builder *strings.Builder, verbose boo
 	if r.FirstRunCount > 0 && verbose {
 		builder.WriteString("=== First-Runs ===\n")
 		for i, target := range r.FirstRunTargets {
-			builder.WriteString(fmt.Sprintf("%d. %s:%s -> %s\n", i+1, target.Provider, target.SourcePath, target.Destination.To))
+			fmt.Fprintf(builder, "%d. %s:%s -> %s\n", i+1, target.Provider, target.SourcePath, target.Destination.To)
 		}
 		builder.WriteString("\n")
 	}

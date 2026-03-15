@@ -49,7 +49,14 @@ func TestHandle_FirstRunRetry(t *testing.T) {
 	require.NotNil(t, result)
 	assert.Equal(t, 0, result.ExitCode)
 	assert.Equal(t, 1, retries)
-	assert.Contains(t, log.info, "First-run detected, retrying with --resync (attempt %d/%d)")
+	containsFirstRunRetry := false
+	for _, msg := range log.stage {
+		if msg == "Stage: First-run detected, retrying with --resync (attempt %d/%d)" {
+			containsFirstRunRetry = true
+			break
+		}
+	}
+	assert.True(t, containsFirstRunRetry, "Expected log message about first-run retry missing")
 }
 
 func TestHandle_MaxRetriesExceeded(t *testing.T) {

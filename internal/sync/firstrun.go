@@ -36,37 +36,43 @@ func NewFirstRunHandler(maxRetries int, log Logger) *FirstRunHandler {
 func (h *FirstRunHandler) Handle(ctx context.Context, exec rclone.Executor, args *rclone.BisyncArgs) (*rclone.Result, int, error) {
 	retries := 0
 
+	h.logger.Command(args.String())
+
 	for {
 		cmdResult, err := exec.Run(ctx, args.Build()...)
 
 		if cmdResult == nil {
-			// Command execution failed (not sync operation error)
-			h.logger.Error("Sync command failed: %v", err)
+			h.logger.StageInfo("Stage: Command execution failed")
 			return nil, retries, fmt.Errorf("sync command failed: %w", err)
 		}
 
-		// Sync operation succeeded
+		if cmdResult.Combined != "" {
+			h.logger.CombinedOutput(cmdResult.Combined)
+		}
+
 		if cmdResult.ExitCode == 0 {
-			h.logger.Info("Sync completed successfully")
+			if retries == 0 {
+				h.logger.Info("Result: Command completed successfully")
+			} else {
+				h.logger.Info("Result: Command completed successfully after %d retry(ies)", retries)
+			}
 			return cmdResult, retries, nil
 		}
 
-		// Check if this is a recoverable first-run error
 		isFirstRun := rclone.IsFirstRunError(cmdResult.Combined)
 		if !isFirstRun {
-			h.logger.Error("Sync failed with exit code %d: %s", cmdResult.ExitCode, cmdResult.Combined)
+			h.logger.Error("Result: Command failed with exit code %d", cmdResult.ExitCode)
 			return cmdResult, retries, fmt.Errorf("sync failed: %s", cmdResult.Combined)
 		}
 
 		retries++
 
 		if retries > h.maxRetries {
-			h.logger.Error("First-run error detected but max retries exceeded")
+			h.logger.Error("Result: First-run error but max retries exceeded")
 			return cmdResult, retries, fmt.Errorf("first-run error after %d retries: %s", h.maxRetries+1, cmdResult.Stderr)
 		}
 
-		// First-run error: retry with --resync flag to initialize state files
-		h.logger.Info("First-run detected, retrying with --resync (attempt %d/%d)", retries, h.maxRetries+1)
+		h.logger.StageInfo("Stage: First-run detected, retrying with --resync (attempt %d/%d)", retries, h.maxRetries+1)
 		args = args.WithResync()
 	}
 }

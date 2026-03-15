@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"strings"
 	"sync"
 )
 
@@ -34,6 +35,16 @@ const (
 	logPrefix       = "["
 	logSuffix       = "] "
 	nilWriterErrMsg = "output writer cannot be nil"
+
+	colorReset  = "\033[0m"
+	colorRed    = "\033[31m"
+	colorGreen  = "\033[32m"
+	colorYellow = "\033[33m"
+	colorBlue   = "\033[34m"
+	colorGray   = "\033[90m"
+	colorCyan   = "\033[36m"
+	colorBold   = "\033[1m"
+	colorDim    = "\033[2m"
 )
 
 var levelStrings = [...]string{
@@ -64,6 +75,12 @@ func (l LogLevel) String() string {
 //   - Info: logs info-level messages (default level)
 //   - Warn: logs warning-level messages for non-critical issues
 //   - Error: logs error-level messages for critical issues
+//   - Command: logs command execution with cyan color at INFO level
+//   - CombinedOutput: logs combined stdout/stderr output at INFO level with distinct color
+//   - Output: logs multi-line output blocks (deprecated, use CombinedOutput)
+//   - ErrorOutput: logs error output blocks with red color (deprecated, use CombinedOutput)
+//   - StageInfo: logs stage messages with bold highlighting
+//   - TargetInfo: logs target messages with normal brightness
 //
 // Design: Small, focused interface following Go best practices. Configuration
 // operations are separated into the Configurable interface.
@@ -72,6 +89,12 @@ type Logger interface {
 	Info(msg string, args ...interface{})
 	Warn(msg string, args ...interface{})
 	Error(msg string, args ...interface{})
+	Command(cmd string)
+	CombinedOutput(output string)
+	Output(output string)
+	ErrorOutput(output string)
+	StageInfo(msg string, args ...interface{})
+	TargetInfo(msg string, args ...interface{})
 }
 
 // Configurable defines configuration methods for logger implementations.
@@ -197,7 +220,40 @@ func (l *ConsoleLogger) format(levelStr string, msg string, args ...interface{})
 	}
 	buf.WriteByte('\n')
 
-	buf.WriteTo(l.output)
+	_, _ = buf.WriteTo(l.output)
+}
+
+func (l *ConsoleLogger) formatBlock(color, title string, lines []string) {
+	if l.quiet || l.level > LevelDebug {
+		return
+	}
+	if len(lines) == 0 {
+		return
+	}
+
+	buf := bufferPool.Get().(*bytes.Buffer)
+	buf.Reset()
+	defer bufferPool.Put(buf)
+
+	if title != "" {
+		buf.WriteString(color)
+		buf.WriteString(title)
+		buf.WriteString(colorReset)
+		buf.WriteByte('\n')
+	}
+
+	for _, line := range lines {
+		if line != "" {
+			buf.WriteString(colorGray)
+			buf.WriteString("  ")
+			buf.WriteString(colorReset)
+			buf.WriteString(line)
+			buf.WriteByte('\n')
+		}
+	}
+
+	buf.WriteByte('\n')
+	_, _ = buf.WriteTo(l.output)
 }
 
 // Debug logs debug-level messages with optional formatting.
@@ -260,6 +316,54 @@ func (l *ConsoleLogger) Info(msg string, args ...interface{}) {
 		return
 	}
 	l.format(levelStrings[LevelInfo], msg, args...)
+}
+
+func (l *ConsoleLogger) StageInfo(msg string, args ...interface{}) {
+	if l.quiet || l.level > LevelInfo {
+		return
+	}
+	buf := bufferPool.Get().(*bytes.Buffer)
+	buf.Reset()
+	defer bufferPool.Put(buf)
+
+	buf.WriteString(logPrefix)
+	buf.WriteString(levelStrings[LevelInfo])
+	buf.WriteString(logSuffix)
+	buf.WriteString(colorBold)
+
+	if len(args) > 0 {
+		fmt.Fprintf(buf, msg, args...)
+	} else {
+		buf.WriteString(msg)
+	}
+
+	buf.WriteString(colorReset)
+	buf.WriteByte('\n')
+
+	_, _ = buf.WriteTo(l.output)
+}
+
+func (l *ConsoleLogger) TargetInfo(msg string, args ...interface{}) {
+	if l.quiet || l.level > LevelInfo {
+		return
+	}
+	buf := bufferPool.Get().(*bytes.Buffer)
+	buf.Reset()
+	defer bufferPool.Put(buf)
+
+	buf.WriteString(logPrefix)
+	buf.WriteString(levelStrings[LevelInfo])
+	buf.WriteString(logSuffix)
+
+	if len(args) > 0 {
+		fmt.Fprintf(buf, msg, args...)
+	} else {
+		buf.WriteString(msg)
+	}
+
+	buf.WriteByte('\n')
+
+	_, _ = buf.WriteTo(l.output)
 }
 
 // Warn logs warning-level messages with optional formatting.
@@ -408,7 +512,7 @@ func (l *ConsoleLogger) SetLevel(level LogLevel) {
 // (e.g., closing files, flushing buffers).
 func (l *ConsoleLogger) SetOutput(w io.Writer) error {
 	if w == nil {
-		return fmt.Errorf(nilWriterErrMsg)
+		return fmt.Errorf("%s", nilWriterErrMsg)
 	}
 	l.output = w
 	return nil
@@ -561,4 +665,62 @@ func (l *ConsoleLogger) GetLevel() LogLevel {
 // Returns: LogLevel - the previously stored log level value.
 func (l *ConsoleLogger) GetPreviousLevel() LogLevel {
 	return l.previousLevel
+}
+
+func (l *ConsoleLogger) InfoBlock(title string, lines []string) {
+	if l.quiet || l.level > LevelInfo {
+		return
+	}
+	l.formatBlock("", title, lines)
+}
+
+func (l *ConsoleLogger) DebugBlock(title string, lines []string) {
+	if l.quiet || l.level > LevelDebug {
+		return
+	}
+	l.formatBlock("", title, lines)
+}
+
+func (l *ConsoleLogger) Command(cmd string) {
+	if l.quiet || l.level > LevelInfo {
+		return
+	}
+	buf := bufferPool.Get().(*bytes.Buffer)
+	buf.Reset()
+	defer bufferPool.Put(buf)
+
+	buf.WriteString(colorCyan)
+	buf.WriteString("→ ")
+	buf.WriteString(cmd)
+	buf.WriteString(colorReset)
+	buf.WriteByte('\n')
+
+	_, _ = buf.WriteTo(l.output)
+}
+
+func (l *ConsoleLogger) Output(output string) {
+	if l.quiet || l.level > LevelDebug || output == "" {
+		return
+	}
+
+	lines := strings.Split(strings.TrimSpace(output), "\n")
+	l.formatBlock(colorGray, "", lines)
+}
+
+func (l *ConsoleLogger) CombinedOutput(output string) {
+	if l.quiet || l.level > LevelInfo || output == "" {
+		return
+	}
+
+	lines := strings.Split(strings.TrimSpace(output), "\n")
+	l.formatBlock(colorGreen, "", lines)
+}
+
+func (l *ConsoleLogger) ErrorOutput(output string) {
+	if l.quiet || l.level > LevelDebug || output == "" {
+		return
+	}
+
+	lines := strings.Split(strings.TrimSpace(output), "\n")
+	l.formatBlock(colorRed, "", lines)
 }

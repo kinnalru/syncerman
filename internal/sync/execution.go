@@ -10,11 +10,10 @@ import (
 // RunSync executes a single sync operation for the given target.
 // It builds the rclone bisync command with appropriate flags and executes it.
 func (e *Engine) RunSync(ctx context.Context, target SyncTarget, options SyncOptions) (*SyncResult, error) {
-	if options.Verbose {
-		e.logger.Info("Starting sync for %s:%s to %s", target.Provider, target.SourcePath, StripProviderHash(target.Destination.To))
-	} else {
-		e.logger.Debug("Starting sync for %s:%s to %s", target.Provider, target.SourcePath, StripProviderHash(target.Destination.To))
-	}
+	taskName := fmt.Sprintf("%s:%s → %s", target.Provider, target.SourcePath, StripProviderHash(target.Destination.To))
+
+	e.logger.StageInfo("Stage: Starting sync task")
+	e.logger.TargetInfo("Target: %s", taskName)
 
 	sourceRemote := FormatRemote(target.Provider, target.SourcePath)
 	destRemote := target.Destination.To
@@ -39,10 +38,6 @@ func (e *Engine) RunSync(ctx context.Context, target SyncTarget, options SyncOpt
 	handler := NewFirstRunHandler(maxRetries, e.logger)
 	cmdResult, retryCount, err := handler.Handle(ctx, e.rclone, args)
 
-	if cmdResult != nil && options.Verbose {
-		e.logger.Debug("Sync output: %s", NormalizeOutputPaths(cmdResult.Combined))
-	}
-
 	result := &SyncResult{
 		Target:     target,
 		Success:    err == nil && cmdResult.ExitCode == 0,
@@ -52,17 +47,12 @@ func (e *Engine) RunSync(ctx context.Context, target SyncTarget, options SyncOpt
 	}
 
 	if err != nil {
-		if options.Verbose {
-			e.logger.Error("Sync failed for %s:%s: %v", target.Provider, target.SourcePath, err)
-		}
+		e.logger.Error("Stage: Sync failed for %s", taskName)
 		return nil, err
 	}
 
-	if retryCount > 0 {
-		e.logger.Info("First-run recovery completed for %s:%s", target.Provider, target.SourcePath)
-	}
-
-	e.logger.Info("Sync completed successfully for %s:%s to %s", target.Provider, target.SourcePath, StripProviderHash(destRemote))
+	e.logger.StageInfo("Stage: Sync completed successfully")
+	e.logger.TargetInfo("Target: %s", taskName)
 	return result, nil
 }
 

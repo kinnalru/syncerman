@@ -233,7 +233,7 @@ func NewExecutorWithLogger(config *Config, log logger.Logger) Executor {
 //   - Successful execution: Returns Result with exit code 0 and nil error
 func (e *ExecutorImpl) Run(ctx context.Context, args ...string) (*Result, error) {
 	if e.logger != nil {
-		e.logger.Debug("Executing rclone command: %s %s", e.config.BinaryPath, strings.Join(args, " "))
+		e.logger.Command(fmt.Sprintf("%s %s", e.config.BinaryPath, strings.Join(args, " ")))
 	}
 
 	cmd := exec.CommandContext(ctx, e.config.BinaryPath, args...)
