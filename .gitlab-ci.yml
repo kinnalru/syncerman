@@ -60,7 +60,7 @@ build:windows:
     - tags
 
 release:
-  image: curlimages/curl:latest
+  image: registry.gitlab.com/gitlab-org/cli:latest
   stage: release
   needs:
     - build:linux
@@ -68,14 +68,14 @@ release:
   only:
     - /^v\d+\.\d+\.\d+$/
   script:
-    - |
-      curl --header "PRIVATE-TOKEN: ${GITLAB_TOKEN}" \
-           --request POST \
-           "${CI_API_V4_URL}/projects/${CI_PROJECT_ID}/releases" \
-           --form "name=Release ${CI_COMMIT_TAG}" \
-           --form "tag_name=${CI_COMMIT_TAG}" \
-           --form "description=Syncerman ${CI_COMMIT_TAG}" \
-           --form "assets[links][0][name]=syncerman-linux-amd64" \
-           --form "assets[links][0][url]=${CI_PROJECT_URL}/-/jobs/artifacts/${CI_COMMIT_TAG}/raw/bin/syncerman-linux-amd64?job=build:linux" \
-           --form "assets[links][1][name]=syncerman-windows-amd64.exe" \
-           --form "assets[links][1][url]=${CI_PROJECT_URL}/-/jobs/artifacts/${CI_COMMIT_TAG}/raw/bin/syncerman-windows-amd64.exe?job=build:windows"
+    - echo "Running the release job."
+  release:
+    tag_name: $CI_COMMIT_TAG
+    name: 'Syncerman $CI_COMMIT_TAG'
+    description: 'Syncerman CLI for bidirectional file synchronization using rclone'
+    assets:
+      links:
+        - name: 'syncerman-linux-amd64'
+          url: '${CI_PROJECT_URL}/-/jobs/artifacts/${CI_COMMIT_TAG}/raw/bin/syncerman-linux-amd64?job=build:linux'
+        - name: 'syncerman-windows-amd64.exe'
+          url: '${CI_PROJECT_URL}/-/jobs/artifacts/${CI_COMMIT_TAG}/raw/bin/syncerman-windows-amd64.exe?job=build:windows'
