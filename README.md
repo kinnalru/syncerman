@@ -15,6 +15,12 @@
 - **Go 1.25.5+** - Required for building Syncerman from source
 - **rclone CLI** - Required at runtime for all synchronization operations
 
+### Installing by go install
+
+```bash
+go install gitlab.com/kinnalru/syncerman@latest
+```
+
 ### Building from Source
 
 #### Using the Makefile (Recommended)
