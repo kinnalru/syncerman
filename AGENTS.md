@@ -9,7 +9,7 @@ This document provides guidelines for autonomous coding agents working on this r
 - `guides/OVERALL.md` - Comprehensive and detailed project description, features and corner cases. READ WHEN PLANING
 - `guides/STYLE.md` - Go Code Style Guidelines
 - `guides/PLANING.md` - Autonomous Coding Agent Workflow
-
+- `guides/WRITE_AHEAD_LOGS.md` - WAL (Write Ahead Log) definition an rules
 
 ## Technology Stack
 
