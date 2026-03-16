@@ -121,58 +121,6 @@ func TestCreateAllDirectories_NoDestinations(t *testing.T) {
 	assert.Error(t, err)
 }
 
-func TestValidateDestinationPaths_Valid(t *testing.T) {
-	targets := []*SyncTarget{
-		{
-			Provider:    "gdrive",
-			SourcePath:  "docs",
-			Destination: config.Destination{To: "s3:backup/docs"},
-		},
-		{
-			Provider:    "local",
-			SourcePath:  "/data",
-			Destination: config.Destination{To: "/backup/data"},
-		},
-	}
-
-	engine := NewEngine(nil, nil, &mockLogger{})
-	err := engine.ValidateDestinationPaths(targets)
-
-	require.NoError(t, err)
-}
-
-func TestValidateDestinationPaths_InvalidFormat(t *testing.T) {
-	targets := []*SyncTarget{
-		{
-			Provider:    "gdrive",
-			SourcePath:  "docs",
-			Destination: config.Destination{To: ":emptyprovider"},
-		},
-	}
-
-	engine := NewEngine(nil, nil, &mockLogger{})
-	err := engine.ValidateDestinationPaths(targets)
-
-	require.Error(t, err)
-	assert.Contains(t, err.Error(), "provider name cannot be empty")
-}
-
-func TestValidateDestinationPaths_EmptyProvider(t *testing.T) {
-	targets := []*SyncTarget{
-		{
-			Provider:    "gdrive",
-			SourcePath:  "docs",
-			Destination: config.Destination{To: ":path"},
-		},
-	}
-
-	engine := NewEngine(nil, nil, &mockLogger{})
-	err := engine.ValidateDestinationPaths(targets)
-
-	require.Error(t, err)
-	assert.Contains(t, err.Error(), "provider name cannot be empty")
-}
-
 func TestPrepare_Directories(t *testing.T) {
 	mockExec := &mockMkdirExecutor{
 		results: []*rclone.Result{

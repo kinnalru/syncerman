@@ -30,17 +30,6 @@ func (ve ValidationErrors) Error() string {
 	return fmt.Sprintf("validation errors: %s", joinErrorMessages(ve, "; "))
 }
 
-func joinErrorMessages(errors []error, separator string) string {
-	if len(errors) == 0 {
-		return ""
-	}
-	messages := make([]string, len(errors))
-	for i, err := range errors {
-		messages[i] = err.Error()
-	}
-	return strings.Join(messages, separator)
-}
-
 // ValidateTargets checks that all providers and paths in config are valid.
 // It verifies that providers exist in rclone configuration and paths are configured.
 // Validates each provider by querying rclone, except for 'local' which is always valid.

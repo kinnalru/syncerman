@@ -99,7 +99,7 @@ func (e *Engine) RunAll(ctx context.Context, config *config.Config, options Sync
 		}
 	}
 
-	successCount, firstRunCount := countResults(results)
+	successCount, firstRunCount := countBasicResults(results)
 
 	e.logger.Info("Sync completed: %d/%d successful, %d first-runs", successCount, len(results), firstRunCount)
 
@@ -114,16 +114,4 @@ func (e *Engine) Run(ctx context.Context, target SyncTarget, options SyncOptions
 
 func formatTaskName(target SyncTarget) string {
 	return fmt.Sprintf("%s:%s → %s", target.Provider, target.SourcePath, StripProviderHash(target.Destination.To))
-}
-
-func countResults(results []*SyncResult) (successCount int, firstRunCount int) {
-	for _, result := range results {
-		if result.Success {
-			successCount++
-		}
-		if result.FirstRun {
-			firstRunCount++
-		}
-	}
-	return
 }

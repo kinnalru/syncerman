@@ -358,37 +358,6 @@ func TestNewReport(t *testing.T) {
 	assert.Equal(t, 1, report.SuccessCount)
 }
 
-func TestAggregateReport(t *testing.T) {
-	report1 := NewReport([]*SyncResult{
-		{
-			Target:     SyncTarget{Provider: "gdrive", SourcePath: "docs", Destination: config.Destination{To: "s3:backup/docs"}},
-			Success:    true,
-			Error:      nil,
-			FirstRun:   false,
-			RetryCount: 0,
-		},
-	})
-
-	report2 := NewReport([]*SyncResult{
-		{
-			Target:     SyncTarget{Provider: "local", SourcePath: "/data", Destination: config.Destination{To: "gdrive:data"}},
-			Success:    false,
-			Error:      assert.AnError,
-			FirstRun:   false,
-			RetryCount: 0,
-		},
-	})
-
-	combined := AggregateReport([]*SyncReport{report1, report2})
-
-	assert.Equal(t, 2, combined.TotalTargets)
-	assert.Equal(t, 1, combined.SuccessCount)
-	assert.Equal(t, 1, combined.FailureCount)
-	assert.Equal(t, 0, combined.FirstRunCount)
-	assert.True(t, combined.HasErrors)
-	assert.Equal(t, 1, combined.ExitCode)
-}
-
 func TestNewEmptyReport(t *testing.T) {
 	report := newEmptyReport()
 
@@ -541,7 +510,7 @@ func TestFormatSuccessfulTargets(t *testing.T) {
 	}
 
 	var builder strings.Builder
-	report.formatSuccessfulTargets(&builder, true)
+	report.formatTargetsConditional(&builder, true, report.SuccessCount, "=== Successful Targets ===\n", report.SucceededTargets, nil)
 	output := builder.String()
 
 	assert.Contains(t, output, "=== Successful Targets ===")
@@ -558,7 +527,7 @@ func TestFormatSuccessfulTargets_NonVerbose(t *testing.T) {
 	}
 
 	var builder strings.Builder
-	report.formatSuccessfulTargets(&builder, false)
+	report.formatTargetsConditional(&builder, false, report.SuccessCount, "=== Successful Targets ===\n", report.SucceededTargets, nil)
 	output := builder.String()
 
 	assert.Empty(t, output)
@@ -578,7 +547,7 @@ func TestFormatFailedTargets(t *testing.T) {
 	}
 
 	var builder strings.Builder
-	report.formatFailedTargets(&builder, true)
+	report.formatTargetsConditional(&builder, true, report.FailureCount, "=== Failed Targets ===\n", report.FailedTargets, report.Errors)
 	output := builder.String()
 
 	assert.Contains(t, output, "=== Failed Targets ===")
@@ -597,7 +566,7 @@ func TestFormatFailedTargets_NonVerbose(t *testing.T) {
 	}
 
 	var builder strings.Builder
-	report.formatFailedTargets(&builder, false)
+	report.formatTargetsConditional(&builder, false, report.FailureCount, "=== Failed Targets ===\n", report.FailedTargets, report.Errors)
 	output := builder.String()
 
 	assert.Empty(t, output)
@@ -613,7 +582,7 @@ func TestFormatFirstRunTargets(t *testing.T) {
 	}
 
 	var builder strings.Builder
-	report.formatFirstRunTargets(&builder, true)
+	report.formatTargetsConditional(&builder, true, report.FirstRunCount, "=== First-Runs ===\n", report.FirstRunTargets, nil)
 	output := builder.String()
 
 	assert.Contains(t, output, "=== First-Runs ===")
@@ -630,7 +599,7 @@ func TestFormatFirstRunTargets_NonVerbose(t *testing.T) {
 	}
 
 	var builder strings.Builder
-	report.formatFirstRunTargets(&builder, false)
+	report.formatTargetsConditional(&builder, false, report.FirstRunCount, "=== First-Runs ===\n", report.FirstRunTargets, nil)
 	output := builder.String()
 
 	assert.Empty(t, output)

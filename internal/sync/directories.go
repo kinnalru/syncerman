@@ -67,24 +67,3 @@ func (e *Engine) createDirectories(ctx context.Context, paths map[string]struct{
 	}
 	return nil
 }
-
-// ValidateDestinationPaths checks if all destination paths in targets are valid.
-// Returns error if any destination path is malformed.
-func (e *Engine) ValidateDestinationPaths(targets []*SyncTarget) error {
-	for i, target := range targets {
-		provider, path, err := ParseRemote(target.Destination.To)
-		if err != nil {
-			return fmt.Errorf("destination %d has invalid remote format '%s': %w", i+1, target.Destination.To, err)
-		}
-
-		if provider == "" {
-			return fmt.Errorf("destination %d has empty provider: %s", i+1, target.Destination.To)
-		}
-
-		if path == "" {
-			return fmt.Errorf("destination %d has empty path: %s", i+1, target.Destination.To)
-		}
-	}
-
-	return nil
-}

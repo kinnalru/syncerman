@@ -2,11 +2,23 @@ package sync
 
 import (
 	"context"
+	"strings"
 
 	"gitlab.com/kinnalru/syncerman/internal/config"
 	"gitlab.com/kinnalru/syncerman/internal/logger"
 	"gitlab.com/kinnalru/syncerman/internal/rclone"
 )
+
+func joinErrorMessages(errors []error, separator string) string {
+	if len(errors) == 0 {
+		return ""
+	}
+	messages := make([]string, len(errors))
+	for i, err := range errors {
+		messages[i] = err.Error()
+	}
+	return strings.Join(messages, separator)
+}
 
 // SyncTarget represents a single synchronization operation between source and destinations.
 type SyncTarget struct {

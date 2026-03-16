@@ -50,8 +50,17 @@ func collectResults(results []*SyncResult) *SyncReport {
 	return report
 }
 
-func (e *Engine) CollectResults(results []*SyncResult) *SyncReport {
-	return collectResults(results)
+func countBasicResults(results []*SyncResult) (successCount int, firstRunCount int) {
+	nonNilResults := filterNilResults(results)
+	for _, result := range nonNilResults {
+		if result.Success {
+			successCount++
+		}
+		if result.FirstRun {
+			firstRunCount++
+		}
+	}
+	return
 }
 
 // calculateExitCode determines the appropriate exit code based on sync results.
@@ -67,9 +76,9 @@ func (r *SyncReport) Format(verbose bool) string {
 	var builder strings.Builder
 
 	r.formatHeader(&builder)
-	r.formatSuccessfulTargets(&builder, verbose)
-	r.formatFailedTargets(&builder, verbose)
-	r.formatFirstRunTargets(&builder, verbose)
+	r.formatTargetsConditional(&builder, verbose, r.SuccessCount, "=== Successful Targets ===\n", r.SucceededTargets, nil)
+	r.formatTargetsConditional(&builder, verbose, r.FailureCount, "=== Failed Targets ===\n", r.FailedTargets, r.Errors)
+	r.formatTargetsConditional(&builder, verbose, r.FirstRunCount, "=== First-Runs ===\n", r.FirstRunTargets, nil)
 	fmt.Fprintf(&builder, "Exit code: %d\n", r.ExitCode)
 
 	return builder.String()
@@ -103,21 +112,9 @@ func (r *SyncReport) formatTargetList(builder *strings.Builder, header string, t
 	builder.WriteString("\n")
 }
 
-func (r *SyncReport) formatSuccessfulTargets(builder *strings.Builder, verbose bool) {
-	if r.SuccessCount > 0 && verbose {
-		r.formatTargetList(builder, "=== Successful Targets ===\n", r.SucceededTargets, nil)
-	}
-}
-
-func (r *SyncReport) formatFailedTargets(builder *strings.Builder, verbose bool) {
-	if r.FailureCount > 0 && verbose {
-		r.formatTargetList(builder, "=== Failed Targets ===\n", r.FailedTargets, r.Errors)
-	}
-}
-
-func (r *SyncReport) formatFirstRunTargets(builder *strings.Builder, verbose bool) {
-	if r.FirstRunCount > 0 && verbose {
-		r.formatTargetList(builder, "=== First-Runs ===\n", r.FirstRunTargets, nil)
+func (r *SyncReport) formatTargetsConditional(builder *strings.Builder, verbose bool, count int, header string, targets []SyncTarget, errors []error) {
+	if count > 0 && verbose {
+		r.formatTargetList(builder, header, targets, errors)
 	}
 }
 
@@ -139,28 +136,6 @@ func newEmptyReport() *SyncReport {
 		SucceededTargets: []SyncTarget{},
 		Errors:           []error{},
 	}
-}
-
-func AggregateReport(reports []*SyncReport) *SyncReport {
-	combined := newEmptyReport()
-
-	for _, report := range reports {
-		combined.TotalTargets += report.TotalTargets
-		combined.SuccessCount += report.SuccessCount
-		combined.FailureCount += report.FailureCount
-		combined.FirstRunCount += report.FirstRunCount
-
-		combined.FirstRunTargets = append(combined.FirstRunTargets, report.FirstRunTargets...)
-		combined.FailedTargets = append(combined.FailedTargets, report.FailedTargets...)
-		combined.SucceededTargets = append(combined.SucceededTargets, report.SucceededTargets...)
-
-		combined.HasErrors = combined.HasErrors || report.HasErrors
-		combined.Errors = append(combined.Errors, report.Errors...)
-	}
-
-	combined.ExitCode = combined.calculateExitCode()
-
-	return combined
 }
 
 func filterNilResults(results []*SyncResult) []*SyncResult {
