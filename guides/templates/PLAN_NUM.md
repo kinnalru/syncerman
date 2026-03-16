@@ -17,7 +17,7 @@ SHORT_PLAN_OVERVIEW
 
 **Key Requirements**: LIST_OF_KEY_REQUIREMENT (each short summary)
   - key components
-  - invarians
+  - invariants
   - ...
 
 **Context**: MILESTONE_CONTEXT

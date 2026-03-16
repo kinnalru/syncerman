@@ -1,4 +1,4 @@
-# WAL (Write Ahead Log) definition an rules
+# WAL (Write Ahead Log) definition and rules
 
 - WAL persisted ONLY in file `./WAL.md`
 - use strict format of `./WAL.md` file: `guides/templates/WAL_TEMPLATE.md`

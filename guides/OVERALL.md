@@ -235,7 +235,7 @@ syncerman --config /home/user/.config/syncerman/.syncerman.yml check
 Syncerman executes rclone bisync with the following standard command:
 
 ```bash
-rclone bisync <SRC Provider:><SRC Path> <DST Provider:><DST Path> \
+rclone bisync <SRC Provider>:<SRC Path> <DST Provider>:<DST Path> \
   --create-empty-src-dirs \
   --compare size,modtime \
   --no-slow-hash \
@@ -298,7 +298,7 @@ Syncerman detects and handles the first-run scenario:
 /Bisync critical error: cannot find prior Path1 or Path2 listings/ AND /here are the filenames we were looking for/ AND /Do they exist/
 ```
 
-example (USE THIS IN TEST):
+Example (USE THIS IN TEST):
 ```
 2026/03/14 20:14:03 ERROR : Bisync critical error: cannot find prior Path1 or Path2 listings, likely due to critical error on prior run 
 Tip: here are the filenames we were looking for. Do they exist? 
