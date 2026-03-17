@@ -19,10 +19,9 @@ package cmd
 //   syncerman version
 //       Prints version number of Syncerman.
 //
-// Global Flags:
 //
 //   -c, --config string
-//       Path to configuration file (default: ./syncerman.yaml or ./syncerman.yml)
+//       Path to configuration file (default: .syncerman.yml)
 //
 //   -d, --dry-run
 //       Dry run mode - show what would be done without making changes

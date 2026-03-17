@@ -6,7 +6,6 @@ import (
 
 	"gitlab.com/kinnalru/syncerman/internal/config"
 	"gitlab.com/kinnalru/syncerman/internal/logger"
-	"gitlab.com/kinnalru/syncerman/internal/rclone"
 	"gitlab.com/kinnalru/syncerman/internal/sync"
 
 	"github.com/spf13/cobra"
@@ -27,9 +26,9 @@ Examples:
   syncerman sync --verbose         # Show detailed output
 
 Global Flags:
-   -c, --config string   Path to configuration file (default: ./syncerman.yaml)
+   -c, --config string   Path to configuration file (default: .syncerman.yml)
    -d, --dry-run        Dry run mode (show what would be done)
-   -v, --verbose         Verbose output
+   -v, --verbose        Verbose output
    -q, --quiet          Quiet mode (suppress output)`,
 	Args: cobra.MaximumNArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
@@ -55,8 +54,7 @@ func runSync(cmd *cobra.Command, args []string) error {
 		Quiet:   IsQuiet(),
 	}
 
-	executor := rclone.NewExecutor(rclone.NewConfig())
-	engine := sync.NewEngine(cfg, executor, log)
+	engine := createEngine(cfg)
 	ctx, cancel := GetConfig().CreateContext()
 	defer cancel()
 
@@ -67,7 +65,7 @@ func runSync(cmd *cobra.Command, args []string) error {
 }
 
 func syncAllTargets(ctx context.Context, engine *sync.Engine, cfg *config.Config, opts sync.SyncOptions, log *logger.ConsoleLogger) error {
-	if err := prepareDirectories(ctx, engine, cfg, opts, log); err != nil && !opts.Quiet {
+	if err := engine.Prepare(ctx, cfg, opts); err != nil && !opts.Quiet {
 		log.Error("Failed to prepare directories: %v", err)
 	}
 
@@ -77,7 +75,7 @@ func syncAllTargets(ctx context.Context, engine *sync.Engine, cfg *config.Config
 		if !opts.Quiet {
 			log.Error("%s", report.FormatError())
 		}
-		return &ExitCodeError{Code: exitCodeRcloneError, Err: err}
+		return wrapError(exitCodeRcloneError, err, "")
 	}
 
 	return reportResults(engine, results, opts, log)
@@ -90,7 +88,7 @@ func reportResults(engine *sync.Engine, results []*sync.SyncResult, opts sync.Sy
 	}
 
 	if report.ExitCode != 0 {
-		return &ExitCodeError{Code: report.ExitCode, Err: fmt.Errorf("sync completed with exit code %d", report.ExitCode)}
+		return wrapError(report.ExitCode, fmt.Errorf("sync completed with exit code %d", report.ExitCode), "")
 	}
 
 	return nil
@@ -102,34 +100,29 @@ func syncSingleTarget(ctx context.Context, log *logger.ConsoleLogger, engine *sy
 		return err
 	}
 
-	if err := prepareDirectories(ctx, engine, cfg, opts, log); err != nil && !opts.Quiet {
+	if err := engine.Prepare(ctx, cfg, opts); err != nil && !opts.Quiet {
 		log.Error("Failed to prepare directories: %v", err)
 	}
 
 	result, err := engine.Run(ctx, *target, opts)
 	if err != nil {
-		log.Error("Sync failed: %v", err)
-		return &ExitCodeError{Code: exitCodeRcloneError, Err: err}
+		return wrapError(exitCodeRcloneError, err, "")
 	}
 
 	return reportResults(engine, []*sync.SyncResult{result}, opts, log)
-}
-
-func prepareDirectories(ctx context.Context, engine *sync.Engine, cfg *config.Config, opts sync.SyncOptions, log *logger.ConsoleLogger) error {
-	return engine.Prepare(ctx, cfg, opts)
 }
 
 func findAndValidateTarget(log *logger.ConsoleLogger, engine *sync.Engine, cfg *config.Config, targetArg string) (*sync.SyncTarget, error) {
 	provider, path, err := sync.ParseRemote(targetArg)
 	if err != nil {
 		log.Error("Invalid target format: %v (expected: provider:path)", err)
-		return nil, &ExitCodeError{Code: exitCodeGeneralError, Err: err}
+		return nil, wrapError(exitCodeGeneralError, err, "")
 	}
 
 	targets, err := engine.ExpandTargets(cfg)
 	if err != nil {
 		log.Error("Failed to expand targets: %v", err)
-		return nil, &ExitCodeError{Code: exitCodeConfigError, Err: err}
+		return nil, wrapError(exitCodeConfigError, err, "")
 	}
 
 	for _, target := range targets {
@@ -139,5 +132,5 @@ func findAndValidateTarget(log *logger.ConsoleLogger, engine *sync.Engine, cfg *
 	}
 
 	log.Error("Target %s:%s not found in configuration", provider, path)
-	return nil, &ExitCodeError{Code: exitCodeConfigError, Err: fmt.Errorf("target %s:%s not found", provider, path)}
+	return nil, wrapError(exitCodeConfigError, fmt.Errorf("target %s:%s not found", provider, path), "")
 }

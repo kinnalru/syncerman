@@ -3,9 +3,6 @@ package cmd
 import (
 	"fmt"
 
-	"gitlab.com/kinnalru/syncerman/internal/rclone"
-	"gitlab.com/kinnalru/syncerman/internal/sync"
-
 	"github.com/spf13/cobra"
 )
 
@@ -34,14 +31,13 @@ Examples:
 			return err
 		}
 
-		executor := rclone.NewExecutor(rclone.NewConfig())
-		engine := sync.NewEngine(cfg, executor, log)
+		engine := createEngine(cfg)
 		ctx, cancel := GetConfig().CreateContext()
 		defer cancel()
 
 		if err := engine.Validate(ctx, cfg); err != nil {
 			log.Error("Target validation failed: %v", err)
-			return &ExitCodeError{Code: exitCodeValidationError, Err: err}
+			return wrapError(exitCodeValidationError, err, "")
 		}
 
 		log.Info("Configuration is valid")
@@ -55,8 +51,6 @@ Examples:
 		log.Info("Checking rclone remotes...")
 		for _, provider := range providers {
 			providerName := provider.Name
-			executor := rclone.NewExecutor(rclone.NewConfig())
-			engine := sync.NewEngine(nil, executor, log)
 
 			exists, err := engine.RemoteProviderExists(ctx, providerName)
 			if err != nil {
@@ -76,7 +70,7 @@ Examples:
 		if allValid {
 			log.Info("All checks passed")
 		} else {
-			return &ExitCodeError{Code: exitCodeValidationError, Err: fmt.Errorf("one or more checks failed")}
+			return wrapError(exitCodeValidationError, fmt.Errorf("one or more checks failed"), "")
 		}
 
 		return nil
@@ -85,17 +79,4 @@ Examples:
 
 func init() {
 	rootCmd.AddCommand(checkCmd)
-}
-
-type ExitCodeError struct {
-	Code int
-	Err  error
-}
-
-func (e *ExitCodeError) Error() string {
-	return e.Err.Error()
-}
-
-func (e *ExitCodeError) ExitCode() int {
-	return e.Code
 }

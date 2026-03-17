@@ -21,7 +21,7 @@
 //
 // Running Multiple Syncs:
 //
-//	cfg := config.LoadConfig("syncerman.yaml")
+//	cfg := config.LoadConfig(".syncerman.yml")
 //	results, err := engine.RunAll(ctx, cfg, sync.SyncOptions{})
 //	if len(results) > 0 {
 //	    report := sync.NewReport(results)

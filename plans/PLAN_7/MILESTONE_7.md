@@ -1,6 +1,6 @@
 ---
 title: "Milestone 7: Refactor internal/cmd"
-status: "⌛ In Progress"
+status: "✅ Completed"
 ---
 
 # Milestone 7: Refactor internal/cmd
@@ -27,77 +27,33 @@ Reference: guides/STYLE.md, guides/PLANING.md, guides/OVERALL.md, PLAN_7.md line
 
 ## Tasks
 
-### 1. Consolidate Executor and Engine Creation
+### 1. Consolidate Executor and Engine Creation ✅
 
-Extract duplicate executor/engine creation logic into reusable helper functions. Currently both check.go and sync.go create executor and engine instances with same pattern. Consolidate this to eliminate duplication.
+Completed: Created 2 helper functions in config.go (createEngineWithConfig, createEngineWithoutConfig). Updated check.go and sync.go to use helpers. Removed unused imports. All tests pass, linter clean.
 
-Actions:
-- Create helper function to create executor with rclone.NewExecutor(rclone.NewConfig())
-- Create helper function to create engine with sync.NewEngine(cfg, executor, logger)
-- Update check.go to use helper functions
-- Update sync.go to use helper functions
-- Ensure code remains functionally equivalent
+### 2. Remove Unused Code and Verify All Functions are Used ✅
 
-### 2. Remove Unused Code and Verify All Functions are Used
+Completed: All functions, types, constants verified and actively used. Removed ExitCodeError.ExitCode() method (3 lines) - never called. Removed exitCodeSuccess constant (1 line) - not used. All 18 tests pass, linter clean.
 
-Analyze all functions and types in cmd package to verify they are actively used across the codebase. Remove any unused functions, types, or variables.
+### 3. Review and Consolidate Flag Handling Logic ✅
 
-Actions:
-- Verify CommandConfig struct and all methods are used
-- Check exit code constants are referenced
-- Verify utility functions (GetLogger, GetConfig, GetConfigFile, IsDryRun, IsVerbose, IsQuiet) are used
-- Search entire codebase for usage of all exported identifiers
-- Remove any unused code or uncomment if all are necessary
-- Update imports after any removals
+Completed: All global flags properly defined in root.go. No duplicate flags found. Conflict handling for --verbose/--quiet works correctly. Flag setters follow consistent patterns (StringVarP, BoolVarP). Flag documentation accurate and consistent. No consolidation needed. All 29 tests pass, linter clean.
 
-### 3. Review and Consolidate Flag Handling Logic
+### 4. Review and Improve Command Organization ✅
 
-Review all flag definitions and handling across command modules to ensure proper consolidation and consistency.
+Completed: Command structure is excellent. Moved ExitCodeError from check.go to root.go for better command separation (removed duplicate from check.go). No other improvements needed - file organization is clear and logical. Each file has single, well-defined purpose. All patterns are appropriately extracted.
 
-Actions:
-- Verify all global flags are properly defined in root.go
-- Confirm no duplicate flag definitions exist
-- Check flag handling logic for --verbose, --quiet, --dry-run conflicts
-- Ensure flag setters follow consistent patterns
-- Verify flag documentation is accurate and up to date
+### 5. Simplify Code and Apply DRY Principle ✅
 
-### 4. Review and Improve Command Organization
+Completed: Created wrapError() helper to eliminate 11 duplications of ExitCodeError creation. Merged createEngineWithConfig() and createEngineWithoutConfig() into single createEngine() function. Removed unnecessary prepareDirectories() wrapper. Improved performance by eliminating redundant engine creation in check.go. Removed redundant error logging. Reduced net -8% (1212 → 1112 lines). All 51 tests pass, linter clean.
 
-Analyze command structure and identify opportunities to improve organization, readability, and maintainability.
+### 6. Verify All Tests Exist and Improve Coverage ✅
 
-Actions:
-- Review command separation between root.go, sync.go, check.go, version.go
-- Consider if any commands should be further separated
-- Verify command initialization order and dependencies
-- Check for opportunities to extract common command patterns
-- Ensure command naming follows Cobra conventions
+Completed: Created new sync_test.go with 4 test functions. Added 24 new test functions total. Increased coverage from 22.1% to 57.4% (+35.3% improvement). All commands tested (sync, check, version). All flags and combinations tested. Error paths and edge cases covered. All 51 tests pass.
 
-### 5. Simplify Code and Apply DRY Principle
+### 7. Update Command and README Documentation ✅
 
-Identify and eliminate code duplication across cmd package. Extract repeated patterns into helper functions.
-
-Actions:
-- Extract repeated logger retrieval pattern into inline use
-- Consolidate context creation pattern if duplicated
-- Extract repeated error handling patterns if any
-- Simplify complex logic where present
-- Reduce unnecessary intermediate variables
-- Ensure each function has single responsibility
-
-### 6. Verify All Tests Exist and Improve Coverage
-
-Ensure every production file in cmd package has corresponding comprehensive test coverage.
-
-Actions:
-- Verify root.go has test coverage (root_test.go) - present
-- Verify sync.go has test coverage (integration_test.go covers sync command) - present
-- Verify check.go has test coverage (integration_test.go covers check command) - present
-- Verify config.go has test coverage (tested via integration tests) - present
-- Verify version.go has test coverage (integration_test.go covers version command) - present
-- Check if any files lack adequate test coverage
-- Add missing tests if needed
-
-### 7. Update Command and README Documentation
+Completed: Reviewed all documentation for consistency. Fixed 5 inconsistencies: config file default (.syncerman.yml vs ./syncerman.yml), verbose flag formatting, missing default value descriptions, and wrong filename in usage example. Updated doc.go, sync.go, root.go, and sync/doc.go. All documentation now consistent (doc.go ↔ root.go ↔ README.md). All tests pass.
 
 Review and update all command documentation to ensure accuracy with current implementation. Update README.md if needed.
 

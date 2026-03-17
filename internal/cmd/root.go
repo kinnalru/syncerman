@@ -13,7 +13,6 @@ import (
 )
 
 const (
-	exitCodeSuccess         = 0
 	exitCodeGeneralError    = 1
 	exitCodeConfigError     = 2
 	exitCodeRcloneError     = 3
@@ -92,11 +91,11 @@ Available Commands:
   check      Check configuration and verify rclone remotes
   version     Print version number
 
-  Global Flags:
-   -c, --config string   Path to configuration file
-  -d, --dry-run        Dry run mode (show what would be done)
-  -v, --verbose         Verbose output
-  -q, --quiet          Quiet mode (suppress output)
+   Global Flags:
+    -c, --config string   Path to configuration file (default: .syncerman.yml)
+   -d, --dry-run        Dry run mode (show what would be done)
+   -v, --verbose        Verbose output
+   -q, --quiet          Quiet mode (suppress output)
 
  Examples:
   # Sync all targets from configuration
@@ -129,7 +128,7 @@ func init() {
 	rootCmd.Version = version.Version
 	cobra.OnInitialize(initCommandConfig)
 
-	rootCmd.PersistentFlags().StringVarP(&commandConfig.ConfigFile, "config", "c", "", "Path to configuration file")
+	rootCmd.PersistentFlags().StringVarP(&commandConfig.ConfigFile, "config", "c", "", "Path to configuration file (default: .syncerman.yml)")
 	rootCmd.PersistentFlags().BoolVarP(&commandConfig.DryRun, "dry-run", "d", false, "Dry run mode (show what would be done)")
 	rootCmd.PersistentFlags().BoolVarP(&commandConfig.Verbose, "verbose", "v", false, "Verbose output")
 	rootCmd.PersistentFlags().BoolVarP(&commandConfig.Quiet, "quiet", "q", false, "Quiet mode (suppress output)")
@@ -164,4 +163,13 @@ func IsVerbose() bool {
 
 func IsQuiet() bool {
 	return commandConfig.Quiet
+}
+
+type ExitCodeError struct {
+	Code int
+	Err  error
+}
+
+func (e *ExitCodeError) Error() string {
+	return e.Err.Error()
 }
