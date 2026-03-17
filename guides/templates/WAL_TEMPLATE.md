@@ -1,7 +1,5 @@
 ## Project Status: <SHORT STATUS SUMMARY>
 
----
-
 ## Work Log
 
 ### <ICON> <START DATE> PLAN_<NUM>: <PLAN_NAME> [<PLAN STATUS>]
