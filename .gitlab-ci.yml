@@ -8,11 +8,11 @@ variables:
   GO_VERSION: "1.25.5"
   BINARY_NAME: "syncerman"
 
-workflow:
-  rules:
-    - if: $CI_PIPELINE_SOURCE == "schedule"
-      when: never
-    - when: always
+# workflow:
+#   rules:
+#     - if: $CI_PIPELINE_SOURCE == "schedule"
+#       when: never
+#     - when: always
 
 
 test:
@@ -28,6 +28,8 @@ test:
   only:
     - branches
     - merge_requests
+  except:
+    - schedule
 
 build:linux:
   image: golang:${GO_VERSION}
@@ -52,6 +54,9 @@ build:linux:
     - branches
     - merge_requests
     - tags
+  except:
+    - schedule
+
 
 build:windows:
   image: golang:${GO_VERSION}
@@ -76,6 +81,8 @@ build:windows:
     - branches
     - merge_requests
     - tags
+  except:
+    - schedule
 
 release:
   image: registry.gitlab.com/gitlab-org/cli:latest
