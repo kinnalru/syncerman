@@ -8,6 +8,12 @@ variables:
   GO_VERSION: "1.25.5"
   BINARY_NAME: "syncerman"
 
+workflow:
+  rules:
+    - if: $CI_PIPELINE_SOURCE === "schedule"
+      when: never
+
+
 test:
   image: golang:${GO_VERSION}
   stage: test
@@ -103,6 +109,9 @@ sync-public-repos:
     paths:
       - repositories
       - $APK_CACHE_DIR
+  rules:
+    - if: '$CI_PIPELINE_SOURCE === "schedule" && $SCRIPTNAME == "gitsync"'
+      when: always
   only:
     refs:
       - schedules
