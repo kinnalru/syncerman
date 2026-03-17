@@ -1,0 +1,5 @@
+workdir: repositories
+repositories:
+  - git: git@gitlab.com:kinnalru/syncerman.git
+    mirrors:
+      - git@github.com:kinnalru/syncerman.git

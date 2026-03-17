@@ -2,6 +2,7 @@ stages:
   - test
   - build
   - release
+  - schedule
 
 variables:
   GO_VERSION: "1.25.5"
@@ -90,3 +91,29 @@ release:
           url: '${CI_PROJECT_URL}/-/jobs/artifacts/${CI_COMMIT_TAG}/raw/bin/syncerman-linux-amd64?job=build:linux'
         - name: 'syncerman-windows-amd64.exe'
           url: '${CI_PROJECT_URL}/-/jobs/artifacts/${CI_COMMIT_TAG}/raw/bin/syncerman-windows-amd64.exe?job=build:windows'
+
+sync-public-repos:
+  stage: schedule
+  image: harbor.rnds.pro/dockerhub/library/ruby:3.0-alpine
+  variables:
+    GITBULK_CONFIG: gitbulk.yml
+    APK_CACHE_DIR: $CI_PROJECT_DIR/.cache/apk
+  cache:
+    key: repositories-cache
+    paths:
+      - repositories
+      - $APK_CACHE_DIR
+  only:
+    refs:
+      - schedules
+    variables:
+      - $SCRIPTNAME == "gitsync"
+  before_script:
+    - which ssh-agent || apk add --cache-dir $APK_CACHE_DIR openssh git
+    - eval $(ssh-agent -s)
+    - ssh-add <(echo "$GITSYNCBOT_ID_RSA_KEY")
+    - mkdir -p ~/.ssh
+    - echo -e "Host *\n\tStrictHostKeyChecking no\n\n" > ~/.ssh/config
+  script:
+    - gem install gitbulk
+    - gitbulk
