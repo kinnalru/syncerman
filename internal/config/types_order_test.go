@@ -320,36 +320,6 @@ provider1:
 	}
 }
 
-func TestBackwardCompatibilityWithProviderMap(t *testing.T) {
-	yamlData := `
-provider1:
-  "path1":
-    - to: "remote:dest1"
-provider2:
-  "path2":
-    - to: "remote:dest2"
-`
-
-	cfg, err := parseTestConfig(yamlData)
-	if err != nil {
-		t.Fatalf("Failed to unmarshal YAML: %v", err)
-	}
-
-	providersMap := cfg.GetProvidersMap()
-
-	if len(providersMap) != 2 {
-		t.Fatalf("Expected 2 providers in map, got %d", len(providersMap))
-	}
-
-	if _, ok := providersMap["provider1"]; !ok {
-		t.Errorf("Expected provider1 to exist in map")
-	}
-
-	if _, ok := providersMap["provider2"]; !ok {
-		t.Errorf("Expected provider2 to exist in map")
-	}
-}
-
 func TestOrderedProviders_TableDrivenTests(t *testing.T) {
 	tests := []struct {
 		name          string

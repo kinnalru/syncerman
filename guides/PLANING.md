@@ -29,7 +29,7 @@ Always read `guides/OVERALL.md` when planning. You MUST use `todowrite` and `tod
 *   **Tracker Update**:
      - Populate the active progress in `./WAL.md` (see Write Ahead Log definition and rules in `guides/WRITE_AHEAD_LOGS.md`) BEFORE and AFTER actual work
 *   **Subagent invocation**:
-    - MAY use tool with subagents → Use OpenCode's subagent system (@mention `@plan`). example: `@plan create a plan to implement Milestone 3`
+    - MAY use tool with subagents → Use OpenCode's subagent system (use mention `@build`). example: `@build create a plan to implement Milestone 3`
     - MAY use the task tool with subagent_type set to "plan" and pass the task description.
 
 ### `Plan Format`
@@ -67,9 +67,10 @@ Always read `guides/OVERALL.md` when planning. You MUST use `todowrite` and `tod
     - Maintain `Milestone` status in Frontmatter during Milestone/Task Execution
 *   **Tracker Update**:
      - Populate the active milestone in `./WAL.md` (see Write Ahead Log definition and rules in `guides/WRITE_AHEAD_LOGS.md`) with these granular tasks. Write BEFORE and AFTER actual work.
+     - Only status and icon, SINGLE LINE, NO any changes in task text!
 *   **Subagent invocation**:
-     - MAY use tool with subagents → Use OpenCode's subagent system (@mention `@plan`). example: `@plan create a plan to implement Milestone 3`
-     - MAY use the task tool FOR PLANNING with subagent_type set to "plan" and pass the task description.
+     - MAY use tool with subagents → Use OpenCode's subagent system (use mention `@build`). example: `@build create a plan to implement Milestone 3`
+     - MAY use the task tool FOR PLANNING with subagent_type set to "build" and pass the task description.
     - MAY use the task tool FOR EXECUTING with subagent_type set to "build" and pass the task description.
 
 ### `Milestone Format`
@@ -116,12 +117,12 @@ Execution must be methodical and focused to maintain code quality. You MUST use 
 *   **Continuous Verification**:
     - Immediately after completing a task's code, run local verification steps (e.g., formatters, linters, unit tests).
 *   **Task Completion**:
-    - Once verified successfully, mark the task as "Completed" inside Milestone file.
+    - Once verified successfully, mark the task as "Completed" inside Milestone file. Only status and icon, NO any changes in task text!
 *   **Dynamic Adaptation**:
     - If a task requires unforeseen subsequent steps, dynamically add new tasks to the current milestone rather than deviating from the plan.
 *   **Subagent invocation**:
      - you MUST use subagents for each task via `task` tool.
-    - MAY use tool with subagents → Use OpenCode's subagent system (@mention `@build`)
+    - MAY use tool with subagents → Use OpenCode's subagent system (use mention `@build`)
     - MAY use the task tool FOR EXECUTING with subagent_type set to "build" and pass the task description.
 
 ## 4. Fixing and Tracking Current Progress
@@ -139,9 +140,10 @@ Robust state management and error handling are critical for autonomous progress.
     - Ensure the codebase is in a stable, verifiable state before moving on. Fix checkpoint in Write Ahead Log.
 *   **Single Source of Truth**:
     - The agent must treat its `./WAL.md` as the definitive record of progress.
-    - The status of milestones and tasks must be continuously updated in real-time to reflect the actual state of the codebase.
+    - The status of milestones and tasks must be continuously updated in real-time to reflect the actual state of progress
+    - CRITICAL: Only status and icon, SINGLE LINE, NO any changes in task text!
 *   **Milestone completion**:
-     - Mark all tasks in `plans/PLAN_N/MILESTONE_<NUM>.md` after `Milestone` (all its tasks) completion
+     - Mark all tasks in `plans/PLAN_N/MILESTONE_<NUM>.md` after `Milestone` (all its tasks) completion. Only status and icon, NO any changes in task text!
 *   **Plan completion**:
      - Mark all milestones in `plans/PLAN_<NUM>.md` after `Plan` (all its milestones) completion
 
@@ -174,18 +176,18 @@ Robust state management and error handling are critical for autonomous progress.
     - remove details from completed milestones leave only names and status. example: `### 2026-03-14 Milestone 1: Project Foundation and Core Structure - COMPLETED`
 2. List all `plans/**/*`
 3. read next UNFINISHED `plans/PLAN_<NUM>.md`
-4. created detailed comprehensive Milestone definitions in `plans/PLAN_N/MILESTONE_<NUM>.md`
+4. created detailed comprehensive SINGLE NEXT Milestone definitions in `plans/PLAN_N/MILESTONE_<NUM>.md`
 5. stop working when all milestones and plans completed
 6. use `Take Next Milestone Flow` 
 
 ## 6. subagents spawning
 
 **When planning:**
-You MUST use tool with subagents → Use OpenCode's subagent system (@mention `@plan`)
-I should use the task tool with subagent_type set to "plan" and pass the task description.
+You MUST use tool with subagents → Use OpenCode's subagent system (use mention `@build`)
+I should use the task tool with subagent_type set to "build" and pass the task description.
 
 **When building/executing tasks:**
-You MUST use tool with subagents → Use OpenCode's subagent system (@mention `@build`)
+You MUST use tool with subagents → Use OpenCode's subagent system (use mention `@build`)
 I should use the task tool with subagent_type set to "build" and pass the task description.
 
 

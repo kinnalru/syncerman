@@ -54,37 +54,26 @@ func executeMkdirCommand(ctx context.Context, executor Executor, remotePath stri
 	}
 
 	result, err := executor.Run(ctx, "mkdir", remotePath)
-	if err != nil {
-		if result != nil && isDirectoryExistsError(result.Stderr) {
-			return nil
-		}
-		if result != nil && errorHandler != nil {
-			if handlerErr := errorHandler(*result); handlerErr != nil {
-				return fmt.Errorf("failed to create directory %s: %w", remotePath, handlerErr)
-			}
-		}
-		stderr := ""
-		if result != nil {
-			stderr = result.Stderr
-		}
-		return fmt.Errorf("failed to create directory %s: %s", remotePath, stderr)
-	}
 
-	if result.ExitCode == 0 {
+	if err == nil && result.ExitCode == 0 {
 		return nil
 	}
 
-	if isDirectoryExistsError(result.Stderr) {
+	if result != nil && isDirectoryExistsError(result.Stderr) {
 		return nil
 	}
 
-	if errorHandler != nil {
+	if result != nil && errorHandler != nil {
 		if handlerErr := errorHandler(*result); handlerErr != nil {
-			return fmt.Errorf("failed to create directory %s: %w", remotePath, handlerErr)
+			return newMkdirError(remotePath, handlerErr)
 		}
 	}
 
-	return fmt.Errorf("failed to create directory %s: %s", remotePath, result.Stderr)
+	stderr := extractStderr(result)
+	if stderr == "" && err != nil {
+		stderr = err.Error()
+	}
+	return newMkdirErrorWithMessage(remotePath, stderr)
 }
 
 func Mkdir(ctx context.Context, executor Executor, remotePath string) error {
@@ -224,4 +213,19 @@ func isParentDirNotFoundError(stderr string) bool {
 		"directory not found",
 	}
 	return matchesAnyPattern(stderr, parentNotFoundPatterns)
+}
+
+func newMkdirError(remotePath string, err error) error {
+	return fmt.Errorf("failed to create directory %s: %w", remotePath, err)
+}
+
+func newMkdirErrorWithMessage(remotePath string, message string) error {
+	return fmt.Errorf("failed to create directory %s: %s", remotePath, message)
+}
+
+func extractStderr(result *Result) string {
+	if result == nil {
+		return ""
+	}
+	return result.Stderr
 }

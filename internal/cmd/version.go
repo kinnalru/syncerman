@@ -13,11 +13,10 @@ var versionCmd = &cobra.Command{
 	Short: "Print the version number",
 	Long:  `Version prints the version number of Syncerman.`,
 	Run: func(cmd *cobra.Command, args []string) {
-		v := version.GetVersion()
-		if v == "dev" {
-			fmt.Printf("Syncerman version %s (%s)\n", v, version.GetGitCommit())
+		if version.Version == "dev" || version.Version == "" {
+			fmt.Printf("Syncerman version %s (commit: %s)\n", version.Version, version.GitCommit)
 		} else {
-			fmt.Printf("Syncerman version %s\n", v)
+			fmt.Printf("Syncerman version %s\n", version.Version)
 		}
 	},
 }

@@ -74,16 +74,6 @@ func resolvePath(path string) (string, error) {
 	return filepath.Abs(path)
 }
 
-// FindRcloneBinaryOrFatal locates rclone binary or logs a fatal error.
-// This is a convenience function for CLI applications.
-func FindRcloneBinaryOrFatal() string {
-	path, err := FindRcloneBinary()
-	if err != nil {
-		return ""
-	}
-	return path
-}
-
 // ConfigFromEnv loads rclone configuration from environment variables.
 // It discovers the rclone binary path using the following order:
 //

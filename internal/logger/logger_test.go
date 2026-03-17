@@ -180,9 +180,6 @@ func TestConsoleLogger_VerboseRestoresLevel(t *testing.T) {
 	if logger.GetLevel() != LevelDebug {
 		t.Errorf("expected level to be LevelDebug when verbose, got %v", logger.GetLevel())
 	}
-	if logger.GetPreviousLevel() != LevelWarn {
-		t.Errorf("expected previous level to be saved as LevelWarn, got %v", logger.GetPreviousLevel())
-	}
 
 	logger.SetVerbose(false)
 	if logger.GetLevel() != LevelWarn {
@@ -202,9 +199,6 @@ func TestConsoleLogger_QuietRestoresLevel(t *testing.T) {
 	logger.SetQuiet(true)
 	if logger.GetLevel() != LevelQuiet {
 		t.Errorf("expected level to be LevelQuiet when quiet, got %v", logger.GetLevel())
-	}
-	if logger.GetPreviousLevel() != LevelWarn {
-		t.Errorf("expected previous level to be saved as LevelWarn, got %v", logger.GetPreviousLevel())
 	}
 
 	logger.SetQuiet(false)
@@ -504,74 +498,67 @@ func TestConsoleLogger_LevelFiltering(t *testing.T) {
 
 func TestConsoleLogger_GetLevel(t *testing.T) {
 	tests := []struct {
-		name              string
-		setLevel          LogLevel
-		setVerbose        bool
-		setQuiet          bool
-		expectedLevel     LogLevel
-		expectedVerbose   bool
-		expectedQuiet     bool
-		expectedPrevLevel LogLevel
+		name            string
+		setLevel        LogLevel
+		setVerbose      bool
+		setQuiet        bool
+		expectedLevel   LogLevel
+		expectedVerbose bool
+		expectedQuiet   bool
 	}{
 		{
-			name:              "default level is Info",
-			setLevel:          LevelInfo,
-			setVerbose:        false,
-			setQuiet:          false,
-			expectedLevel:     LevelInfo,
-			expectedVerbose:   false,
-			expectedQuiet:     false,
-			expectedPrevLevel: LevelInfo,
+			name:            "default level is Info",
+			setLevel:        LevelInfo,
+			setVerbose:      false,
+			setQuiet:        false,
+			expectedLevel:   LevelInfo,
+			expectedVerbose: false,
+			expectedQuiet:   false,
 		},
 		{
-			name:              "set level to Debug",
-			setLevel:          LevelDebug,
-			setVerbose:        false,
-			setQuiet:          false,
-			expectedLevel:     LevelDebug,
-			expectedVerbose:   false,
-			expectedQuiet:     false,
-			expectedPrevLevel: LevelInfo,
+			name:            "set level to Debug",
+			setLevel:        LevelDebug,
+			setVerbose:      false,
+			setQuiet:        false,
+			expectedLevel:   LevelDebug,
+			expectedVerbose: false,
+			expectedQuiet:   false,
 		},
 		{
-			name:              "set level to Debug then Verbose",
-			setLevel:          LevelDebug,
-			setVerbose:        true,
-			setQuiet:          false,
-			expectedLevel:     LevelDebug,
-			expectedVerbose:   true,
-			expectedQuiet:     false,
-			expectedPrevLevel: LevelInfo,
+			name:            "set level to Debug then Verbose",
+			setLevel:        LevelDebug,
+			setVerbose:      true,
+			setQuiet:        false,
+			expectedLevel:   LevelDebug,
+			expectedVerbose: true,
+			expectedQuiet:   false,
 		},
 		{
-			name:              "set level to Warn then Verbose",
-			setLevel:          LevelWarn,
-			setVerbose:        true,
-			setQuiet:          false,
-			expectedLevel:     LevelDebug,
-			expectedVerbose:   true,
-			expectedQuiet:     false,
-			expectedPrevLevel: LevelWarn,
+			name:            "set level to Warn then Verbose",
+			setLevel:        LevelWarn,
+			setVerbose:      true,
+			setQuiet:        false,
+			expectedLevel:   LevelDebug,
+			expectedVerbose: true,
+			expectedQuiet:   false,
 		},
 		{
-			name:              "set level to Warn then Quiet",
-			setLevel:          LevelWarn,
-			setVerbose:        false,
-			setQuiet:          true,
-			expectedLevel:     LevelQuiet,
-			expectedVerbose:   false,
-			expectedQuiet:     true,
-			expectedPrevLevel: LevelWarn,
+			name:            "set level to Warn then Quiet",
+			setLevel:        LevelWarn,
+			setVerbose:      false,
+			setQuiet:        true,
+			expectedLevel:   LevelQuiet,
+			expectedVerbose: false,
+			expectedQuiet:   true,
 		},
 		{
-			name:              "set Quiet then Verbose",
-			setLevel:          LevelInfo,
-			setVerbose:        true,
-			setQuiet:          true,
-			expectedLevel:     LevelDebug,
-			expectedVerbose:   true,
-			expectedQuiet:     false,
-			expectedPrevLevel: LevelQuiet,
+			name:            "set Quiet then Verbose",
+			setLevel:        LevelInfo,
+			setVerbose:      true,
+			setQuiet:        true,
+			expectedLevel:   LevelDebug,
+			expectedVerbose: true,
+			expectedQuiet:   false,
 		},
 	}
 
@@ -590,11 +577,6 @@ func TestConsoleLogger_GetLevel(t *testing.T) {
 			level := logger.GetLevel()
 			if level != tt.expectedLevel {
 				t.Errorf("expected level %v, got %v", tt.expectedLevel, level)
-			}
-
-			prevLevel := logger.GetPreviousLevel()
-			if prevLevel != tt.expectedPrevLevel {
-				t.Errorf("expected previous level %v, got %v", tt.expectedPrevLevel, prevLevel)
 			}
 		})
 	}
@@ -717,10 +699,6 @@ func TestConsoleLogger_NewConsoleLoggerDefaults(t *testing.T) {
 		t.Errorf("expected default level LevelInfo, got %v", logger.GetLevel())
 	}
 
-	if logger.GetPreviousLevel() != LevelInfo {
-		t.Errorf("expected default previous level LevelInfo, got %v", logger.GetPreviousLevel())
-	}
-
 	buf := &bytes.Buffer{}
 	if err := logger.SetOutput(buf); err != nil {
 		t.Fatalf("failed to set output: %v", err)
@@ -758,24 +736,15 @@ func TestConsoleLogger_MultipleLevelTransitions(t *testing.T) {
 	if logger.GetLevel() != LevelDebug {
 		t.Errorf("expected level LevelDebug after verbose, got %v", logger.GetLevel())
 	}
-	if logger.GetPreviousLevel() != LevelWarn {
-		t.Errorf("expected previous level LevelWarn, got %v", logger.GetPreviousLevel())
-	}
 
 	logger.SetQuiet(true)
 	if logger.GetLevel() != LevelQuiet {
 		t.Errorf("expected level LevelQuiet after quiet, got %v", logger.GetLevel())
 	}
-	if logger.GetPreviousLevel() != LevelDebug {
-		t.Errorf("expected previous level LevelDebug, got %v", logger.GetPreviousLevel())
-	}
 
 	logger.SetVerbose(true)
 	if logger.GetLevel() != LevelDebug {
 		t.Errorf("expected level LevelDebug after verbose, got %v", logger.GetLevel())
-	}
-	if logger.GetPreviousLevel() != LevelQuiet {
-		t.Errorf("expected previous level LevelQuiet after verbose, got %v", logger.GetPreviousLevel())
 	}
 
 	logger.SetQuiet(false)
@@ -875,5 +844,390 @@ func TestLogLevel_StringUnknown(t *testing.T) {
 				t.Errorf("expected %q, got %q", tt.expected, tt.level.String())
 			}
 		})
+	}
+}
+
+func TestConsoleLogger_Command(t *testing.T) {
+	buf := &bytes.Buffer{}
+	logger := NewConsoleLogger()
+	if err := logger.SetOutput(buf); err != nil {
+		t.Fatalf("failed to set output: %v", err)
+	}
+
+	logger.Command("rclone sync /src /dst")
+
+	output := buf.String()
+	if !strings.Contains(output, "rclone sync /src /dst") {
+		t.Errorf("expected command in output, got %q", output)
+	}
+	if !strings.Contains(output, "\033[36m") {
+		t.Errorf("expected cyan color code in output")
+	}
+}
+
+func TestConsoleLogger_CommandLevelFiltering(t *testing.T) {
+	tests := []struct {
+		name      string
+		level     LogLevel
+		shouldLog bool
+	}{
+		{"LevelDebug allows Command", LevelDebug, true},
+		{"LevelInfo allows Command", LevelInfo, true},
+		{"LevelWarn suppresses Command", LevelWarn, false},
+		{"LevelError suppresses Command", LevelError, false},
+		{"LevelQuiet suppresses Command", LevelQuiet, false},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			buf := &bytes.Buffer{}
+			logger := NewConsoleLogger()
+			if err := logger.SetOutput(buf); err != nil {
+				t.Fatalf("failed to set output: %v", err)
+			}
+			logger.SetLevel(tt.level)
+
+			logger.Command("test command")
+
+			output := buf.String()
+			hasOutput := strings.Contains(output, "test command")
+			if hasOutput != tt.shouldLog {
+				t.Errorf("expected output: %v, got output: %v", tt.shouldLog, hasOutput)
+			}
+		})
+	}
+}
+
+func TestConsoleLogger_CommandQuietMode(t *testing.T) {
+	buf := &bytes.Buffer{}
+	logger := NewConsoleLogger()
+	if err := logger.SetOutput(buf); err != nil {
+		t.Fatalf("failed to set output: %v", err)
+	}
+	logger.SetQuiet(true)
+
+	logger.Command("test command")
+
+	if buf.String() != "" {
+		t.Errorf("quiet mode should suppress Command output, got %q", buf.String())
+	}
+}
+
+func TestConsoleLogger_StageInfo(t *testing.T) {
+	buf := &bytes.Buffer{}
+	logger := NewConsoleLogger()
+	if err := logger.SetOutput(buf); err != nil {
+		t.Fatalf("failed to set output: %v", err)
+	}
+
+	logger.StageInfo("Starting sync phase")
+
+	output := buf.String()
+	if !strings.Contains(output, "Starting sync phase") {
+		t.Errorf("expected message in output, got %q", output)
+	}
+	if !strings.Contains(output, "[INFO]") {
+		t.Errorf("expected INFO tag in output")
+	}
+	if !strings.Contains(output, "\033[1m") {
+		t.Errorf("expected bold color code in output")
+	}
+}
+
+func TestConsoleLogger_StageInfoWithArgs(t *testing.T) {
+	buf := &bytes.Buffer{}
+	logger := NewConsoleLogger()
+	if err := logger.SetOutput(buf); err != nil {
+		t.Fatalf("failed to set output: %v", err)
+	}
+
+	logger.StageInfo("Processing %d files", 42)
+
+	output := buf.String()
+	if !strings.Contains(output, "Processing 42 files") {
+		t.Errorf("expected formatted message, got %q", output)
+	}
+	if !strings.Contains(output, "\033[1m") {
+		t.Errorf("expected bold color code in output")
+	}
+}
+
+func TestConsoleLogger_StageInfoLevelFiltering(t *testing.T) {
+	tests := []struct {
+		name      string
+		level     LogLevel
+		shouldLog bool
+	}{
+		{"LevelDebug allows StageInfo", LevelDebug, true},
+		{"LevelInfo allows StageInfo", LevelInfo, true},
+		{"LevelWarn suppresses StageInfo", LevelWarn, false},
+		{"LevelError suppresses StageInfo", LevelError, false},
+		{"LevelQuiet suppresses StageInfo", LevelQuiet, false},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			buf := &bytes.Buffer{}
+			logger := NewConsoleLogger()
+			if err := logger.SetOutput(buf); err != nil {
+				t.Fatalf("failed to set output: %v", err)
+			}
+			logger.SetLevel(tt.level)
+
+			logger.StageInfo("test message")
+
+			output := buf.String()
+			hasOutput := strings.Contains(output, "test message")
+			if hasOutput != tt.shouldLog {
+				t.Errorf("expected output: %v, got output: %v", tt.shouldLog, hasOutput)
+			}
+		})
+	}
+}
+
+func TestConsoleLogger_StageInfoQuietMode(t *testing.T) {
+	buf := &bytes.Buffer{}
+	logger := NewConsoleLogger()
+	if err := logger.SetOutput(buf); err != nil {
+		t.Fatalf("failed to set output: %v", err)
+	}
+	logger.SetQuiet(true)
+
+	logger.StageInfo("test message")
+
+	if buf.String() != "" {
+		t.Errorf("quiet mode should suppress StageInfo output, got %q", buf.String())
+	}
+}
+
+func TestConsoleLogger_TargetInfo(t *testing.T) {
+	buf := &bytes.Buffer{}
+	logger := NewConsoleLogger()
+	if err := logger.SetOutput(buf); err != nil {
+		t.Fatalf("failed to set output: %v", err)
+	}
+
+	logger.TargetInfo("Syncing from /src")
+
+	output := buf.String()
+	if !strings.Contains(output, "Syncing from /src") {
+		t.Errorf("expected message in output, got %q", output)
+	}
+	if !strings.Contains(output, "[INFO]") {
+		t.Errorf("expected INFO tag in output")
+	}
+	if strings.Contains(output, "\033[1m") {
+		t.Errorf("should not contain bold color code in output")
+	}
+}
+
+func TestConsoleLogger_TargetInfoWithArgs(t *testing.T) {
+	buf := &bytes.Buffer{}
+	logger := NewConsoleLogger()
+	if err := logger.SetOutput(buf); err != nil {
+		t.Fatalf("failed to set output: %v", err)
+	}
+
+	logger.TargetInfo("Target: %s at %s", "remote:bucket", "main")
+
+	output := buf.String()
+	if !strings.Contains(output, "Target: remote:bucket at main") {
+		t.Errorf("expected formatted message, got %q", output)
+	}
+}
+
+func TestConsoleLogger_TargetInfoLevelFiltering(t *testing.T) {
+	tests := []struct {
+		name      string
+		level     LogLevel
+		shouldLog bool
+	}{
+		{"LevelDebug allows TargetInfo", LevelDebug, true},
+		{"LevelInfo allows TargetInfo", LevelInfo, true},
+		{"LevelWarn suppresses TargetInfo", LevelWarn, false},
+		{"LevelError suppresses TargetInfo", LevelError, false},
+		{"LevelQuiet suppresses TargetInfo", LevelQuiet, false},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			buf := &bytes.Buffer{}
+			logger := NewConsoleLogger()
+			if err := logger.SetOutput(buf); err != nil {
+				t.Fatalf("failed to set output: %v", err)
+			}
+			logger.SetLevel(tt.level)
+
+			logger.TargetInfo("test target")
+
+			output := buf.String()
+			hasOutput := strings.Contains(output, "test target")
+			if hasOutput != tt.shouldLog {
+				t.Errorf("expected output: %v, got output: %v", tt.shouldLog, hasOutput)
+			}
+		})
+	}
+}
+
+func TestConsoleLogger_TargetInfoQuietMode(t *testing.T) {
+	buf := &bytes.Buffer{}
+	logger := NewConsoleLogger()
+	if err := logger.SetOutput(buf); err != nil {
+		t.Fatalf("failed to set output: %v", err)
+	}
+	logger.SetQuiet(true)
+
+	logger.TargetInfo("test target")
+
+	if buf.String() != "" {
+		t.Errorf("quiet mode should suppress TargetInfo output, got %q", buf.String())
+	}
+}
+
+func TestConsoleLogger_CombinedOutput(t *testing.T) {
+	buf := &bytes.Buffer{}
+	logger := NewConsoleLogger()
+	if err := logger.SetOutput(buf); err != nil {
+		t.Fatalf("failed to set output: %v", err)
+	}
+	logger.SetLevel(LevelDebug)
+
+	output := "Line 1\nLine 2\nLine 3"
+	logger.CombinedOutput(output)
+
+	result := buf.String()
+	if !strings.Contains(result, "Line 1") {
+		t.Errorf("expected Line 1 in output, got %q", result)
+	}
+	if !strings.Contains(result, "Line 2") {
+		t.Errorf("expected Line 2 in output, got %q", result)
+	}
+	if !strings.Contains(result, "Line 3") {
+		t.Errorf("expected Line 3 in output, got %q", result)
+	}
+	if !strings.Contains(result, "\033[90m") {
+		t.Errorf("expected gray color code in output")
+	}
+}
+
+func TestConsoleLogger_CombinedOutputFiltering(t *testing.T) {
+	buf := &bytes.Buffer{}
+	logger := NewConsoleLogger()
+	if err := logger.SetOutput(buf); err != nil {
+		t.Fatalf("failed to set output: %v", err)
+	}
+	logger.SetLevel(LevelDebug)
+
+	output := "Line 1\nElapsed time: 1.234s\nChecks: 123\nLine 4"
+	logger.CombinedOutput(output)
+
+	result := buf.String()
+	if !strings.Contains(result, "Line 1") {
+		t.Errorf("expected Line 1 in output, got %q", result)
+	}
+	if strings.Contains(result, "Elapsed time:") {
+		t.Errorf("Elapsed time line should be filtered, got %q", result)
+	}
+	if strings.Contains(result, "Checks:") {
+		t.Errorf("Checks line should be filtered, got %q", result)
+	}
+	if !strings.Contains(result, "Line 4") {
+		t.Errorf("expected Line 4 in output, got %q", result)
+	}
+}
+
+func TestConsoleLogger_CombinedOutputLevelFiltering(t *testing.T) {
+	tests := []struct {
+		name      string
+		level     LogLevel
+		shouldLog bool
+	}{
+		{"LevelDebug allows CombinedOutput", LevelDebug, true},
+		{"LevelInfo suppresses CombinedOutput", LevelInfo, false},
+		{"LevelWarn suppresses CombinedOutput", LevelWarn, false},
+		{"LevelError suppresses CombinedOutput", LevelError, false},
+		{"LevelQuiet suppresses CombinedOutput", LevelQuiet, false},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			buf := &bytes.Buffer{}
+			logger := NewConsoleLogger()
+			if err := logger.SetOutput(buf); err != nil {
+				t.Fatalf("failed to set output: %v", err)
+			}
+			logger.SetLevel(tt.level)
+
+			logger.CombinedOutput("test output")
+
+			hasOutput := strings.Contains(buf.String(), "test output")
+			if hasOutput != tt.shouldLog {
+				t.Errorf("expected output: %v, got output: %v", tt.shouldLog, hasOutput)
+			}
+		})
+	}
+}
+
+func TestConsoleLogger_CombinedOutputQuietMode(t *testing.T) {
+	buf := &bytes.Buffer{}
+	logger := NewConsoleLogger()
+	if err := logger.SetOutput(buf); err != nil {
+		t.Fatalf("failed to set output: %v", err)
+	}
+	logger.SetQuiet(true)
+
+	logger.CombinedOutput("test output")
+
+	if buf.String() != "" {
+		t.Errorf("quiet mode should suppress CombinedOutput output, got %q", buf.String())
+	}
+}
+
+func TestConsoleLogger_CombinedOutputEmptyInput(t *testing.T) {
+	buf := &bytes.Buffer{}
+	logger := NewConsoleLogger()
+	if err := logger.SetOutput(buf); err != nil {
+		t.Fatalf("failed to set output: %v", err)
+	}
+
+	logger.CombinedOutput("")
+
+	if buf.String() != "" {
+		t.Errorf("empty input should produce no output, got %q", buf.String())
+	}
+}
+
+func TestConsoleLogger_CombinedOutputWhitespaceOnly(t *testing.T) {
+	buf := &bytes.Buffer{}
+	logger := NewConsoleLogger()
+	if err := logger.SetOutput(buf); err != nil {
+		t.Fatalf("failed to set output: %v", err)
+	}
+	logger.SetLevel(LevelDebug)
+
+	logger.CombinedOutput("   \n   ")
+
+	output := buf.String()
+	if output != "\n" {
+		t.Errorf("whitespace-only input should produce only a newline, got %q", output)
+	}
+	if strings.Contains(output, " ") {
+		t.Errorf("whitespace-only input should not contain spaces in output, got %q", output)
+	}
+}
+
+func TestConsoleLogger_CombinedOutputTrimsEmptyLines(t *testing.T) {
+	buf := &bytes.Buffer{}
+	logger := NewConsoleLogger()
+	if err := logger.SetOutput(buf); err != nil {
+		t.Fatalf("failed to set output: %v", err)
+	}
+	logger.SetLevel(LevelDebug)
+
+	logger.CombinedOutput("   \n\n   \n  \n")
+
+	output := buf.String()
+	if output != "\n" {
+		t.Errorf("empty/whitespace-only lines should be trimmed, got %q", output)
 	}
 }

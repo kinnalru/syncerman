@@ -44,12 +44,15 @@ import (
 func LoadConfig(path string) (*Config, error) {
 	data, err := os.ReadFile(path)
 	if err != nil {
-		return nil, errors.NewConfigError(fmt.Sprintf("failed to read configuration file: %s", path), err)
+		return nil, errors.NewConfigError(fmt.Sprintf("failed to read configuration file: %s.\n\nSolutions:\n  - Check the file path spelling\n  - Ensure the file exists\n  - Verify file permissions (read access required)\n  - Check that the file is not a directory",
+			path), err)
 	}
 
 	providers, err := parseProviders(data)
 	if err != nil {
-		return nil, errors.NewConfigError(fmt.Sprintf("failed to parse configuration file: %s", path), err)
+		return nil, errors.NewConfigError(fmt.Sprintf("failed to parse configuration file: %s.\n\nThis typically indicates a YAML syntax error or invalid configuration structure. "+
+			"Check the following:\n  - YAML indentation (use spaces, not tabs)\n  - Matching brackets, quotes, and colons\n  - Valid YAML structure (see documentation for examples)",
+			path), err)
 	}
 
 	config := NewConfig()
@@ -95,7 +98,8 @@ func LoadConfig(path string) (*Config, error) {
 func LoadConfigFromData(data []byte) (*Config, error) {
 	providers, err := parseProviders(data)
 	if err != nil {
-		return nil, errors.NewConfigError("failed to parse configuration data", err)
+		return nil, errors.NewConfigError("failed to parse configuration data.\n\nThis typically indicates a YAML syntax error or invalid configuration structure. "+
+			"Check the following:\n  - YAML indentation (use spaces, not tabs)\n  - Matching brackets, quotes, and colons\n  - Valid YAML structure (see documentation for examples)", err)
 	}
 
 	config := NewConfig()
@@ -107,7 +111,7 @@ func LoadConfigFromData(data []byte) (*Config, error) {
 func parseProviders(data []byte) (OrderedProviders, error) {
 	var providers OrderedProviders
 	if err := yaml.Unmarshal(data, &providers); err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to parse YAML configuration: %w. Check YAML syntax and structure", err)
 	}
 	return providers, nil
 }

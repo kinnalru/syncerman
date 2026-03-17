@@ -1,18 +1,16 @@
 package cmd
 
 import (
-	"os"
-
 	"gitlab.com/kinnalru/syncerman/internal/config"
 )
 
 func loadAndValidateConfig() (*config.Config, error) {
 	log := GetLogger()
 
-	configPath := discoverConfigPath()
-	if configPath == "" {
-		log.Error("No configuration file found (use --config to specify)")
-		return nil, &ExitCodeError{Code: exitCodeFileNotFound, Err: os.ErrNotExist}
+	configPath, err := config.DiscoverConfigPath(GetConfigFile())
+	if err != nil {
+		log.Error("No configuration file found (use --config to specify): %v", err)
+		return nil, &ExitCodeError{Code: exitCodeFileNotFound, Err: err}
 	}
 
 	cfg, err := config.LoadConfig(configPath)

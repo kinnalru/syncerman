@@ -76,12 +76,6 @@ func (r *Result) Error() error {
 	return fmt.Errorf("rclone command failed with exit code %d: %s", r.ExitCode, r.Stderr)
 }
 
-// Remote represents a configured rclone remote.
-type Remote struct {
-	Name   string            `json:"name" yaml:"name"`
-	Config map[string]string `json:"config,omitempty" yaml:"config,omitempty"`
-}
-
 // Executor defines the interface for executing rclone commands.
 //
 // Purpose:
@@ -251,14 +245,14 @@ func (e *ExecutorImpl) Run(ctx context.Context, args ...string) (*Result, error)
 
 	if err := cmd.Wait(); err != nil {
 		exitCode := e.extractExitCode(cmd)
-		stdoutStr := stdoutBuf.String()
-		stderrStr := stderrBuf.String()
+		result := e.buildResultFromBuffers(stdoutBuf, stderrBuf)
+		result.ExitCode = exitCode
 
 		if ctx.Err() != nil {
-			return e.buildResultWithExitCode(stdoutStr, stderrStr, exitCode), syncerman_errors.NewRcloneError("command cancelled by context", ctx.Err())
+			return result, syncerman_errors.NewRcloneError("command cancelled by context", ctx.Err())
 		}
 
-		return e.buildResultWithExitCode(stdoutStr, stderrStr, exitCode), syncerman_errors.NewRcloneError("rclone command failed", err)
+		return result, syncerman_errors.NewRcloneError("rclone command failed", err)
 	}
 
 	return e.buildResultFromBuffers(stdoutBuf, stderrBuf), nil
@@ -279,23 +273,6 @@ func (e *ExecutorImpl) buildResultFromBuffers(stdoutBuf, stderrBuf bytes.Buffer)
 		Stdout:   stdoutStr,
 		Stderr:   stderrStr,
 		Combined: stdoutStr + stderrStr,
-	}
-}
-
-// buildResultWithExitCode creates a Result from string outputs and an exit code.
-//
-// Parameters:
-//   - stdout: string containing standard output
-//   - stderr: string containing standard error
-//   - exitCode: the command exit code
-//
-// Returns: Result populated with the provided outputs and exit code
-func (e *ExecutorImpl) buildResultWithExitCode(stdout, stderr string, exitCode int) *Result {
-	return &Result{
-		ExitCode: exitCode,
-		Stdout:   stdout,
-		Stderr:   stderr,
-		Combined: stdout + stderr,
 	}
 }
 

@@ -1,13 +1,16 @@
 package rclone
 
 import (
+	"context"
 	"os"
 	"path/filepath"
 	"strconv"
 	"testing"
+
+	"gitlab.com/kinnalru/syncerman/internal/logger"
 )
 
-// CreateTestBinary creates a test binary script that outputs content and exits with specified code.
+// createTestBinary creates a test binary script that outputs content and exits with specified code.
 // Returns the path to the created binary.
 //
 // Parameters:
@@ -18,7 +21,7 @@ import (
 //
 // Returns:
 //   - string: Path to the created binary executable
-func CreateTestBinary(t *testing.T, tempDir string, output string, exitCode int) string {
+func createTestBinary(t *testing.T, tempDir string, output string, exitCode int) string {
 	binaryPath := filepath.Join(tempDir, "test-binary")
 	content := "#!/bin/sh\necho '" + output + "'\nexit " + strconv.Itoa(exitCode) + "\n"
 	if err := os.WriteFile(binaryPath, []byte(content), 0o755); err != nil {
@@ -27,7 +30,7 @@ func CreateTestBinary(t *testing.T, tempDir string, output string, exitCode int)
 	return binaryPath
 }
 
-// CreateTestBinaryWithStderr creates a test binary that outputs to stderr and exits with specified code.
+// createTestBinaryWithStderr creates a test binary that outputs to stderr and exits with specified code.
 //
 // Parameters:
 //   - t: Testing instance for error handling
@@ -37,7 +40,7 @@ func CreateTestBinary(t *testing.T, tempDir string, output string, exitCode int)
 //
 // Returns:
 //   - string: Path to the created binary executable
-func CreateTestBinaryWithStderr(t *testing.T, tempDir string, stderr string, exitCode int) string {
+func createTestBinaryWithStderr(t *testing.T, tempDir string, stderr string, exitCode int) string {
 	binaryPath := filepath.Join(tempDir, "test-binary")
 	content := "#!/bin/sh\necho '" + stderr + "' >&2\nexit " + strconv.Itoa(exitCode) + "\n"
 	if err := os.WriteFile(binaryPath, []byte(content), 0o755); err != nil {
@@ -46,7 +49,7 @@ func CreateTestBinaryWithStderr(t *testing.T, tempDir string, stderr string, exi
 	return binaryPath
 }
 
-// CreateSuccessBinary creates a test binary that exits successfully.
+// createSuccessBinary creates a test binary that exits successfully.
 //
 // Parameters:
 //   - t: Testing instance for error handling
@@ -54,7 +57,7 @@ func CreateTestBinaryWithStderr(t *testing.T, tempDir string, stderr string, exi
 //
 // Returns:
 //   - string: Path to the created binary executable
-func CreateSuccessBinary(t *testing.T, tempDir string) string {
+func createSuccessBinary(t *testing.T, tempDir string) string {
 	binaryPath := filepath.Join(tempDir, "test-success")
 	content := "#!/bin/sh\nexit 0\n"
 	if err := os.WriteFile(binaryPath, []byte(content), 0o755); err != nil {
@@ -63,7 +66,7 @@ func CreateSuccessBinary(t *testing.T, tempDir string) string {
 	return binaryPath
 }
 
-// CreateSlowBinary creates a test binary that sleeps before exiting (for timeout tests).
+// createSlowBinary creates a test binary that sleeps before exiting (for timeout tests).
 //
 // Parameters:
 //   - t: Testing instance for error handling
@@ -71,7 +74,7 @@ func CreateSuccessBinary(t *testing.T, tempDir string) string {
 //
 // Returns:
 //   - string: Path to the created binary executable
-func CreateSlowBinary(t *testing.T, tempDir string) string {
+func createSlowBinary(t *testing.T, tempDir string) string {
 	binaryPath := filepath.Join(tempDir, "test-slow")
 	content := "#!/bin/sh\nsleep 10\nexit 0\n"
 	if err := os.WriteFile(binaryPath, []byte(content), 0o755); err != nil {
@@ -80,29 +83,22 @@ func CreateSlowBinary(t *testing.T, tempDir string) string {
 	return binaryPath
 }
 
-// ContainsString checks if a string contains a substring.
+// setupTestExecutor creates a configured executor for testing.
+// This consolidates common test setup code and provides a consistent way
+// to create test executors with quiet logging.
 //
 // Parameters:
-//   - s: The string to search in
-//   - substr: The substring to search for
+//   - t: Testing instance
+//   - binaryPath: Path to the test binary executable
 //
 // Returns:
-//   - bool: true if substr is found in s, false otherwise
-func ContainsString(s, substr string) bool {
-	return len(s) > 0 && len(substr) > 0 && findSubstring(s, substr)
-}
-
-func findSubstring(s, substr string) bool {
-	if len(substr) == 0 {
-		return true
-	}
-	if len(s) < len(substr) {
-		return false
-	}
-	for i := 0; i <= len(s)-len(substr); i++ {
-		if s[i:i+len(substr)] == substr {
-			return true
-		}
-	}
-	return false
+//   - context.Context: Background context for testing
+//   - Executor: Configured executor with quiet logger
+func setupTestExecutor(t *testing.T, binaryPath string) (context.Context, Executor) {
+	config := &Config{BinaryPath: binaryPath}
+	log := logger.NewConsoleLogger()
+	log.SetLevel(logger.LevelQuiet)
+	exec := NewExecutorWithLogger(config, log)
+	ctx := context.Background()
+	return ctx, exec
 }

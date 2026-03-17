@@ -69,7 +69,7 @@ Syncerman uses YAML configuration files to define sync targets with the followin
 
 **Source Path**: The path within the source provider
 - Always relative to the provider's root
-- For local provider, use relative path like `./cloud/docs`
+- For local provider, use relative path like `./cloud/docs` or absolute path `/home/user/cloud/docs`
 
 **Destination Object** (required):
 - `to` (string, required): Destination in format `<provider>:<path>` or `<path>` for local
@@ -239,7 +239,7 @@ rclone bisync <SRC Provider>:<SRC Path> <DST Provider>:<DST Path> \
   --create-empty-src-dirs \
   --compare size,modtime \
   --no-slow-hash \
-  -MvP \
+  -Mv \
   --drive-skip-gdocs \
   --fix-case \
   --ignore-listing-checksum \
@@ -254,7 +254,7 @@ rclone bisync <SRC Provider>:<SRC Path> <DST Provider>:<DST Path> \
 | `--create-empty-src-dirs`   | Sync creation and deletion of empty directories  |
 | `--compare size,modtime`    | Compare files by size and modification time      |
 | `--no-slow-hash`            | Skip slow checksum calculations during listing   |
-| `-MvP`                      | Preserve metadata, verbose output, show progress |
+| `-Mv`                       | Preserve metadata, verbose output                |
 | `--drive-skip-gdocs`        | Skip Google Docs files (Google Drive specific)   |
 | `--fix-case`                | Force rename of case-insensitive destinations    |
 | `--ignore-listing-checksum` | Don't use checksums for listings                 |

@@ -6,7 +6,6 @@ import (
 	"testing"
 
 	syncerman_errors "gitlab.com/kinnalru/syncerman/internal/errors"
-	"gitlab.com/kinnalru/syncerman/internal/logger"
 )
 
 func TestParseRemoteLine(t *testing.T) {
@@ -221,14 +220,9 @@ func TestExecuteMkdirCommand(t *testing.T) {
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
 			tempDir := t.TempDir()
-			binaryPath := CreateTestBinaryWithStderr(t, tempDir, tc.stderr, tc.exitCode)
+			binaryPath := createTestBinaryWithStderr(t, tempDir, tc.stderr, tc.exitCode)
 
-			config := &Config{BinaryPath: binaryPath}
-			log := logger.NewConsoleLogger()
-			log.SetLevel(logger.LevelQuiet)
-			exec := NewExecutorWithLogger(config, log)
-
-			ctx := context.Background()
+			ctx, exec := setupTestExecutor(t, binaryPath)
 			err := executeMkdirCommand(ctx, exec, tc.remotePath, tc.customErrorHandler)
 
 			if (err != nil) != tc.wantErr {
@@ -251,14 +245,10 @@ func TestExecuteMkdirCommand(t *testing.T) {
 
 func TestExecuteMkdirCommand_ContextCancellation(t *testing.T) {
 	tempDir := t.TempDir()
-	binaryPath := CreateSlowBinary(t, tempDir)
+	binaryPath := createSlowBinary(t, tempDir)
 
-	config := &Config{BinaryPath: binaryPath}
-	log := logger.NewConsoleLogger()
-	log.SetLevel(logger.LevelQuiet)
-	exec := NewExecutorWithLogger(config, log)
-
-	ctx, cancel := context.WithCancel(context.Background())
+	ctx, exec := setupTestExecutor(t, binaryPath)
+	ctx, cancel := context.WithCancel(ctx)
 
 	go func() {
 		cancel()

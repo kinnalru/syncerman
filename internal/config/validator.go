@@ -29,40 +29,44 @@ import (
 //	    log.Fatalf("Invalid configuration: %v", err)
 //	}
 func (c *Config) Validate() error {
-	// Ensure configuration has at least one provider defined
 	if len(c.Providers) == 0 {
-		return errors.NewValidationError("configuration is empty", nil)
+		return errors.NewValidationError("configuration is empty: at least one provider must be defined. "+
+			"Example: providers:\n  gdrive:\n    \"/path\":\n      - to: \"remote:backup\"", nil)
 	}
 
 	for _, provider := range c.Providers {
 		providerName := provider.Name
 		paths := provider.Data
 
-		// Provider names must not be empty
 		if providerName == "" {
-			return errors.NewValidationError("provider name cannot be empty", nil)
+			return errors.NewValidationError("provider name cannot be empty. "+
+				"Each provider must have a valid name (e.g., 'gdrive', 'dropbox', 's3'). "+
+				"Provider names must correspond to rclone remotes defined in ~/.config/rclone/rclone.conf", nil)
 		}
 
-		// Each provider must have at least one path defined
 		if len(paths) == 0 {
-			return errors.NewValidationError(fmt.Sprintf("provider %q has no paths defined", providerName), nil)
+			return errors.NewValidationError(fmt.Sprintf("provider %q has no paths defined. "+
+				"Each provider must specify at least one source path to sync from. "+
+				"Example:\n  %q:\n    \"/source/path\":\n      - to: \"destination:backup\"", providerName, providerName), nil)
 		}
 
 		for _, pathData := range paths {
 			path := pathData.Name
 			destinations := pathData.Values
 
-			// Source paths must not be empty
 			if path == "" {
-				return errors.NewValidationError(fmt.Sprintf("path cannot be empty for provider %q", providerName), nil)
+				return errors.NewValidationError(fmt.Sprintf("source path cannot be empty for provider %q. "+
+					"Each path key must specify a source location to sync from. "+
+					"Example:\n  %q:\n    \"/documents\":\n      - to: \"backup:docs\"", providerName, providerName), nil)
 			}
 
-			// Each source path must have at least one destination
 			if len(destinations) == 0 {
-				return errors.NewValidationError(fmt.Sprintf("no destinations defined for provider %q path %q", providerName, path), nil)
+				return errors.NewValidationError(fmt.Sprintf("no destinations defined for provider %q path %q. "+
+					"Each source path must have at least one destination to sync to. "+
+					"Example:\n  %q:\n    %q:\n      - to: \"remote:backup\"",
+					providerName, path, providerName, path), nil)
 			}
 
-			// Validate each destination configuration
 			for i, dest := range destinations {
 				if err := validateDestination(providerName, path, dest, i); err != nil {
 					return err
@@ -94,19 +98,24 @@ func (c *Config) Validate() error {
 //   - All destination arguments are not empty
 func validateDestination(provider string, path string, dest Destination, index int) error {
 	if dest.To == "" {
-		return errors.NewValidationError(fmt.Sprintf("destination 'to' field cannot be empty for provider %q path %q at index %d",
+		return errors.NewValidationError(fmt.Sprintf("destination 'to' field cannot be empty for provider %q path %q (destination #%d). "+
+			"Each destination must specify where to sync to. "+
+			"Valid formats:\n  - Remote provider: 'provider:path' (e.g., 'gdrive:backup/docs')\n  - Local path: '/absolute/path' or './relative/path'",
 			provider, path, index), nil)
 	}
 
 	if !isValidDestinationFormat(dest.To) {
-		return errors.NewValidationError(fmt.Sprintf("destination must be in format 'provider:path' or local path for provider %q path %q at index %d: %q",
-			provider, path, index, dest.To), nil)
+		return errors.NewValidationError(fmt.Sprintf("invalid destination format %q for provider %q path %q (destination #%d). "+
+			"Destination must be one of:\n  - Remote provider with colon: 'provider:path' (e.g., 'gdrive:backup/docs', 'dropbox:archive')\n  - Absolute path starting with '/': '/absolute/path/to/backup'\n  - Relative path starting with '.' or '..': './backup' or '../backup'\n  "+
+			"Provider names must correspond to rclone remotes defined in rclone configuration",
+			dest.To, provider, path, index), nil)
 	}
 
-	for _, arg := range dest.Args {
+	for i, arg := range dest.Args {
 		if arg == "" {
-			return errors.NewValidationError(fmt.Sprintf("destination argument cannot be empty for provider %q path %q at index %d",
-				provider, path, index), nil)
+			return errors.NewValidationError(fmt.Sprintf("destination args element #%d cannot be empty for provider %q path %q (destination #%d). "+
+				"All rclone arguments must be non-empty. If you don't need arguments, remove the 'args' field or provide a list of valid flags (e.g., args: ['--fast-list', '--max-age 30d'])",
+				i, provider, path, index), nil)
 		}
 	}
 

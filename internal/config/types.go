@@ -6,6 +6,36 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
+// unmarshalOrderedMap is a generic helper for unmarshaling ordered YAML mappings.
+// It iterates through key-value pairs in document order, preserving the exact order
+// from the YAML configuration. This is critical for linear synchronization chains.
+//
+// Parameters:
+//   - node: The YAML mapping node to unmarshal
+//   - typeName: Name for error messages (e.g., "paths", "providers")
+//   - processPair: Function called for each key-value pair, returns error if decoding fails
+//
+// Returns error if node is not a mapping or if any pair processing fails.
+func unmarshalOrderedMap(node *yaml.Node, typeName string, processPair func(key, value *yaml.Node) error) error {
+	if node.Kind != yaml.MappingNode {
+		return fmt.Errorf("%s must be a mapping node: got kind %d at line %d. Check YAML indentation and syntax",
+			typeName, node.Kind, node.Line)
+	}
+
+	for i := 0; i < len(node.Content); i += 2 {
+		keyNode := node.Content[i]
+		valueNode := node.Content[i+1]
+
+		if err := processPair(keyNode, valueNode); err != nil {
+			return fmt.Errorf("failed to decode %s %q at line %d: %w. "+
+				"Check YAML structure and ensure proper indentation",
+				typeName, keyNode.Value, keyNode.Line, err)
+		}
+	}
+
+	return nil
+}
+
 // PathWithKey preserves path name and its destination configurations.
 // This structure is used internally to maintain YAML ordering while
 // providing backward-compatible accessor methods.
@@ -67,28 +97,20 @@ type OrderedPaths []PathWithKey
 // If the YAML node is not a mapping, an error is returned.
 // Path configurations are decoded as slices of Destination objects.
 func (op *OrderedPaths) UnmarshalYAML(node *yaml.Node) error {
-	if node.Kind != yaml.MappingNode {
-		return fmt.Errorf("paths must be a mapping node")
-	}
-
 	*op = make(OrderedPaths, 0, len(node.Content)/2)
 
-	for i := 0; i < len(node.Content); i += 2 {
-		keyNode := node.Content[i]
-		valueNode := node.Content[i+1]
-
+	return unmarshalOrderedMap(node, "paths", func(keyNode, valueNode *yaml.Node) error {
 		var destinations []Destination
 		if err := valueNode.Decode(&destinations); err != nil {
-			return fmt.Errorf("failed to decode path %s: %w", keyNode.Value, err)
+			return err
 		}
 
 		*op = append(*op, PathWithKey{
 			Name:   keyNode.Value,
 			Values: destinations,
 		})
-	}
-
-	return nil
+		return nil
+	})
 }
 
 // toPathMap converts OrderedPaths to PathMap for backward compatibility.
@@ -146,28 +168,20 @@ type OrderedProviders []ProviderWithKey
 // If the YAML node is not a mapping, an error is returned.
 // Provider configurations are decoded using the OrderedPaths type to preserve order.
 func (op *OrderedProviders) UnmarshalYAML(node *yaml.Node) error {
-	if node.Kind != yaml.MappingNode {
-		return fmt.Errorf("providers must be a mapping node")
-	}
-
 	*op = make(OrderedProviders, 0, len(node.Content)/2)
 
-	for i := 0; i < len(node.Content); i += 2 {
-		keyNode := node.Content[i]
-		valueNode := node.Content[i+1]
-
+	return unmarshalOrderedMap(node, "providers", func(keyNode, valueNode *yaml.Node) error {
 		var paths OrderedPaths
 		if err := valueNode.Decode(&paths); err != nil {
-			return fmt.Errorf("failed to decode provider %s: %w", keyNode.Value, err)
+			return err
 		}
 
 		*op = append(*op, ProviderWithKey{
 			Name: keyNode.Value,
 			Data: paths,
 		})
-	}
-
-	return nil
+		return nil
+	})
 }
 
 // Destination represents a sync destination configuration.
@@ -293,24 +307,6 @@ func (c *Config) AddProvider(name string, paths PathMap) {
 //   - OrderedProviders: A slice of all providers with their PathMap configurations
 func (c *Config) GetProviders() OrderedProviders {
 	return c.Providers
-}
-
-// GetProvidersMap returns a legacy map of all configured providers.
-//
-// DEPRECATED: Use GetProviders() instead for order-preserving access.
-// This method is provided for backward compatibility only.
-//
-// Returns:
-//   - ProviderMap: A map of all provider names to their PathMap configurations
-func (c *Config) GetProvidersMap() ProviderMap {
-	if c.Providers == nil {
-		return make(ProviderMap)
-	}
-	result := make(ProviderMap, len(c.Providers))
-	for _, provider := range c.Providers {
-		result[provider.Name] = provider.Data.toPathMap()
-	}
-	return result
 }
 
 // GetPaths retrieves paths for a specific provider.

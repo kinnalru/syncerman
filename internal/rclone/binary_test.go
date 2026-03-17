@@ -90,6 +90,30 @@ func TestFindRcloneBinary(t *testing.T) {
 			},
 			wantErr: true,
 		},
+		{
+			name: "custom path with simple name (no separator)",
+			setupFunc: func() func() {
+				originalWd, _ := os.Getwd()
+				originalPath := os.Getenv("PATH")
+				testDir := t.TempDir()
+				testBinary := filepath.Join(testDir, "rclone")
+				if err := os.WriteFile(testBinary, []byte("#!/bin/sh\necho 'rclone'\n"), 0o755); err != nil {
+					t.Fatalf("Failed to create fake rclone: %v", err)
+				}
+				if err := os.Chdir(testDir); err != nil {
+					t.Fatalf("Failed to change directory: %v", err)
+				}
+				_ = os.Setenv("PATH", "")
+				_ = os.Setenv(RcloneEnvVar, "rclone")
+				return func() {
+					_ = os.Chdir(originalWd)
+					_ = os.Setenv("PATH", originalPath)
+					_ = os.Unsetenv(RcloneEnvVar)
+					_ = os.Remove(testBinary)
+				}
+			},
+			wantErr: false,
+		},
 	}
 
 	for _, tc := range testCases {
@@ -124,6 +148,7 @@ func TestConfigFromEnv(t *testing.T) {
 	tests := []struct {
 		name    string
 		setup   func()
+		cleanup func()
 		wantErr bool
 	}{
 		{
@@ -131,6 +156,7 @@ func TestConfigFromEnv(t *testing.T) {
 			setup: func() {
 				_ = os.Unsetenv(RcloneEnvVar)
 			},
+			cleanup: nil,
 			wantErr: false,
 		},
 		{
@@ -143,7 +169,22 @@ func TestConfigFromEnv(t *testing.T) {
 				}
 				_ = os.Setenv(RcloneEnvVar, binaryPath)
 			},
+			cleanup: nil,
 			wantErr: false,
+		},
+		{
+			name: "rclone not found - error case",
+			setup: func() {
+				originalPath := os.Getenv("PATH")
+				emptyDir := t.TempDir()
+				_ = os.Setenv("PATH", emptyDir)
+				_ = os.Unsetenv(RcloneEnvVar)
+				t.Cleanup(func() {
+					_ = os.Setenv("PATH", originalPath)
+				})
+			},
+			cleanup: nil,
+			wantErr: true,
 		},
 	}
 
@@ -160,14 +201,10 @@ func TestConfigFromEnv(t *testing.T) {
 			if !tt.wantErr && config == nil {
 				t.Errorf("ConfigFromEnv() returned nil config")
 			}
+			if tt.wantErr && config != nil {
+				t.Errorf("ConfigFromEnv() should return nil config on error, got %+v", config)
+			}
 		})
-	}
-}
-
-func TestFindRcloneBinaryOrFatal(t *testing.T) {
-	path := FindRcloneBinaryOrFatal()
-	if path != "" {
-		t.Logf("Found rclone at: %s", path)
 	}
 }
 

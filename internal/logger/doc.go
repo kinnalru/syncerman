@@ -47,7 +47,7 @@ package logger
 // is active, all log messages (DEBUG, INFO, WARN, ERROR) are output.
 //
 // Usage:
-//	logger.SetVerbose(true)  // Enables all debug output
+//	log.SetVerbose(true)  // Enables all debug output
 //
 // Quiet Mode
 //
@@ -57,15 +57,15 @@ package logger
 // codes matter.
 //
 // Usage:
-//	logger.SetQuiet(true)  // Suppresses all log output
+//	log.SetQuiet(true)  // Suppresses all log output
 //
 // Dynamic Level Setting
 //
 // The logger level can be set directly for fine-grained control:
 //
-//	logger.SetLevel(LevelInfo)   // Show INFO, WARN, ERROR
-//	logger.SetLevel(LevelWarn)   // Show WARN, ERROR only
-//	logger.SetLevel(LevelQuiet)  // Suppress all output
+//	log.SetLevel(LevelInfo)   // Show INFO, WARN, ERROR
+//	log.SetLevel(LevelWarn)   // Show WARN, ERROR only
+//	log.SetLevel(LevelQuiet)  // Suppress all output
 //
 // Output Format and Destination
 //
@@ -88,10 +88,10 @@ package logger
 // to separate informational output from program results. The output destination can be
 // changed to any io.Writer:
 //
-//	if err := logger.SetOutput(os.Stdout); err != nil {
+//	if err := log.SetOutput(os.Stdout); err != nil {
 //	    handle error
 //	}
-//	if err := logger.SetOutput(logFile); err != nil {
+//	if err := log.SetOutput(logFile); err != nil {
 //	    handle error
 //	}
 //
@@ -104,6 +104,15 @@ package logger
 //	    Info(msg string, args ...interface{})
 //	    Warn(msg string, args ...interface{})
 //	    Error(msg string, args ...interface{})
+//	    Command(cmd string)
+//	    CombinedOutput(output string)
+//	    StageInfo(msg string, args ...interface{})
+//	    TargetInfo(msg string, args ...interface{})
+//	}
+//
+// The Configurable interface defines configuration methods:
+//
+//	type Configurable interface {
 //	    SetLevel(level LogLevel)
 //	    SetOutput(w io.Writer) error
 //	    GetLevel() LogLevel
@@ -115,25 +124,33 @@ package logger
 //
 // ConsoleLogger is the default implementation of the Logger interface. It provides
 // structured logging to console output with the standard "[LEVEL] message" format.
+// ConsoleLogger also implements the Configurable interface for configuration support.
 //
 // Basic Usage:
 //
-//	log := logger.NewConsoleLogger()
+//	log := NewConsoleLogger()
 //	log.Info("Starting sync operation")
 //	log.Debug("Connecting to remote endpoint")
 //	log.Warn("Rate limit approaching")
 //	log.Error("Connection failed")
 //
+// Specialized Logging Methods:
+//
+//	log.Command("rclone bisync source: dest:")
+//	log.CombinedOutput("Synced 5 files")
+//	log.StageInfo("Processing stage 1")
+//	log.TargetInfo("Target: gdrive:documents")
+//
 // Configuring Verbosity:
 //
-//	log := logger.NewConsoleLogger()
+//	log := NewConsoleLogger()
 //	log.SetVerbose(true)  // Enable debug output
 //	log.SetQuiet(true)    // Suppress all output
 //
 // Example Programmatic Configuration:
 //
-//	func initLogger(verbose, quiet bool) *logger.ConsoleLogger {
-//	    log := logger.NewConsoleLogger()
+//	func initLogger(verbose, quiet bool) *ConsoleLogger {
+//	    log := NewConsoleLogger()
 //	    if verbose {
 //	        log.SetVerbose(true)
 //	    } else if quiet {
@@ -146,11 +163,11 @@ package logger
 //
 // The logger suppresses messages at lower severity levels when a higher level is set:
 //
-//	SetLevel(LevelDebug) → Show: DEBUG, INFO, WARN, ERROR
-//	SetLevel(LevelInfo)  → Show: INFO, WARN, ERROR
-//	SetLevel(LevelWarn)  → Show: WARN, ERROR
-//	SetLevel(LevelError) → Show: ERROR
-//	SetLevel(LevelQuiet) → Show: (nothing)
+//	log.SetLevel(LevelDebug) → Show: DEBUG, INFO, WARN, ERROR
+//	log.SetLevel(LevelInfo)  → Show: INFO, WARN, ERROR
+//	log.SetLevel(LevelWarn)  → Show: WARN, ERROR
+//	log.SetLevel(LevelError) → Show: ERROR
+//	log.SetLevel(LevelQuiet) → Show: (nothing)
 //
 // Integration with CLI Flags
 //
@@ -160,3 +177,48 @@ package logger
 //   --quiet:   Equivalent to SetLevel(LevelQuiet)
 //
 // When both flags are specified, verbose takes precedence.
+//
+// Specialized Logging Methods
+//
+// The logger provides specialized methods for specific use cases within Syncerman:
+//
+//	Command(cmd string)
+//	    Logs the rclone command being executed with cyan color.
+//	    Useful for tracking command execution in verbose mode.
+//
+//	CombinedOutput(output string)
+//	    Logs the combined stdout/stderr output from rclone commands.
+//	    Filters out informational lines (e.g., "Elapsed time:", "Checks:").
+//	    Displays the filtered output in green color.
+//
+//	StageInfo(msg string, args ...interface{})
+//	    Logs important stage or milestone messages with bold formatting.
+//	    Used for highlighting significant synchronization stages.
+//
+//	TargetInfo(msg string, args ...interface{})
+//	    Logs target-specific messages with normal brightness.
+//	    Used for standard target information without emphasis.
+//
+// Color Constants
+//
+// The logger uses ANSI color codes for console output. Available colors:
+//
+//	colorReset ("\033[0m")
+//	    Resets all color and style attributes to terminal defaults.
+//
+//	colorRed ("\033[31m")
+//	    Red text, used for error indicators (not currently used in log methods).
+//
+//	colorGreen ("\033[32m")
+//	    Green text, used for CombinedOutput to display command results.
+//
+//	colorGray ("\033[90m")
+//	    Gray/dim text, used for indentation in formatted blocks.
+//
+//	colorCyan ("\033[36m")
+//	    Cyan text, used for Command method to highlight command execution.
+//
+//	colorBold ("\033[1m")
+//	    Bold text, used for StageInfo to emphasize important messages.
+//
+// Note: colorYellow, colorBlue, and colorDim have been removed from the API.

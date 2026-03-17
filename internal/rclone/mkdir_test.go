@@ -5,8 +5,6 @@ import (
 	"strings"
 	"testing"
 	"time"
-
-	"gitlab.com/kinnalru/syncerman/internal/logger"
 )
 
 func TestMkdir(t *testing.T) {
@@ -82,17 +80,12 @@ func TestMkdir(t *testing.T) {
 			tempDir := t.TempDir()
 			var binaryPath string
 			if tc.exitCode != 0 && tc.stderr != "" {
-				binaryPath = CreateTestBinaryWithStderr(t, tempDir, tc.stderr, tc.exitCode)
+				binaryPath = createTestBinaryWithStderr(t, tempDir, tc.stderr, tc.exitCode)
 			} else {
-				binaryPath = CreateSuccessBinary(t, tempDir)
+				binaryPath = createSuccessBinary(t, tempDir)
 			}
 
-			config := &Config{BinaryPath: binaryPath}
-			log := logger.NewConsoleLogger()
-			log.SetLevel(logger.LevelQuiet)
-			exec := NewExecutorWithLogger(config, log)
-
-			ctx := context.Background()
+			ctx, exec := setupTestExecutor(t, binaryPath)
 			err := Mkdir(ctx, exec, tc.remotePath)
 
 			if (err != nil) != tc.wantErr {
@@ -248,17 +241,12 @@ func TestCreatePath(t *testing.T) {
 			var binaryPath string
 
 			if tc.exitCode == 0 {
-				binaryPath = CreateSuccessBinary(t, tempDir)
+				binaryPath = createSuccessBinary(t, tempDir)
 			} else {
-				binaryPath = CreateTestBinaryWithStderr(t, tempDir, tc.stderr, tc.exitCode)
+				binaryPath = createTestBinaryWithStderr(t, tempDir, tc.stderr, tc.exitCode)
 			}
 
-			config := &Config{BinaryPath: binaryPath}
-			log := logger.NewConsoleLogger()
-			log.SetLevel(logger.LevelQuiet)
-			exec := NewExecutorWithLogger(config, log)
-
-			ctx := context.Background()
+			ctx, exec := setupTestExecutor(t, binaryPath)
 			err := CreatePath(ctx, exec, tc.remotePath)
 
 			if (err != nil) != tc.wantErr {
@@ -281,14 +269,10 @@ func TestCreatePath(t *testing.T) {
 
 func TestMkdir_ContextCancellation(t *testing.T) {
 	tempDir := t.TempDir()
-	binaryPath := CreateSlowBinary(t, tempDir)
+	binaryPath := createSlowBinary(t, tempDir)
 
-	config := &Config{BinaryPath: binaryPath}
-	log := logger.NewConsoleLogger()
-	log.SetLevel(logger.LevelQuiet)
-	exec := NewExecutorWithLogger(config, log)
-
-	ctx, cancel := context.WithCancel(context.Background())
+	ctx, exec := setupTestExecutor(t, binaryPath)
+	ctx, cancel := context.WithCancel(ctx)
 	defer cancel()
 
 	go func() {
@@ -304,14 +288,9 @@ func TestMkdir_ContextCancellation(t *testing.T) {
 
 func TestEmptyPath(t *testing.T) {
 	tempDir := t.TempDir()
-	binaryPath := CreateSuccessBinary(t, tempDir)
+	binaryPath := createSuccessBinary(t, tempDir)
 
-	config := &Config{BinaryPath: binaryPath}
-	log := logger.NewConsoleLogger()
-	log.SetLevel(logger.LevelQuiet)
-	exec := NewExecutorWithLogger(config, log)
-
-	ctx := context.Background()
+	ctx, exec := setupTestExecutor(t, binaryPath)
 
 	err := Mkdir(ctx, exec, "")
 	if err == nil {
@@ -320,5 +299,28 @@ func TestEmptyPath(t *testing.T) {
 
 	if err != nil && !strings.Contains(err.Error(), "remote path cannot be empty") {
 		t.Errorf("Mkdir() error = %v, want error containing 'remote path cannot be empty'", err)
+	}
+}
+
+func TestCreatePath_NonParentDirError(t *testing.T) {
+	tempDir := t.TempDir()
+	binaryPath := createTestBinaryWithStderr(t, tempDir, "Error: permission denied", 1)
+
+	ctx, exec := setupTestExecutor(t, binaryPath)
+
+	err := CreatePath(ctx, exec, "remote:testdir")
+	if err == nil {
+		t.Error("CreatePath() expected error for permission denied, got nil")
+	}
+
+	if err != nil && strings.Contains(err.Error(), "parent directory does not exist") {
+		t.Error("CreatePath() should not treat permission denied as parent directory error")
+	}
+}
+
+func TestExtractStderr_NilResult(t *testing.T) {
+	result := extractStderr(nil)
+	if result != "" {
+		t.Errorf("extractStderr(nil) should return empty string, got %q", result)
 	}
 }

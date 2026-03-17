@@ -36,15 +36,11 @@ const (
 	logSuffix       = "] "
 	nilWriterErrMsg = "output writer cannot be nil"
 
-	colorReset  = "\033[0m"
-	colorRed    = "\033[31m"
-	colorGreen  = "\033[32m"
-	colorYellow = "\033[33m"
-	colorBlue   = "\033[34m"
-	colorGray   = "\033[90m"
-	colorCyan   = "\033[36m"
-	colorBold   = "\033[1m"
-	colorDim    = "\033[2m"
+	colorReset = "\033[0m"
+	colorGreen = "\033[32m"
+	colorGray  = "\033[90m"
+	colorCyan  = "\033[36m"
+	colorBold  = "\033[1m"
 )
 
 var levelStrings = [...]string{
@@ -77,8 +73,6 @@ func (l LogLevel) String() string {
 //   - Error: logs error-level messages for critical issues
 //   - Command: logs command execution with cyan color at INFO level
 //   - CombinedOutput: logs combined stdout/stderr output at INFO level with distinct color
-//   - Output: logs multi-line output blocks (deprecated, use CombinedOutput)
-//   - ErrorOutput: logs error output blocks with red color (deprecated, use CombinedOutput)
 //   - StageInfo: logs stage messages with bold highlighting
 //   - TargetInfo: logs target messages with normal brightness
 //
@@ -91,8 +85,6 @@ type Logger interface {
 	Error(msg string, args ...interface{})
 	Command(cmd string)
 	CombinedOutput(output string)
-	Output(output string)
-	ErrorOutput(output string)
 	StageInfo(msg string, args ...interface{})
 	TargetInfo(msg string, args ...interface{})
 }
@@ -656,31 +648,6 @@ func (l *ConsoleLogger) GetLevel() LogLevel {
 	return l.level
 }
 
-// GetPreviousLevel returns the saved previous log level.
-//
-// This method allows inspection of the previously saved log level, which is used
-// internally by SetVerbose() and SetQuiet() to restore the level when those modes
-// are disabled. This is primarily useful for testing purposes.
-//
-// Returns: LogLevel - the previously stored log level value.
-func (l *ConsoleLogger) GetPreviousLevel() LogLevel {
-	return l.previousLevel
-}
-
-func (l *ConsoleLogger) InfoBlock(title string, lines []string) {
-	if l.quiet || l.level > LevelInfo {
-		return
-	}
-	l.formatBlock("", title, lines)
-}
-
-func (l *ConsoleLogger) DebugBlock(title string, lines []string) {
-	if l.quiet || l.level > LevelDebug {
-		return
-	}
-	l.formatBlock("", title, lines)
-}
-
 func (l *ConsoleLogger) Command(cmd string) {
 	if l.quiet || l.level > LevelInfo {
 		return
@@ -698,15 +665,6 @@ func (l *ConsoleLogger) Command(cmd string) {
 	_, _ = buf.WriteTo(l.output)
 }
 
-func (l *ConsoleLogger) Output(output string) {
-	if l.quiet || l.level > LevelDebug || output == "" {
-		return
-	}
-
-	lines := strings.Split(strings.TrimSpace(output), "\n")
-	l.formatBlock(colorGray, "", lines)
-}
-
 func (l *ConsoleLogger) CombinedOutput(output string) {
 	if l.quiet || l.level > LevelInfo || output == "" {
 		return
@@ -721,13 +679,4 @@ func (l *ConsoleLogger) CombinedOutput(output string) {
 		filtered = append(filtered, line)
 	}
 	l.formatBlock(colorGreen, "", filtered)
-}
-
-func (l *ConsoleLogger) ErrorOutput(output string) {
-	if l.quiet || l.level > LevelDebug || output == "" {
-		return
-	}
-
-	lines := strings.Split(strings.TrimSpace(output), "\n")
-	l.formatBlock(colorRed, "", lines)
 }

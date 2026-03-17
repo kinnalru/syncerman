@@ -101,7 +101,7 @@ func TestNewExecutorWithLogger(t *testing.T) {
 
 func TestExecutorImpl_Run_Success(t *testing.T) {
 	tempDir := t.TempDir()
-	binaryPath := CreateTestBinary(t, tempDir, "success", 0)
+	binaryPath := createTestBinary(t, tempDir, "success", 0)
 
 	config := &Config{BinaryPath: binaryPath}
 	log := logger.NewConsoleLogger()
@@ -126,7 +126,7 @@ func TestExecutorImpl_Run_Success(t *testing.T) {
 
 func TestExecutorImpl_Run_Failure(t *testing.T) {
 	tempDir := t.TempDir()
-	binaryPath := CreateTestBinaryWithStderr(t, tempDir, "error", 1)
+	binaryPath := createTestBinaryWithStderr(t, tempDir, "error", 1)
 
 	config := &Config{BinaryPath: binaryPath}
 	log := logger.NewConsoleLogger()
@@ -151,7 +151,7 @@ func TestExecutorImpl_Run_Failure(t *testing.T) {
 
 func TestExecutorImpl_Run_ContextCancelled(t *testing.T) {
 	tempDir := t.TempDir()
-	binaryPath := CreateSlowBinary(t, tempDir)
+	binaryPath := createSlowBinary(t, tempDir)
 
 	config := &Config{BinaryPath: binaryPath}
 	log := logger.NewConsoleLogger()
@@ -199,7 +199,7 @@ func TestExecutorImpl_Run_BinaryNotFound(t *testing.T) {
 
 func TestExecutorImpl_Run_WithArgs(t *testing.T) {
 	tempDir := t.TempDir()
-	binaryPath := CreateTestBinary(t, tempDir, "Args: arg1 arg2 arg3", 0)
+	binaryPath := createTestBinary(t, tempDir, "Args: arg1 arg2 arg3", 0)
 
 	config := &Config{BinaryPath: binaryPath}
 	log := logger.NewConsoleLogger()
@@ -220,7 +220,7 @@ func TestExecutorImpl_Run_WithArgs(t *testing.T) {
 
 func TestExecutorImpl_Run_Timeout(t *testing.T) {
 	tempDir := t.TempDir()
-	binaryPath := CreateSlowBinary(t, tempDir)
+	binaryPath := createSlowBinary(t, tempDir)
 
 	config := &Config{BinaryPath: binaryPath}
 	log := logger.NewConsoleLogger()
@@ -261,7 +261,6 @@ func TestExecutorImpl_Run_RealEcho(t *testing.T) {
 
 	if err != nil {
 		t.Errorf("Run() unexpected error: %v", err)
-		return
 	}
 
 	if !result.Success() {
@@ -276,4 +275,21 @@ func TestExecutorImpl_Run_RealEcho(t *testing.T) {
 	if !strings.Contains(result.Combined, "test message") {
 		t.Errorf("Run() combined = %q, want to contain 'test message'", result.Combined)
 	}
+}
+
+func TestExecutorImpl_extractExitCode(t *testing.T) {
+	config := NewConfig()
+	executor := NewExecutor(config)
+	impl, ok := executor.(*ExecutorImpl)
+	if !ok {
+		t.Fatal("Failed to get ExecutorImpl")
+	}
+
+	t.Run("nil ProcessState", func(t *testing.T) {
+		cmd := exec.Command("echo", "test")
+		exitCode := impl.extractExitCode(cmd)
+		if exitCode != 1 {
+			t.Errorf("extractExitCode() should return 1 for nil ProcessState, got %d", exitCode)
+		}
+	})
 }

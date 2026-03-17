@@ -70,7 +70,7 @@ var commandConfig *CommandConfig
 var rootCmd = &cobra.Command{
 	Use:     "syncerman",
 	Short:   "Synchronizing targets using rclone",
-	Version: version.GetFullVersion(),
+	Version: version.Version,
 	Long: `Syncerman is a CLI application for synchronizing targets
 (sources and destinations) based on rclone CLI.
 
@@ -126,7 +126,7 @@ func Execute() error {
 
 func init() {
 	commandConfig = NewCommandConfig()
-	rootCmd.Version = version.GetFullVersion()
+	rootCmd.Version = version.Version
 	cobra.OnInitialize(initCommandConfig)
 
 	rootCmd.PersistentFlags().StringVarP(&commandConfig.ConfigFile, "config", "c", "", "Path to configuration file")
@@ -164,17 +164,4 @@ func IsVerbose() bool {
 
 func IsQuiet() bool {
 	return commandConfig.Quiet
-}
-
-func discoverConfigPath() string {
-	if commandConfig.ConfigFile != "" {
-		return commandConfig.ConfigFile
-	}
-
-	configPath := "./.syncerman.yml"
-	if _, err := os.Stat(configPath); err == nil {
-		return configPath
-	}
-
-	return ""
 }

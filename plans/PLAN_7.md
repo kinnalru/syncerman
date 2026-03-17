@@ -29,14 +29,14 @@ Template plan for refactoring internal packages. Each package has its own milest
     - Package itself
     - Package tests
     - ALL other packages in project
-  - Remove unused functions
-  - Remove unused types
+  - CRITICAL Remove unused functions
+  - CRITICAL Remove unused types
   - Update imports
 
 - [ ] **Remove Unused Files**
   - List all files in package directory
   - Check if each file is imported or used elsewhere
-  - Remove unused files
+  - CRITICAL Remove unused files
 
 - [ ] **Verify Package Specification**
   - Read specification file in `specs/PACKAGE_<NAME>.md` (if exists)

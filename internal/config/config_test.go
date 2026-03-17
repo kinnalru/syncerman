@@ -159,6 +159,26 @@ gdrive:
 	}
 }
 
+func TestLoadConfigFileInvalidYAML(t *testing.T) {
+	invalidYAML := `
+gdrive:
+  "./test":
+    - invalid yaml syntax
+`
+
+	tmpfile := createTempConfigFile(invalidYAML, t)
+	defer func() { _ = os.Remove(tmpfile) }()
+
+	_, err := LoadConfig(tmpfile)
+	if err == nil {
+		t.Error("expected error for invalid YAML")
+	}
+
+	if !errors.IsConfigError(err) {
+		t.Error("expected ConfigError")
+	}
+}
+
 func TestConfigValidateErrors(t *testing.T) {
 	tests := []struct {
 		name        string
@@ -405,6 +425,33 @@ func TestValidateConfigPathInvalid(t *testing.T) {
 	err := validateConfigPath("/nonexistent/path.yml")
 	if err == nil {
 		t.Error("expected error for nonexistent path")
+	}
+
+	if !errors.IsConfigError(err) {
+		t.Error("expected ConfigError")
+	}
+}
+
+func TestValidateConfigPathPermissionDenied(t *testing.T) {
+	tmpDir, err := os.MkdirTemp("", "test-perm-*")
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer os.RemoveAll(tmpDir)
+
+	testFile := filepath.Join(tmpDir, "config.yml")
+	if err := os.WriteFile(testFile, []byte("gdrive: {}"), 0600); err != nil {
+		t.Fatal(err)
+	}
+
+	if err := os.Chmod(testFile, 0000); err != nil {
+		t.Skipf("cannot set file permissions: %v", err)
+	}
+	defer os.Chmod(testFile, 0600)
+
+	err = validateConfigPath(testFile)
+	if err == nil {
+		t.Skip("permission restrictions not enforced in this environment (possibly running as root)")
 	}
 
 	if !errors.IsConfigError(err) {

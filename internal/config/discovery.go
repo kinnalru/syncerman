@@ -53,7 +53,7 @@ func DiscoverConfigPath(customPath string) (string, error) {
 func findDefaultConfig() (string, error) {
 	cwd, err := os.Getwd()
 	if err != nil {
-		return "", errors.NewConfigError("failed to get current working directory", err)
+		return "", errors.NewConfigError("failed to get current working directory: unable to determine config search location", err)
 	}
 
 	configPath := searchInDirectory(cwd)
@@ -61,7 +61,9 @@ func findDefaultConfig() (string, error) {
 		return configPath, nil
 	}
 
-	return "", errors.NewConfigError(fmt.Sprintf("no configuration file found in current directory (searching for: %s)", defaultConfigName), nil)
+	return "", errors.NewConfigError(fmt.Sprintf("no configuration file found in current directory. "+
+		"Searching for: %s in directory: %s\n\nSolutions:\n  - Create a %s file in the current directory\n  - Specify a custom config file path using -c or --config flag\n  - Run from a directory that contains %s",
+		defaultConfigName, cwd, defaultConfigName, defaultConfigName), nil)
 }
 
 // searchInDirectory searches for .syncerman.yml in the specified directory.
@@ -92,7 +94,13 @@ func searchInDirectory(dir string) string {
 //   - error: error if the file doesn't exist at the specified path, nil if valid
 func validateConfigPath(path string) error {
 	if _, err := os.Stat(path); err != nil {
-		return errors.NewConfigError(fmt.Sprintf("configuration file not found: %s", path), err)
+		if os.IsNotExist(err) {
+			return errors.NewConfigError(fmt.Sprintf("configuration file not found: %s\n\nSolutions:\n  - Check the file path spelling\n  - Ensure the file exists\n  - Use an absolute path if relative path is not working\n  - Verify file permissions",
+				path), nil)
+		}
+		return errors.NewConfigError(fmt.Sprintf("unable to access configuration file: %s (error: %v). "+
+			"Check file permissions and ensure the file is readable",
+			path, err), err)
 	}
 	return nil
 }

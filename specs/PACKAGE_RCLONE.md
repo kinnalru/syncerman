@@ -43,7 +43,7 @@ Constructs rclone bisync commands with standard and optional flags.
 **Standard Flags:**
 ```
 --create-empty-src-dirs, --compare=size,modtime, --no-slow-hash
--MvP, --drive-skip-gdocs, --fix-case
+-Mv, --drive-skip-gdocs, --fix-case
 --ignore-listing-checksum, --fast-list, --transfers=10
 --resilient
 ```

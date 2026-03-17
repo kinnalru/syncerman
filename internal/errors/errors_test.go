@@ -84,6 +84,7 @@ func TestErrorType_String(t *testing.T) {
 		{TypeConfig, "CONFIG"},
 		{TypeRclone, "RCLONE"},
 		{TypeValidation, "VALIDATION"},
+		{ErrorType(999), "UNKNOWN"},
 	}
 
 	for _, tt := range tests {
@@ -170,4 +171,93 @@ func TestErrorUnwrapInterface(t *testing.T) {
 
 func containsString(s, substr string) bool {
 	return len(s) >= len(substr) && s[:len(substr)] == substr || len(s) > len(substr) && (containsString(s[1:], substr))
+}
+
+func TestErrorChainWithErrorsIs(t *testing.T) {
+	baseErr := errors.New("underlying error")
+	wrappedErr := NewConfigError("wrapper message", baseErr)
+
+	if !errors.Is(wrappedErr, baseErr) {
+		t.Error("errors.Is should find the underlying error in the chain")
+	}
+
+	if errors.Is(wrappedErr, errors.New("different error")) {
+		t.Error("errors.Is should not find a different error in the chain")
+	}
+}
+
+func TestErrorChainWithErrorsAs(t *testing.T) {
+	baseErr := errors.New("underlying error")
+	wrappedErr := NewConfigError("wrapper message", baseErr)
+
+	var syncErr *SyncermanError
+	if !errors.As(wrappedErr, &syncErr) {
+		t.Error("errors.As should find SyncermanError in the chain")
+	}
+
+	if syncErr.Type != TypeConfig {
+		t.Errorf("expected TypeConfig, got %v", syncErr.Type)
+	}
+
+	if syncErr.Message != "wrapper message" {
+		t.Errorf("expected 'wrapper message', got %v", syncErr.Message)
+	}
+}
+
+func TestMultiLevelErrorWrapping(t *testing.T) {
+	baseErr := errors.New("base error")
+	level1 := NewConfigError("config problem", baseErr)
+
+	var syncErr *SyncermanError
+	if !errors.As(level1, &syncErr) {
+		t.Error("errors.As should find SyncermanError at first level")
+	}
+
+	if !errors.Is(level1, baseErr) {
+		t.Error("errors.Is should find base error through single wrapper")
+	}
+
+	if !IsConfigError(level1) {
+		t.Error("IsConfigError should identify wrapped config error")
+	}
+}
+
+func TestErrorChainPreservation(t *testing.T) {
+	baseErr := errors.New("underlying")
+	middleErr := NewRcloneError("rclone failed", baseErr)
+	topErr := NewValidationError("validation failed", middleErr)
+
+	if !errors.Is(topErr, baseErr) {
+		t.Error("errors.Is should find base error through multiple wrappers")
+	}
+
+	if !errors.Is(topErr, middleErr) {
+		t.Error("errors.Is should find middle error in chain")
+	}
+
+	var syncErr *SyncermanError
+	if !errors.As(topErr, &syncErr) {
+		t.Error("errors.As should find SyncermanError")
+	}
+
+	if syncErr.Type != TypeValidation {
+		t.Errorf("expected TypeValidation at top level, got %v", syncErr.Type)
+	}
+
+	if !IsValidationError(topErr) {
+		t.Error("IsValidationError should identify top-level error type")
+	}
+}
+
+func TestErrorChainWithNilUnderlying(t *testing.T) {
+	err := NewConfigError("message", nil)
+
+	if errors.Is(err, errors.New("any")) {
+		t.Error("errors.Is with nil underlying should not match random errors")
+	}
+
+	var syncErr *SyncermanError
+	if !errors.As(err, &syncErr) {
+		t.Error("errors.As should still work with nil underlying error")
+	}
 }
