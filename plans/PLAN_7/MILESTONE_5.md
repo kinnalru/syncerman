@@ -53,7 +53,7 @@ Completed: All production files have corresponding test files. Coverage 95.4% (e
 
 ### 7. Review and Consolidate Rclone Command Building ✅
 
-Completed: BisyncArgs builder is well-implemented. Argument order correct (command, standard flags, optional flags, source, dest, extra args). All standard flags from OVERALL.md present (--create-empty-src-dirs, --compare, --no-slow-hash, -MvP, --drive-skip-gdocs, --fix-case, --ignore-listing-checksum, --fast-list, --transfers=10, --resilient). Methods (WithResync, WithDryRun, WithArgs) follow consistent pattern. Fluent builder pattern is easy to use and hard to misuse. All tests pass.
+Completed: BisyncArgs builder is well-implemented. Argument order correct (command, standard flags, optional flags, source, dest, extra args). All standard flags from OVERALL.md present (--create-empty-src-dirs, --compare, --no-slow-hash, -Mv, --drive-skip-gdocs, --fix-case, --ignore-listing-checksum, --fast-list, --transfers=10, --resilient). Methods (WithResync, WithDryRun, WithArgs) follow consistent pattern. Fluent builder pattern is easy to use and hard to misuse. All tests pass.
 
 Review the rclone command building logic, particularly the BisyncArgs builder, to ensure consistency and simplicity.
 

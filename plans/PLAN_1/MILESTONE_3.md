@@ -89,7 +89,7 @@ Build rclone bisync commands with all required flags:
   - `--create-empty-src-dirs`
   - `--compare size,modtime`
   - `--no-slow-hash`
-  - `-MvP`
+  - `-Mv`
   - `--drive-skip-gdocs`
   - `--fix-case`
   - `--ignore-listing-checksum`

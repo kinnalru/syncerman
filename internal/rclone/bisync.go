@@ -133,7 +133,7 @@ func (b *BisyncArgs) buildStandardFlags() []string {
 		"--create-empty-src-dirs",   // Sync creation and deletion of empty directories
 		"--compare=size,modtime",    // Compare files by size and modification time instead of checksum
 		"--no-slow-hash",            // Skip slow checksum calculations during listing
-		"-MvP",                      // Preserve metadata, verbose output, show progress
+		"-Mv",                       // Preserve metadata, verbose output
 		"--drive-skip-gdocs",        // Skip Google Docs files (Google Drive specific)
 		"--fix-case",                // Force rename of case-insensitive destinations
 		"--ignore-listing-checksum", // Don't use checksums for listings
