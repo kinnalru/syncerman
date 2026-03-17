@@ -10,7 +10,7 @@ variables:
 
 workflow:
   rules:
-    - if: $CI_PIPELINE_SOURCE === "schedule"
+    - if: $CI_PIPELINE_SOURCE == "schedule"
       when: never
 
 
@@ -110,13 +110,8 @@ sync-public-repos:
       - repositories
       - $APK_CACHE_DIR
   rules:
-    - if: '$CI_PIPELINE_SOURCE === "schedule" && $SCRIPTNAME == "gitsync"'
+    - if: '$CI_PIPELINE_SOURCE == "schedule" && $SCRIPTNAME == "gitsync"'
       when: always
-  only:
-    refs:
-      - schedules
-    variables:
-      - $SCRIPTNAME == "gitsync"
   before_script:
     - which ssh-agent || apk add --cache-dir $APK_CACHE_DIR openssh git
     - eval $(ssh-agent -s)
