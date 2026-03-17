@@ -14,12 +14,13 @@ BINARY_NAME=syncerman
 LINUX_BINARY=$(BINARY_NAME)-linux-amd64
 WINDOWS_BINARY=$(BINARY_NAME)-windows-amd64
 
-# Version parameters
-VERSION ?= $(shell cat VERSION 2>/dev/null || echo "dev")
+# Build-time parameters (embedded version from VERSION file via go:embed)
+# Version is NOT passed via ldflags - it's read by go:embed from VERSION file at compile time
+# These parameters only override GitCommit, BuildTime, and GoVersion which are build-time specific
 GitCommit ?= $(shell git rev-parse HEAD 2>/dev/null || echo "unknown")
 BuildTime ?= $(shell date -u +"%Y-%m-%dT%H:%M:%SZ" 2>/dev/null || echo "unknown")
 GoVersion ?= $(shell go version 2>/dev/null | awk '{print $$3}' || echo "unknown")
-LDFLAGS ?= -s -w -X gitlab.com/kinnalru/syncerman/internal/version.Version=$(VERSION) -X gitlab.com/kinnalru/syncerman/internal/version.GitCommit=$(GitCommit) -X gitlab.com/kinnalru/syncerman/internal/version.BuildTime=$(BuildTime) -X gitlab.com/kinnalru/syncerman/internal/version.GoVersion=$(GoVersion)
+LDFLAGS ?= -s -w -X gitlab.com/kinnalru/syncerman/internal/version.GitCommit=$(GitCommit) -X gitlab.com/kinnalru/syncerman/internal/version.BuildTime=$(BuildTime) -X gitlab.com/kinnalru/syncerman/internal/version.GoVersion=$(GoVersion)
 
 all: test build
 

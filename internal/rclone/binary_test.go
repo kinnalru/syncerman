@@ -146,18 +146,21 @@ func TestFindRcloneBinary(t *testing.T) {
 
 func TestConfigFromEnv(t *testing.T) {
 	tests := []struct {
-		name    string
-		setup   func()
-		cleanup func()
-		wantErr bool
+		name        string
+		setup       func()
+		cleanup     func()
+		wantErr     bool
+		needsRclone bool
 	}{
 		{
 			name: "valid rclone in PATH",
 			setup: func() {
+				skipIfNoRclone(t)
 				_ = os.Unsetenv(RcloneEnvVar)
 			},
-			cleanup: nil,
-			wantErr: false,
+			cleanup:     nil,
+			wantErr:     false,
+			needsRclone: true,
 		},
 		{
 			name: "custom env var set",
@@ -169,8 +172,9 @@ func TestConfigFromEnv(t *testing.T) {
 				}
 				_ = os.Setenv(RcloneEnvVar, binaryPath)
 			},
-			cleanup: nil,
-			wantErr: false,
+			cleanup:     nil,
+			wantErr:     false,
+			needsRclone: false,
 		},
 		{
 			name: "rclone not found - error case",
@@ -183,8 +187,9 @@ func TestConfigFromEnv(t *testing.T) {
 					_ = os.Setenv("PATH", originalPath)
 				})
 			},
-			cleanup: nil,
-			wantErr: true,
+			cleanup:     nil,
+			wantErr:     true,
+			needsRclone: false,
 		},
 	}
 
