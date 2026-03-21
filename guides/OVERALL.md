@@ -49,59 +49,69 @@ syncerman/
 Syncerman uses YAML configuration files to define sync targets with the following structure:
 
 ```yaml
-<SRC provider name>:
-    "<path in SRC provider>": 
-        -
-            to: "<DST provider>:<path in DST provider>"
+jobs:
+  <job_id>:
+    name: "Optional readable name"
+    enabled: true        # optional flag (default: true)
+    priority: 10         # optional sort order (default: 10)
+    tasks:
+      - from: "<SRC provider>:<path in SRC provider>"
+        to:
+          - path: "<DST provider>:<path in DST provider>"
             args: []           # optional array of additional rclone arguments
             resync: true       # optional flag (default: false)
-        -
-            to: "<DST provider 2>:<path in DST provider 2>"
+          - path: "<DST provider 2>:<path in DST provider 2>"
             args: []
             resync: true
+        enabled: true    # optional flag (default: true)
 ```
 
 ### Configuration Schema
 
-**Provider Name**: The name of a remote storage provider configured in rclone
-- Must match a remote name from `rclone listremotes`
-- Can be "local" or any rclone-configured remote (e.g., "gdrive", "ydisk", "s3")
+**jobs**: Root map containing sync jobs.
 
-**Source Path**: The path within the source provider
-- Always relative to the provider's root
-- For local provider, use relative path like `./cloud/docs` or absolute path `/home/user/cloud/docs`
+**Job Object**:
+- `<job_id>` (string, required): Key defining the job identifier. Used in CLI.
+- `name` (string, optional): Human-readable name. Defaults to job_id.
+- `enabled` (bool, optional): Skip this job if false. Defaults to true.
+- `priority` (int, optional): Execution priority. Lower runs first. Defaults to 10.
+- `tasks` (array, required): List of sync tasks.
 
-**Destination Object** (required):
-- `to` (string, required): Destination in format `<provider>:<path>` or `<path>` for local
-- `args` ([]string, optional): Additional rclone command-line arguments
-- `resync` (bool, optional): Use --resync flag (default: false)
+**Task Object**:
+- `from` (string, required): Source path in format `<provider>:<path>`.
+  - Can be "local:" or any rclone-configured remote (e.g., "gdrive:", "ydisk:", "s3:").
+  - Always relative to the provider's root. For local, use relative path like `local:./cloud/docs` or absolute `local:/home/user/docs`.
+- `to` (array, required): List of destinations.
+- `enabled` (bool, optional): Skip this task if false. Defaults to true.
+
+**Destination Object**:
+- `path` (string, required): Destination in format `<provider>:<path>`.
+- `args` ([]string, optional): Additional rclone command-line arguments.
+- `resync` (bool, optional): Use --resync flag (default: false).
 
 ### Configuration Example
 
 ```yaml
-local:
-    "./cloud/mirror/folder":
-        -
-            to: gdrive:folders/folder1
-            args: []
-            resync: false
-        -
-            to: ydisk:folders/folder1
-            args: []
-            resync: false
-
-gdrive:
-    "folders/folder1":
-        -
-            to: ydisk:folders/folder1
-            args: []
-            resync: false
+jobs:
+  cloud_mirror:
+    name: "Cloud Mirroring"
+    tasks:
+      - from: "local:./cloud/mirror/folder"
+        to:
+          - path: "gdrive:folders/folder1"
+          - path: "ydisk:folders/folder1"
+  inter_cloud:
+    tasks:
+      - from: "gdrive:folders/folder1"
+        to:
+          - path: "ydisk:folders/folder1"
 ```
 
 **Explanation**:
-- Sync local folder `./cloud/mirror/folder` to `gdrive:folders/folder1` and `ydisk:folders/folder1`
-- Sync `gdrive:folders/folder1` to `ydisk:folders/folder1`
-- All syncs use standard rclone bisync options (no custom args, no resync)
+- Defines two jobs: `cloud_mirror` and `inter_cloud`. Both run because `enabled` is implicitly true. Both have priority 10, so they run in alphabetical or defined order based on sorting rules.
+- `cloud_mirror` task syncs local folder `./cloud/mirror/folder` to `gdrive:folders/folder1` and `ydisk:folders/folder1`.
+- `inter_cloud` task syncs `gdrive:folders/folder1` to `ydisk:folders/folder1`.
+- All syncs use standard rclone bisync options (no custom args, no resync).
 
 ### Configuration File Discovery
 
@@ -143,23 +153,22 @@ syncerman sync --dry-run
 4. Sequentially runs rclone bisync for each target in YAML configuration order
 5. Handles first-run errors automatically
 
-#### `sync <provider>:<path> [flags]` - Sync Specific Target
+#### `sync <job_id> [flags]` - Sync Specific Target
 
-Synchronize a specific provider and path.
+Synchronize a specific job defined in the configuration.
 
 **Usage:**
 ```bash
-syncerman sync local:./cloud/docs
-syncerman sync gdrive:folders/folder1 --verbose
-syncerman sync ydisk:folders/folder1 --dry-run
+syncerman sync cloud_mirror
+syncerman sync document_backup --verbose
+syncerman sync inter_cloud --dry-run
 ```
 
 **Options:**
 - Inherits all global flags
 
 **Target Format:**
-- For local: `local:./path/to/folder` or `./path/to/folder`
-- For remotes: `<provider>:<path>`
+- Uses the `<job_id>` from the configuration file's `jobs` map.
 
 #### `check [flags]` - Check Configuration and Remotes
 
@@ -208,14 +217,14 @@ syncerman sync --verbose
 syncerman sync --quiet
 ```
 
-**Scenario 3: Sync specific folder**
+**Scenario 3: Sync specific job**
 
 ```bash
-# Sync only local documents folder
-syncerman sync local:./documents --verbose
+# Sync only document backup job
+syncerman sync document_backup --verbose
 
-# Dry-run specific folder
-syncerman sync gdrive:projects/main --dry-run
+# Dry-run specific job
+syncerman sync cloud_mirror --dry-run
 ```
 
 **Scenario 4: Using custom config file**
@@ -363,31 +372,35 @@ Syncerman processes sync targets sequentially, not in parallel, to:
 
 ### Configuration Order Preservation
 
-Syncerman preserves the exact order of sync targets from the YAML configuration file, which is critical for linear synchronization chains.
+Syncerman preserves the execution order of sync targets through job priorities and array sequences, which is critical for linear synchronization chains.
 
 **Implementation Details:**
-- Ordered data structures preserve YAML configuration order
-- Targets execute in the exact sequence they appear in the configuration file
+- Jobs are sorted and executed ascending by their `priority` value (default 10).
+- Within a job, `tasks` are executed in the exact sequence they appear in the YAML array.
+- Within a task, multiple `to` destinations are executed in their exact YAML array sequence.
 - Order is maintained throughout the entire sync pipeline (configuration loading → target expansion → execution)
 
 **Why Order Matters:**
 Linear synchronization chains require precise execution order to propagate files correctly through multiple destinations:
 ```
 Configuration:
-  local:      # Target 1: local → gd
-    '/data':
-      - to: 'gd:syncerman/data/'
-  gd:         # Target 2: gd → yd
-    'syncerman/data/':
-      - to: 'yd:syncerman/data/'
-  yd:         # Target 3: yd → local2
-    'syncerman/data/':
-      - to: '/backup/yd_backup/'
+jobs:
+  chain_sync:
+    tasks:
+      - from: 'local:/data'              # Target 1: local → gd
+        to:
+          - path: 'gd:syncerman/data/'
+      - from: 'gd:syncerman/data/'       # Target 2: gd → yd
+        to:
+          - path: 'yd:syncerman/data/'
+      - from: 'yd:syncerman/data/'       # Target 3: yd → local2
+        to:
+          - path: 'local:/backup/yd_backup/'
 
-Execution order (preserved from YAML):
+Execution order (preserved by task array):
   1. local:/data → gd:syncerman/data/   (Initial sync)
   2. gd:syncerman/data/ → yd:syncerman/data/   (Files from gd)
-  3. yd:syncerman/data/ → /backup/yd_backup/   (Files from yd)
+  3. yd:syncerman/data/ → local:/backup/yd_backup/   (Files from yd)
 ```
 
 Without order preservation, targets would execute randomly, causing:
@@ -396,8 +409,7 @@ Without order preservation, targets would execute randomly, causing:
 - State file corruption errors on subsequent syncs
 
 **Order-Guaranteed Methods:**
-- `Config.GetProviders()` returns providers in YAML order
-- `ExpandTargets()` returns targets configuration order
+- `ExpandTargets()` returns targets sorted by job priority, then by task order, then by destination order
 - `RunAll()` executes targets in the exact order returned by ExpandTargets()
 
 All configuration examples in this documentation assume order preservation for correct behavior.

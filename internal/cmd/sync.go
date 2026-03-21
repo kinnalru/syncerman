@@ -3,6 +3,7 @@ package cmd
 import (
 	"context"
 	"fmt"
+	"strings"
 
 	"gitlab.com/kinnalru/syncerman/internal/config"
 	"gitlab.com/kinnalru/syncerman/internal/logger"
@@ -17,11 +18,11 @@ var syncCmd = &cobra.Command{
 	Long: `Sync executes bidirectional synchronization using rclone bisync.
 
 When called without arguments, syncs all targets from configuration file.
-When called with a target argument (provider:path), syncs only that specific target.
+When called with a job ID argument, syncs only that specific job.
 
 Examples:
   syncerman sync                  # Sync all targets
-  syncerman sync gdrive:docs       # Sync gdrive:docs only
+  syncerman sync backup-docs      # Sync only job with ID 'backup-docs'
   syncerman sync --dry-run        # Show what would be synced
   syncerman sync --verbose         # Show detailed output
 
@@ -61,7 +62,7 @@ func runSync(cmd *cobra.Command, args []string) error {
 	if len(args) == 0 {
 		return syncAllTargets(ctx, engine, cfg, opts, log)
 	}
-	return syncSingleTarget(ctx, log, engine, cfg, args[0], opts)
+	return syncSingleJob(ctx, log, engine, cfg, args[0], opts)
 }
 
 func syncAllTargets(ctx context.Context, engine *sync.Engine, cfg *config.Config, opts sync.SyncOptions, log *logger.ConsoleLogger) error {
@@ -94,8 +95,8 @@ func reportResults(engine *sync.Engine, results []*sync.SyncResult, opts sync.Sy
 	return nil
 }
 
-func syncSingleTarget(ctx context.Context, log *logger.ConsoleLogger, engine *sync.Engine, cfg *config.Config, targetArg string, opts sync.SyncOptions) error {
-	target, err := findAndValidateTarget(log, engine, cfg, targetArg)
+func syncSingleJob(ctx context.Context, log *logger.ConsoleLogger, engine *sync.Engine, cfg *config.Config, jobID string, opts sync.SyncOptions) error {
+	targets, err := findAndValidateJobTargets(log, engine, cfg, jobID)
 	if err != nil {
 		return err
 	}
@@ -104,33 +105,39 @@ func syncSingleTarget(ctx context.Context, log *logger.ConsoleLogger, engine *sy
 		log.Error("Failed to prepare directories: %v", err)
 	}
 
-	result, err := engine.Run(ctx, *target, opts)
-	if err != nil {
-		return wrapError(exitCodeRcloneError, err, "")
-	}
+	results := make([]*sync.SyncResult, 0, len(targets))
+	for i, target := range targets {
+		result, err := engine.Run(ctx, *target, opts)
+		if err != nil {
+			return wrapError(exitCodeRcloneError, fmt.Errorf("sync failed for target %d: %w", i+1, err), "")
+		}
+		results = append(results, result)
 
-	return reportResults(engine, []*sync.SyncResult{result}, opts, log)
-}
-
-func findAndValidateTarget(log *logger.ConsoleLogger, engine *sync.Engine, cfg *config.Config, targetArg string) (*sync.SyncTarget, error) {
-	provider, path, err := sync.ParseRemote(targetArg)
-	if err != nil {
-		log.Error("Invalid target format: %v (expected: provider:path)", err)
-		return nil, wrapError(exitCodeGeneralError, err, "")
-	}
-
-	targets, err := engine.ExpandTargets(cfg)
-	if err != nil {
-		log.Error("Failed to expand targets: %v", err)
-		return nil, wrapError(exitCodeConfigError, err, "")
-	}
-
-	for _, target := range targets {
-		if target.Provider == provider && target.SourcePath == path {
-			return target, nil
+		if !result.Success {
+			return wrapError(exitCodeRcloneError, fmt.Errorf("sync target %d failed: %v", i+1, result.Error), "")
 		}
 	}
 
-	log.Error("Target %s:%s not found in configuration", provider, path)
-	return nil, wrapError(exitCodeConfigError, fmt.Errorf("target %s:%s not found", provider, path), "")
+	return reportResults(engine, results, opts, log)
+}
+
+func findAndValidateJobTargets(log *logger.ConsoleLogger, engine *sync.Engine, cfg *config.Config, jobID string) ([]*sync.SyncTarget, error) {
+	targets, err := engine.ExpandTargets(cfg, jobID)
+	if err != nil {
+		log.Error("Failed to expand targets for job %s: %v", jobID, err)
+		return nil, wrapError(exitCodeConfigError, err, "")
+	}
+
+	if len(targets) > 0 {
+		return targets, nil
+	}
+
+	// No targets found for jobID
+	if strings.Contains(jobID, ":") {
+		log.Error("Invalid argument: use job ID instead of provider:path format (%s)", jobID)
+		return nil, wrapError(exitCodeGeneralError, fmt.Errorf("invalid job ID format: %s", jobID), "")
+	}
+
+	log.Error("Job %s not found in configuration or has no active targets", jobID)
+	return nil, wrapError(exitCodeConfigError, fmt.Errorf("job %s not found", jobID), "")
 }

@@ -51,38 +51,34 @@ tree "$LOCAL_DIR" 2>/dev/null || find "$LOCAL_DIR" -type f
 
 ```yaml
 # scenario3.yaml
-local:
-  '/home/llm/agents/takopi/syncerman/tmp/complex/scenario3/local':
-    -
-      to: 'gd:syncerman/scenario3/'
-
-gd:
-  'syncerman/scenario3/':
-    -
-      to: 'yd:syncerman/scenario3/'
-
-yd:
-  'syncerman/scenario3/':
-    -
-      to: '/home/llm/agents/takopi/syncerman/tmp/complex/scenario3/local2'
+jobs:
+  scenario3:
+    tasks:
+      - from: 'local:/home/llm/agents/takopi/syncerman/tmp/complex/scenario3/local'
+        to:
+          - path: 'gd:syncerman/scenario3/'
+      - from: 'gd:syncerman/scenario3/'
+        to:
+          - path: 'yd:syncerman/scenario3/'
+      - from: 'yd:syncerman/scenario3/'
+        to:
+          - path: 'local:/home/llm/agents/takopi/syncerman/tmp/complex/scenario3/local2'
 ```
 
 ```bash
 cat > "$CONFIG_FILE" << 'EOF'
-local:
-  '/home/llm/agents/takopi/syncerman/tmp/complex/scenario3/local':
-    -
-      to: 'gd:syncerman/scenario3/'
-
-gd:
-  'syncerman/scenario3/':
-    -
-      to: 'yd:syncerman/scenario3/'
-
-yd:
-  'syncerman/scenario3/':
-    -
-      to: '/home/llm/agents/takopi/syncerman/tmp/complex/scenario3/local2'
+jobs:
+  scenario3:
+    tasks:
+      - from: 'local:/home/llm/agents/takopi/syncerman/tmp/complex/scenario3/local'
+        to:
+          - path: 'gd:syncerman/scenario3/'
+      - from: 'gd:syncerman/scenario3/'
+        to:
+          - path: 'yd:syncerman/scenario3/'
+      - from: 'yd:syncerman/scenario3/'
+        to:
+          - path: 'local:/home/llm/agents/takopi/syncerman/tmp/complex/scenario3/local2'
 EOF
 ```
 
@@ -229,23 +225,21 @@ echo "=== Phase 6: Test manual resync configuration ==="
 echo ""
 echo "Creating configuration with explicit resync: true..."
 cat > "$CONFIG_FILE" << 'EOF'
-local:
-  '/home/llm/agents/takopi/syncerman/tmp/complex/scenario3/local':
-    -
-      to: 'gd:syncerman/scenario3/'
-      resync: true
-
-gd:
-  'syncerman/scenario3/':
-    -
-      to: 'yd:syncerman/scenario3/'
-      resync: true
-
-yd:
-  'syncerman/scenario3/':
-    -
-      to: '/home/llm/agents/takopi/syncerman/tmp/complex/scenario3/local2'
-      resync: true
+jobs:
+  scenario3:
+    tasks:
+      - from: 'local:/home/llm/agents/takopi/syncerman/tmp/complex/scenario3/local'
+        to:
+          - path: 'gd:syncerman/scenario3/'
+            resync: true
+      - from: 'gd:syncerman/scenario3/'
+        to:
+          - path: 'yd:syncerman/scenario3/'
+            resync: true
+      - from: 'yd:syncerman/scenario3/'
+        to:
+          - path: 'local:/home/llm/agents/takopi/syncerman/tmp/complex/scenario3/local2'
+            resync: true
 EOF
 
 echo "Adding test file..."
@@ -343,20 +337,18 @@ echo ""
 # Create configuration
 echo "--- Create configuration ---"
 cat > "$CONFIG_FILE" << 'EOF'
-local:
-  '/home/llm/agents/takopi/syncerman/tmp/complex/scenario3/local':
-    -
-      to: 'gd:syncerman/scenario3/'
-
-gd:
-  'syncerman/scenario3/':
-    -
-      to: 'yd:syncerman/scenario3/'
-
-yd:
-  'syncerman/scenario3/':
-    -
-      to: '/home/llm/agents/takopi/syncerman/tmp/complex/scenario3/local2'
+jobs:
+  scenario3:
+    tasks:
+      - from: 'local:/home/llm/agents/takopi/syncerman/tmp/complex/scenario3/local'
+        to:
+          - path: 'gd:syncerman/scenario3/'
+      - from: 'gd:syncerman/scenario3/'
+        to:
+          - path: 'yd:syncerman/scenario3/'
+      - from: 'yd:syncerman/scenario3/'
+        to:
+          - path: 'local:/home/llm/agents/takopi/syncerman/tmp/complex/scenario3/local2'
 EOF
 echo "Configuration created"
 echo ""
@@ -445,23 +437,21 @@ echo ""
 echo "=== Phase 6: Manual resync configuration ==="
 MANUAL_CONFIG="$TEST_DIR/scenario3_manual.yaml"
 cat > "$MANUAL_CONFIG" << 'EOF'
-local:
-  '/home/llm/agents/takopi/syncerman/tmp/complex/scenario3/local':
-    -
-      to: 'gd:syncerman/scenario3/'
-      resync: true
-
-gd:
-  'syncerman/scenario3/':
-    -
-      to: 'yd:syncerman/scenario3/'
-      resync: true
-
-yd:
-  'syncerman/scenario3/':
-    -
-      to: '/home/llm/agents/takopi/syncerman/tmp/complex/scenario3/local2'
-      resync: true
+jobs:
+  scenario3:
+    tasks:
+      - from: 'local:/home/llm/agents/takopi/syncerman/tmp/complex/scenario3/local'
+        to:
+          - path: 'gd:syncerman/scenario3/'
+            resync: true
+      - from: 'gd:syncerman/scenario3/'
+        to:
+          - path: 'yd:syncerman/scenario3/'
+            resync: true
+      - from: 'yd:syncerman/scenario3/'
+        to:
+          - path: 'local:/home/llm/agents/takopi/syncerman/tmp/complex/scenario3/local2'
+            resync: true
 EOF
 
 echo "Adding manual resync test file..."

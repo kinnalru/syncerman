@@ -107,13 +107,20 @@ func TestValidateTargets_NoProviders(t *testing.T) {
 	err := engine.ValidateTargets(context.Background(), cfg)
 
 	assert.Error(t, err)
-	assert.Contains(t, err.Error(), "no providers configured")
+	assert.Contains(t, err.Error(), "no jobs configured")
 }
 
 func TestValidateTargets_EmptyProvider(t *testing.T) {
 	cfg := config.NewConfig()
-	cfg.AddProvider("", config.PathMap{
-		"path": []config.Destination{{To: "dest"}},
+	cfg.Jobs = append(cfg.Jobs, config.Job{
+		ID:      "empty_job",
+		Name:    "empty_job",
+		Enabled: true,
+		Tasks: []config.Task{
+			{From: ":path", Enabled: true, To: []config.Destination{
+				{Path: "dest"},
+			}},
+		},
 	})
 
 	exec := &mockListRemotesExecutor{remotes: []string{"local", "gdrive"}}
@@ -126,8 +133,15 @@ func TestValidateTargets_EmptyProvider(t *testing.T) {
 
 func TestValidateTargets_ProviderNotFound(t *testing.T) {
 	cfg := config.NewConfig()
-	cfg.AddProvider("unknown", config.PathMap{
-		"path": []config.Destination{{To: "dest"}},
+	cfg.Jobs = append(cfg.Jobs, config.Job{
+		ID:      "unknown_job",
+		Name:    "unknown_job",
+		Enabled: true,
+		Tasks: []config.Task{
+			{From: "unknown:path", Enabled: true, To: []config.Destination{
+				{Path: "dest"},
+			}},
+		},
 	})
 
 	exec := &mockListRemotesExecutor{remotes: []string{"local", "gdrive"}}
@@ -140,8 +154,15 @@ func TestValidateTargets_ProviderNotFound(t *testing.T) {
 
 func TestValidateTargets_VerificationError(t *testing.T) {
 	cfg := config.NewConfig()
-	cfg.AddProvider("gdrive", config.PathMap{
-		"path": []config.Destination{{To: "dest"}},
+	cfg.Jobs = append(cfg.Jobs, config.Job{
+		ID:      "gdrive_job",
+		Name:    "gdrive_job",
+		Enabled: true,
+		Tasks: []config.Task{
+			{From: "gdrive:path", Enabled: true, To: []config.Destination{
+				{Path: "dest"},
+			}},
+		},
 	})
 
 	exec := &mockListRemotesExecutor{error: fmt.Errorf("rclone connection failed")}
@@ -154,11 +175,25 @@ func TestValidateTargets_VerificationError(t *testing.T) {
 
 func TestValidateTargets_SuccessWithMixedProviders(t *testing.T) {
 	cfg := config.NewConfig()
-	cfg.AddProvider("gdrive", config.PathMap{
-		"docs": []config.Destination{{To: "s3:backup/docs"}},
+	cfg.Jobs = append(cfg.Jobs, config.Job{
+		ID:      "gdrive_job",
+		Name:    "gdrive_job",
+		Enabled: true,
+		Tasks: []config.Task{
+			{From: "gdrive:docs", Enabled: true, To: []config.Destination{
+				{Path: "s3:backup/docs"},
+			}},
+		},
 	})
-	cfg.AddProvider("local", config.PathMap{
-		"/data": []config.Destination{{To: "gdrive:data"}},
+	cfg.Jobs = append(cfg.Jobs, config.Job{
+		ID:      "local_job",
+		Name:    "local_job",
+		Enabled: true,
+		Tasks: []config.Task{
+			{From: "/data", Enabled: true, To: []config.Destination{
+				{Path: "gdrive:data"},
+			}},
+		},
 	})
 
 	exec := &mockListRemotesExecutor{remotes: []string{"local", "gdrive", "s3"}}
@@ -170,22 +205,34 @@ func TestValidateTargets_SuccessWithMixedProviders(t *testing.T) {
 
 func TestExpandTargets_EmptySourcePath(t *testing.T) {
 	cfg := config.NewConfig()
-	cfg.AddProvider("gdrive", config.PathMap{
-		"": []config.Destination{{To: "dest"}},
+	cfg.Jobs = append(cfg.Jobs, config.Job{
+		ID:      "gdrive_job",
+		Name:    "gdrive_job",
+		Enabled: true,
+		Tasks: []config.Task{
+			{From: "", Enabled: true, To: []config.Destination{
+				{Path: "dest"},
+			}},
+		},
 	})
 
 	engine := NewEngine(nil, nil, nil)
 	targets, err := engine.ExpandTargets(cfg)
 
 	assert.Error(t, err)
-	assert.Contains(t, err.Error(), "source path cannot be empty")
+	assert.Contains(t, err.Error(), "source 'from' cannot be empty")
 	assert.Nil(t, targets)
 }
 
 func TestExpandTargets_NoDestinations(t *testing.T) {
 	cfg := config.NewConfig()
-	cfg.AddProvider("gdrive", config.PathMap{
-		"docs": []config.Destination{},
+	cfg.Jobs = append(cfg.Jobs, config.Job{
+		ID:      "gdrive_job",
+		Name:    "gdrive_job",
+		Enabled: true,
+		Tasks: []config.Task{
+			{From: "gdrive:docs", Enabled: true, To: []config.Destination{}},
+		},
 	})
 
 	engine := NewEngine(nil, nil, nil)
@@ -198,25 +245,37 @@ func TestExpandTargets_NoDestinations(t *testing.T) {
 
 func TestExpandTargets_EmptyDestination(t *testing.T) {
 	cfg := config.NewConfig()
-	cfg.AddProvider("gdrive", config.PathMap{
-		"docs": []config.Destination{{To: ""}},
+	cfg.Jobs = append(cfg.Jobs, config.Job{
+		ID:      "gdrive_job",
+		Name:    "gdrive_job",
+		Enabled: true,
+		Tasks: []config.Task{
+			{From: "gdrive:docs", Enabled: true, To: []config.Destination{
+				{Path: ""},
+			}},
+		},
 	})
 
 	engine := NewEngine(nil, nil, nil)
 	targets, err := engine.ExpandTargets(cfg)
 
 	assert.Error(t, err)
-	assert.Contains(t, err.Error(), "destination 'to' cannot be empty")
+	assert.Contains(t, err.Error(), "destination 'path' cannot be empty")
 	assert.Nil(t, targets)
 }
 
 func TestExpandTargets_MultipleDestinations(t *testing.T) {
 	cfg := config.NewConfig()
-	cfg.AddProvider("gdrive", config.PathMap{
-		"docs": []config.Destination{
-			{To: "s3:backup/docs"},
-			{To: "dropbox:backup/docs"},
-			{To: "local:/backup/docs"},
+	cfg.Jobs = append(cfg.Jobs, config.Job{
+		ID:      "gdrive_job",
+		Name:    "gdrive_job",
+		Enabled: true,
+		Tasks: []config.Task{
+			{From: "gdrive:docs", Enabled: true, To: []config.Destination{
+				{Path: "s3:backup/docs"},
+				{Path: "dropbox:backup/docs"},
+				{Path: "local:/backup/docs"},
+			}},
 		},
 	})
 
@@ -240,9 +299,14 @@ func TestExpandTargets_NoValidTargets(t *testing.T) {
 
 func TestExpandTargets_HasResyncFlag(t *testing.T) {
 	cfg := config.NewConfig()
-	cfg.AddProvider("gdrive", config.PathMap{
-		"docs": []config.Destination{
-			{To: "s3:backup/docs", Resync: true},
+	cfg.Jobs = append(cfg.Jobs, config.Job{
+		ID:      "gdrive_job",
+		Name:    "gdrive_job",
+		Enabled: true,
+		Tasks: []config.Task{
+			{From: "gdrive:docs", Enabled: true, To: []config.Destination{
+				{Path: "s3:backup/docs", Resync: true},
+			}},
 		},
 	})
 
@@ -256,8 +320,15 @@ func TestExpandTargets_HasResyncFlag(t *testing.T) {
 
 func TestValidate(t *testing.T) {
 	cfg := config.NewConfig()
-	cfg.AddProvider("local", config.PathMap{
-		"/data": []config.Destination{{To: "dest"}},
+	cfg.Jobs = append(cfg.Jobs, config.Job{
+		ID:      "local_job",
+		Name:    "local_job",
+		Enabled: true,
+		Tasks: []config.Task{
+			{From: "/data", Enabled: true, To: []config.Destination{
+				{Path: "dest"},
+			}},
+		},
 	})
 
 	exec := &mockListRemotesExecutor{remotes: []string{"local", "gdrive"}}

@@ -58,39 +58,35 @@ find "$LOCAL_DIR" -type f -exec echo "{}" \;
 
 ```yaml
 # scenario1.yaml
-local:
-  '/home/llm/agents/takopi/syncerman/tmp/complex/scenario1/local':
-    -
-      to: 'gd:syncerman/scenario1/'
-
-gd:
-  'syncerman/scenario1/':
-    -
-      to: 'yd:syncerman/scenario1/'
-
-yd:
-  'syncerman/scenario1/':
-    -
-      to: '/home/llm/agents/takopi/syncerman/tmp/complex/scenario1/local2'
+jobs:
+  scenario1:
+    tasks:
+      - from: 'local:/home/llm/agents/takopi/syncerman/tmp/complex/scenario1/local'
+        to:
+          - path: 'gd:syncerman/scenario1/'
+      - from: 'gd:syncerman/scenario1/'
+        to:
+          - path: 'yd:syncerman/scenario1/'
+      - from: 'yd:syncerman/scenario1/'
+        to:
+          - path: 'local:/home/llm/agents/takopi/syncerman/tmp/complex/scenario1/local2'
 ```
 
 ```bash
 # Write configuration
 cat > "$CONFIG_FILE" << 'EOF'
-local:
-  '/home/llm/agents/takopi/syncerman/tmp/complex/scenario1/local':
-    -
-      to: 'gd:syncerman/scenario1/'
-
-gd:
-  'syncerman/scenario1/':
-    -
-      to: 'yd:syncerman/scenario1/'
-
-yd:
-  'syncerman/scenario1/':
-    -
-      to: '/home/llm/agents/takopi/syncerman/tmp/complex/scenario1/local2'
+jobs:
+  scenario1:
+    tasks:
+      - from: 'local:/home/llm/agents/takopi/syncerman/tmp/complex/scenario1/local'
+        to:
+          - path: 'gd:syncerman/scenario1/'
+      - from: 'gd:syncerman/scenario1/'
+        to:
+          - path: 'yd:syncerman/scenario1/'
+      - from: 'yd:syncerman/scenario1/'
+        to:
+          - path: 'local:/home/llm/agents/takopi/syncerman/tmp/complex/scenario1/local2'
 EOF
 ```
 
@@ -285,20 +281,18 @@ echo ""
 # Create configuration
 echo "--- Create configuration ---"
 cat > "$CONFIG_FILE" << 'EOF'
-local:
-  '/home/llm/agents/takopi/syncerman/tmp/complex/scenario1/local':
-    -
-      to: 'gd:syncerman/scenario1/'
-
-gd:
-  'syncerman/scenario1/':
-    -
-      to: 'yd:syncerman/scenario1/'
-
-yd:
-  'syncerman/scenario1/':
-    -
-      to: '/home/llm/agents/takopi/syncerman/tmp/complex/scenario1/local2'
+jobs:
+  scenario1:
+    tasks:
+      - from: 'local:/home/llm/agents/takopi/syncerman/tmp/complex/scenario1/local'
+        to:
+          - path: 'gd:syncerman/scenario1/'
+      - from: 'gd:syncerman/scenario1/'
+        to:
+          - path: 'yd:syncerman/scenario1/'
+      - from: 'yd:syncerman/scenario1/'
+        to:
+          - path: 'local:/home/llm/agents/takopi/syncerman/tmp/complex/scenario1/local2'
 EOF
 echo "Configuration created"
 echo ""

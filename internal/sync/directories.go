@@ -23,7 +23,7 @@ func (e *Engine) CreateAllDirectories(ctx context.Context, config *config.Config
 	for _, target := range targets {
 		sourceRemote := FormatRemote(target.Provider, target.SourcePath)
 		sourcePaths[sourceRemote] = struct{}{}
-		destPaths[target.Destination.To] = struct{}{}
+		destPaths[target.Destination.Path] = struct{}{}
 	}
 
 	totalPaths := len(sourcePaths) + len(destPaths)

@@ -78,58 +78,54 @@ find "$LOCAL_OTHER" -type f | sort
 
 ```yaml
 # scenario4.yaml - Multiple independent sync paths
-local:
-  '/home/llm/agents/takopi/syncerman/tmp/complex/scenario4/local/docs':
-    -
-      to: 'gd:syncerman/scenario4/docs/'
-    -
-      to: 'yd:syncerman/scenario4/docs/'
+jobs:
+  docs:
+    tasks:
+      - from: 'local:/home/llm/agents/takopi/syncerman/tmp/complex/scenario4/local/docs'
+        to:
+          - path: 'gd:syncerman/scenario4/docs/'
+          - path: 'yd:syncerman/scenario4/docs/'
+      - from: 'gd:syncerman/scenario4/docs/'
+        to:
+          - path: 'local:/home/llm/agents/takopi/syncerman/tmp/complex/scenario4/local2/docs'
 
-  '/home/llm/agents/takopi/syncerman/tmp/complex/scenario4/local/media':
-    -
-      to: 'gd:syncerman/scenario4/media/'
-
-gd:
-  'syncerman/scenario4/docs/':
-    -
-      to: '/home/llm/agents/takopi/syncerman/tmp/complex/scenario4/local2/docs'
-
-  'syncerman/scenario4/media/':
-    -
-      to: 'yd:syncerman/scenario4/media/'
-
-yd:
-  'syncerman/scenario4/media/':
-    -
-      to: '/home/llm/agents/takopi/syncerman/tmp/complex/scenario4/local2/media'
+  media:
+    tasks:
+      - from: 'local:/home/llm/agents/takopi/syncerman/tmp/complex/scenario4/local/media'
+        to:
+          - path: 'gd:syncerman/scenario4/media/'
+      - from: 'gd:syncerman/scenario4/media/'
+        to:
+          - path: 'yd:syncerman/scenario4/media/'
+      - from: 'yd:syncerman/scenario4/media/'
+        to:
+          - path: 'local:/home/llm/agents/takopi/syncerman/tmp/complex/scenario4/local2/media'
 ```
 
 ```bash
 cat > "$CONFIG_FILE" << 'EOF'
-local:
-  '/home/llm/agents/takopi/syncerman/tmp/complex/scenario4/local/docs':
-    -
-      to: 'gd:syncerman/scenario4/docs/'
-    -
-      to: 'yd:syncerman/scenario4/docs/'
+jobs:
+  docs:
+    tasks:
+      - from: 'local:/home/llm/agents/takopi/syncerman/tmp/complex/scenario4/local/docs'
+        to:
+          - path: 'gd:syncerman/scenario4/docs/'
+          - path: 'yd:syncerman/scenario4/docs/'
+      - from: 'gd:syncerman/scenario4/docs/'
+        to:
+          - path: 'local:/home/llm/agents/takopi/syncerman/tmp/complex/scenario4/local2/docs'
 
-  '/home/llm/agents/takopi/syncerman/tmp/complex/scenario4/local/media':
-    -
-      to: 'gd:syncerman/scenario4/media/'
-
-gd:
-  'syncerman/scenario4/docs/':
-    -
-      to: '/home/llm/agents/takopi/syncerman/tmp/complex/scenario4/local2/docs'
-
-  'syncerman/scenario4/media/':
-    -
-      to: 'yd:syncerman/scenario4/media/'
-
-yd:
-  'syncerman/scenario4/media/':
-    -
-      to: '/home/llm/agents/takopi/syncerman/tmp/complex/scenario4/local2/media'
+  media:
+    tasks:
+      - from: 'local:/home/llm/agents/takopi/syncerman/tmp/complex/scenario4/local/media'
+        to:
+          - path: 'gd:syncerman/scenario4/media/'
+      - from: 'gd:syncerman/scenario4/media/'
+        to:
+          - path: 'yd:syncerman/scenario4/media/'
+      - from: 'yd:syncerman/scenario4/media/'
+        to:
+          - path: 'local:/home/llm/agents/takopi/syncerman/tmp/complex/scenario4/local2/media'
 EOF
 ```
 
@@ -334,8 +330,8 @@ SYNCERMAN_BIN="/home/llm/agents/takopi/syncerman/bin/syncerman"
 
 echo "=== Step 10: Test single target sync ==="
 echo ""
-echo "Sync only docs path:"
-$SYNCERMAN_BIN sync --config "$CONFIG_FILE" local:/home/llm/agents/takopi/syncerman/tmp/complex/scenario4/local/docs --verbose
+echo "Sync only docs job:"
+$SYNCERMAN_BIN sync --config "$CONFIG_FILE" docs --verbose
 ```
 
 **Expected Results:**
@@ -400,30 +396,29 @@ echo ""
 # Create configuration
 echo "--- Create configuration ---"
 cat > "$CONFIG_FILE" << 'EOF'
-local:
-  '/home/llm/agents/takopi/syncerman/tmp/complex/scenario4/local/docs':
-    -
-      to: 'gd:syncerman/scenario4/docs/'
-    -
-      to: 'yd:syncerman/scenario4/docs/'
+jobs:
+  scenario4:
+    tasks:
+      - from: 'local:/home/llm/agents/takopi/syncerman/tmp/complex/scenario4/local/docs'
+        to:
+          - path: 'gd:syncerman/scenario4/docs/'
+          - path: 'yd:syncerman/scenario4/docs/'
 
-  '/home/llm/agents/takopi/syncerman/tmp/complex/scenario4/local/media':
-    -
-      to: 'gd:syncerman/scenario4/media/'
+      - from: 'local:/home/llm/agents/takopi/syncerman/tmp/complex/scenario4/local/media'
+        to:
+          - path: 'gd:syncerman/scenario4/media/'
 
-gd:
-  'syncerman/scenario4/docs/':
-    -
-      to: '/home/llm/agents/takopi/syncerman/tmp/complex/scenario4/local2/docs'
+      - from: 'gd:syncerman/scenario4/docs/'
+        to:
+          - path: 'local:/home/llm/agents/takopi/syncerman/tmp/complex/scenario4/local2/docs'
 
-  'syncerman/scenario4/media/':
-    -
-      to: 'yd:syncerman/scenario4/media/'
+      - from: 'gd:syncerman/scenario4/media/'
+        to:
+          - path: 'yd:syncerman/scenario4/media/'
 
-yd:
-  'syncerman/scenario4/media/':
-    -
-      to: '/home/llm/agents/takopi/syncerman/tmp/complex/scenario4/local2/media'
+      - from: 'yd:syncerman/scenario4/media/'
+        to:
+          - path: 'local:/home/llm/agents/takopi/syncerman/tmp/complex/scenario4/local2/media'
 EOF
 echo "Configuration created"
 echo ""

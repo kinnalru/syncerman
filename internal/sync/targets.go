@@ -33,34 +33,57 @@ func (ve ValidationErrors) Error() string {
 // ValidateTargets checks that all providers and paths in config are valid.
 // It verifies that providers exist in rclone configuration and paths are configured.
 // Validates each provider by querying rclone, except for 'local' which is always valid.
-// Validates providers in the order they appear in the YAML configuration.
+// Validates jobs and tasks in the order they appear in the configuration.
 func (e *Engine) ValidateTargets(ctx context.Context, config *config.Config) error {
 	var errs ValidationErrors
 
-	providers := config.GetProviders()
-	if len(providers) == 0 {
-		return fmt.Errorf("no providers configured")
+	jobs := config.GetJobs()
+	if len(jobs) == 0 {
+		return fmt.Errorf("no jobs configured")
 	}
 
-	for _, provider := range providers {
-		providerName := provider.Name
-		if providerName == "" {
-			errs = append(errs, fmt.Errorf("provider name cannot be empty"))
+	providerCache := make(map[string]bool)
+
+	for _, job := range jobs {
+		if !job.Enabled {
 			continue
 		}
 
-		if providerName == localProvider {
-			continue
-		}
+		for _, task := range job.Tasks {
+			if !task.Enabled {
+				continue
+			}
 
-		exists, err := rclone.RemoteExists(ctx, e.rclone, providerName)
-		if err != nil {
-			errs = append(errs, fmt.Errorf("failed to verify provider %s: %w", providerName, err))
-			continue
-		}
+			if task.From == "" {
+				errs = append(errs, fmt.Errorf("source 'from' cannot be empty in job %s", job.ID))
+				continue
+			}
 
-		if !exists {
-			errs = append(errs, fmt.Errorf("provider %s not found in rclone configuration", providerName))
+			providerName, _, err := ParseRemote(task.From)
+			if err != nil {
+				errs = append(errs, fmt.Errorf("invalid source 'from' format %s in job %s: %w", task.From, job.ID, err))
+				continue
+			}
+
+			if providerName == localProvider {
+				continue
+			}
+
+			if _, checked := providerCache[providerName]; checked {
+				continue
+			}
+
+			exists, err := rclone.RemoteExists(ctx, e.rclone, providerName)
+			if err != nil {
+				errs = append(errs, fmt.Errorf("failed to verify provider %s for job %s: %w", providerName, job.ID, err))
+				providerCache[providerName] = true
+				continue
+			}
+
+			if !exists {
+				errs = append(errs, fmt.Errorf("provider %s not found in rclone configuration for job %s", providerName, job.ID))
+			}
+			providerCache[providerName] = true
 		}
 	}
 
@@ -72,43 +95,61 @@ func (e *Engine) ValidateTargets(ctx context.Context, config *config.Config) err
 }
 
 // ExpandTargets expands configuration YAML into a list of sync targets.
-// Each provider:sourcePath + destination combination becomes a SyncTarget.
+// Each task:from + destination combination becomes a SyncTarget.
 // Validates source paths and destination targets, but does not validate rclone provider existence.
 // Provider validation should be done separately using ValidateTargets().
 // Returns error if any target is invalid, along with all validation errors found.
-// Targets are returned in the exact order from YAML configuration.
-func (e *Engine) ExpandTargets(config *config.Config) ([]*SyncTarget, error) {
+// Targets are returned in the exact order from YAML configuration respecting Priority.
+// If filterJobIDs are provided, only targets belonging to those job IDs are returned.
+func (e *Engine) ExpandTargets(config *config.Config, filterJobIDs ...string) ([]*SyncTarget, error) {
 	var targets []*SyncTarget
 	var errs ValidationErrors
 
-	providers := config.GetProviders()
+	jobIDFilter := make(map[string]bool)
+	for _, id := range filterJobIDs {
+		jobIDFilter[id] = true
+	}
 
-	for _, provider := range providers {
-		providerName := provider.Name
-		pathMap := provider.Data
+	for _, job := range config.GetJobs() {
+		if !job.Enabled {
+			continue
+		}
 
-		for _, pathData := range pathMap {
-			sourcePath := pathData.Name
-			destinations := pathData.Values
+		if len(jobIDFilter) > 0 && !jobIDFilter[job.ID] {
+			continue
+		}
 
-			if sourcePath == "" {
-				errs = append(errs, fmt.Errorf("source path cannot be empty for provider %s", providerName))
+		for _, task := range job.Tasks {
+			if !task.Enabled {
 				continue
 			}
 
-			if len(destinations) == 0 {
-				errs = append(errs, fmt.Errorf("no destinations configured for %s:%s", providerName, sourcePath))
+			if task.From == "" {
+				errs = append(errs, fmt.Errorf("source 'from' cannot be empty in job %s", job.ID))
+				continue
+			}
+
+			if len(task.To) == 0 {
+				errs = append(errs, fmt.Errorf("no destinations configured for %s in job %s", task.From, job.ID))
+				continue
+			}
+
+			providerName, sourcePath, err := ParseRemote(task.From)
+			if err != nil {
+				errs = append(errs, fmt.Errorf("invalid source 'from' format %s in job %s: %w", task.From, job.ID, err))
 				continue
 			}
 
 			// Create a sync target for each destination
-			for _, dest := range destinations {
-				if dest.To == "" {
-					errs = append(errs, fmt.Errorf("destination 'to' cannot be empty for %s:%s", providerName, sourcePath))
+			for _, dest := range task.To {
+				if dest.Path == "" {
+					errs = append(errs, fmt.Errorf("destination 'path' cannot be empty for %s in job %s", task.From, job.ID))
 					continue
 				}
 
 				target := &SyncTarget{
+					JobID:       job.ID,
+					JobName:     job.Name,
 					Provider:    providerName,
 					SourcePath:  sourcePath,
 					Destination: dest,

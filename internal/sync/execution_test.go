@@ -25,7 +25,7 @@ func TestRunSync_Success(t *testing.T) {
 	target := SyncTarget{
 		Provider:    "gdrive",
 		SourcePath:  "docs",
-		Destination: config.Destination{To: "s3:backup/docs"},
+		Destination: config.Destination{Path: "s3:backup/docs"},
 		Resync:      false,
 	}
 
@@ -56,7 +56,7 @@ func TestRunSync_FirstRunError(t *testing.T) {
 	target := SyncTarget{
 		Provider:    "gdrive",
 		SourcePath:  "docs",
-		Destination: config.Destination{To: "s3:backup/docs"},
+		Destination: config.Destination{Path: "s3:backup/docs"},
 		Resync:      false,
 	}
 
@@ -92,7 +92,7 @@ func TestRunSync_DryRun(t *testing.T) {
 	target := SyncTarget{
 		Provider:    "gdrive",
 		SourcePath:  "docs",
-		Destination: config.Destination{To: "s3:backup/docs"},
+		Destination: config.Destination{Path: "s3:backup/docs"},
 		Resync:      false,
 	}
 
@@ -119,7 +119,7 @@ func TestRunSync_CommandFailure(t *testing.T) {
 	target := SyncTarget{
 		Provider:    "gdrive",
 		SourcePath:  "docs",
-		Destination: config.Destination{To: "s3:backup/docs"},
+		Destination: config.Destination{Path: "s3:backup/docs"},
 		Resync:      false,
 	}
 
@@ -142,9 +142,14 @@ func TestRunAll_SingleTarget(t *testing.T) {
 	engine := NewEngine(nil, mockExec, log)
 
 	cfg := config.NewConfig()
-	cfg.AddProvider("gdrive", config.PathMap{
-		"docs": []config.Destination{
-			{To: "s3:backup/docs"},
+	cfg.Jobs = append(cfg.Jobs, config.Job{
+		ID:      "gdrive_job",
+		Name:    "gdrive_job",
+		Enabled: true,
+		Tasks: []config.Task{
+			{From: "gdrive:docs", Enabled: true, To: []config.Destination{
+				{Path: "s3:backup/docs"},
+			}},
 		},
 	})
 
@@ -168,14 +173,24 @@ func TestRunAll_MultipleTargets(t *testing.T) {
 	engine := NewEngine(nil, mockExec, log)
 
 	cfg := config.NewConfig()
-	cfg.AddProvider("gdrive", config.PathMap{
-		"docs": []config.Destination{
-			{To: "s3:backup/docs"},
+	cfg.Jobs = append(cfg.Jobs, config.Job{
+		ID:      "gdrive_job",
+		Name:    "gdrive_job",
+		Enabled: true,
+		Tasks: []config.Task{
+			{From: "gdrive:docs", Enabled: true, To: []config.Destination{
+				{Path: "s3:backup/docs"},
+			}},
 		},
 	})
-	cfg.AddProvider("local", config.PathMap{
-		"/data": []config.Destination{
-			{To: "gdrive:data"},
+	cfg.Jobs = append(cfg.Jobs, config.Job{
+		ID:      "local_job",
+		Name:    "local_job",
+		Enabled: true,
+		Tasks: []config.Task{
+			{From: "/data", Enabled: true, To: []config.Destination{
+				{Path: "gdrive:data"},
+			}},
 		},
 	})
 
@@ -200,14 +215,24 @@ func TestRunAll_StopOnError(t *testing.T) {
 	engine := NewEngine(nil, mockExec, log)
 
 	cfg := config.NewConfig()
-	cfg.AddProvider("gdrive", config.PathMap{
-		"docs": []config.Destination{
-			{To: "s3:backup/docs"},
+	cfg.Jobs = append(cfg.Jobs, config.Job{
+		ID:      "gdrive_job",
+		Name:    "gdrive_job",
+		Enabled: true,
+		Tasks: []config.Task{
+			{From: "gdrive:docs", Enabled: true, To: []config.Destination{
+				{Path: "s3:backup/docs"},
+			}},
 		},
 	})
-	cfg.AddProvider("local", config.PathMap{
-		"/data": []config.Destination{
-			{To: "gdrive:data"},
+	cfg.Jobs = append(cfg.Jobs, config.Job{
+		ID:      "local_job",
+		Name:    "local_job",
+		Enabled: true,
+		Tasks: []config.Task{
+			{From: "/data", Enabled: true, To: []config.Destination{
+				{Path: "gdrive:data"},
+			}},
 		},
 	})
 
@@ -232,9 +257,14 @@ func TestRunAll_Verbose(t *testing.T) {
 	engine := NewEngine(nil, mockExec, log)
 
 	cfg := config.NewConfig()
-	cfg.AddProvider("gdrive", config.PathMap{
-		"docs": []config.Destination{
-			{To: "s3:backup/docs"},
+	cfg.Jobs = append(cfg.Jobs, config.Job{
+		ID:      "gdrive_job",
+		Name:    "gdrive_job",
+		Enabled: true,
+		Tasks: []config.Task{
+			{From: "gdrive:docs", Enabled: true, To: []config.Destination{
+				{Path: "s3:backup/docs"},
+			}},
 		},
 	})
 
@@ -254,7 +284,7 @@ func TestRunSync_ContextCancellation(t *testing.T) {
 	target := SyncTarget{
 		Provider:    "gdrive",
 		SourcePath:  "docs",
-		Destination: config.Destination{To: "s3:backup/docs"},
+		Destination: config.Destination{Path: "s3:backup/docs"},
 		Resync:      false,
 	}
 
@@ -286,7 +316,7 @@ func TestRunSync_CustomArgs(t *testing.T) {
 		Provider:   "gdrive",
 		SourcePath: "docs",
 		Destination: config.Destination{
-			To:     "s3:backup/docs",
+			Path:   "s3:backup/docs",
 			Args:   []string{"--exclude", "*.tmp"},
 			Resync: false,
 		},
@@ -333,7 +363,7 @@ func TestRunSync_DryRunViaEngine(t *testing.T) {
 	target := SyncTarget{
 		Provider:    "gdrive",
 		SourcePath:  "docs",
-		Destination: config.Destination{To: "s3:backup/docs"},
+		Destination: config.Destination{Path: "s3:backup/docs"},
 		Resync:      false,
 	}
 
@@ -361,7 +391,7 @@ func TestRunSync_DryRunOptionsOverridesEngine(t *testing.T) {
 	target := SyncTarget{
 		Provider:    "gdrive",
 		SourcePath:  "docs",
-		Destination: config.Destination{To: "s3:backup/docs"},
+		Destination: config.Destination{Path: "s3:backup/docs"},
 		Resync:      false,
 	}
 
@@ -385,14 +415,24 @@ func TestRunAll_DryRun(t *testing.T) {
 	engine := NewEngine(nil, mockExec, log)
 
 	cfg := config.NewConfig()
-	cfg.AddProvider("gdrive", config.PathMap{
-		"docs": []config.Destination{
-			{To: "s3:backup/docs"},
+	cfg.Jobs = append(cfg.Jobs, config.Job{
+		ID:      "gdrive_job",
+		Name:    "gdrive_job",
+		Enabled: true,
+		Tasks: []config.Task{
+			{From: "gdrive:docs", Enabled: true, To: []config.Destination{
+				{Path: "s3:backup/docs"},
+			}},
 		},
 	})
-	cfg.AddProvider("local", config.PathMap{
-		"/data": []config.Destination{
-			{To: "gdrive:data"},
+	cfg.Jobs = append(cfg.Jobs, config.Job{
+		ID:      "local_job",
+		Name:    "local_job",
+		Enabled: true,
+		Tasks: []config.Task{
+			{From: "/data", Enabled: true, To: []config.Destination{
+				{Path: "gdrive:data"},
+			}},
 		},
 	})
 
@@ -418,9 +458,14 @@ func TestRunAll_DryRunViaEngine(t *testing.T) {
 	engine.SetDryRun(true)
 
 	cfg := config.NewConfig()
-	cfg.AddProvider("gdrive", config.PathMap{
-		"docs": []config.Destination{
-			{To: "s3:backup/docs"},
+	cfg.Jobs = append(cfg.Jobs, config.Job{
+		ID:      "gdrive_job",
+		Name:    "gdrive_job",
+		Enabled: true,
+		Tasks: []config.Task{
+			{From: "gdrive:docs", Enabled: true, To: []config.Destination{
+				{Path: "s3:backup/docs"},
+			}},
 		},
 	})
 
@@ -445,19 +490,34 @@ func TestRunAll_PreservesConfigurationOrder(t *testing.T) {
 	engine := NewEngine(nil, mockExec, log)
 
 	cfg := config.NewConfig()
-	cfg.AddProvider("local", config.PathMap{
-		"/path/to/local": []config.Destination{
-			{To: "gd:syncerman/scenario1/"},
+	cfg.Jobs = append(cfg.Jobs, config.Job{
+		ID:      "local_job",
+		Name:    "local_job",
+		Enabled: true,
+		Tasks: []config.Task{
+			{From: "/path/to/local", Enabled: true, To: []config.Destination{
+				{Path: "gd:syncerman/scenario1/"},
+			}},
 		},
 	})
-	cfg.AddProvider("gd", config.PathMap{
-		"syncerman/scenario1/": []config.Destination{
-			{To: "yd:syncerman/scenario1/"},
+	cfg.Jobs = append(cfg.Jobs, config.Job{
+		ID:      "gd_job",
+		Name:    "gd_job",
+		Enabled: true,
+		Tasks: []config.Task{
+			{From: "gd:syncerman/scenario1/", Enabled: true, To: []config.Destination{
+				{Path: "yd:syncerman/scenario1/"},
+			}},
 		},
 	})
-	cfg.AddProvider("yd", config.PathMap{
-		"syncerman/scenario1/": []config.Destination{
-			{To: "/path/to/local2"},
+	cfg.Jobs = append(cfg.Jobs, config.Job{
+		ID:      "yd_job",
+		Name:    "yd_job",
+		Enabled: true,
+		Tasks: []config.Task{
+			{From: "yd:syncerman/scenario1/", Enabled: true, To: []config.Destination{
+				{Path: "/path/to/local2"},
+			}},
 		},
 	})
 
@@ -483,6 +543,6 @@ func TestRunAll_PreservesConfigurationOrder(t *testing.T) {
 		}
 		assert.Equal(t, expected.provider, results[i].Target.Provider)
 		assert.Equal(t, expected.path, results[i].Target.SourcePath)
-		assert.Equal(t, expected.dest, results[i].Target.Destination.To)
+		assert.Equal(t, expected.dest, results[i].Target.Destination.Path)
 	}
 }

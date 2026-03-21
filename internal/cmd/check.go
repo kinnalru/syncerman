@@ -4,6 +4,7 @@ import (
 	"fmt"
 
 	"github.com/spf13/cobra"
+	"gitlab.com/kinnalru/syncerman/internal/sync"
 )
 
 var checkCmd = &cobra.Command{
@@ -13,9 +14,9 @@ var checkCmd = &cobra.Command{
 
 This command verifies:
   - Configuration file syntax and structure
-  - Provider and path configurations
+  - Jobs, tasks, and path configurations
   - Destination format and required fields
-  - All provider names exist in rclone configuration
+  - All providers used in tasks exist in rclone configuration
   - Rclone binary is accessible
   - Connection to each remote is possible
 
@@ -36,43 +37,64 @@ Examples:
 		defer cancel()
 
 		if err := engine.Validate(ctx, cfg); err != nil {
-			log.Error("Target validation failed: %v", err)
-			return wrapError(exitCodeValidationError, err, "")
+			log.Error("Configuration validation failed:")
+			if valErrs, ok := err.(sync.ValidationErrors); ok {
+				for _, e := range valErrs {
+					log.Error("  - %v", e)
+				}
+			} else {
+				log.Error("  %v", err)
+			}
+			return wrapError(exitCodeValidationError, fmt.Errorf("configuration validation failed"), "")
 		}
 
 		log.Info("Configuration is valid")
-		providers := cfg.GetProviders()
-		log.Info("Found %d provider(s):", len(providers))
-		for _, provider := range providers {
-			log.Info("  %s: %d path(s)", provider.Name, len(provider.Data))
-		}
+		jobs := cfg.GetJobs()
+		log.Info("Found %d job(s):", len(jobs))
 
-		allValid := true
-		log.Info("Checking rclone remotes...")
-		for _, provider := range providers {
-			providerName := provider.Name
-
-			exists, err := engine.RemoteProviderExists(ctx, providerName)
-			if err != nil {
-				log.Error("Failed to verify provider %s: %v", providerName, err)
-				allValid = false
+		providerNames := make(map[string]bool)
+		for _, job := range jobs {
+			if !job.Enabled {
 				continue
 			}
+			var numTasks int
+			for _, task := range job.Tasks {
+				if task.Enabled {
+					numTasks++
+					provider, _, err := sync.ParseRemote(task.From)
+					if err == nil && provider != "local" {
+						providerNames[provider] = true
+					}
+				}
+			}
+			log.Info("  %s (%s): %d active task(s)", job.Name, job.ID, numTasks)
+		}
 
-			if exists {
-				log.Info("  %s: OK", providerName)
-			} else {
-				log.Error("  %s: NOT FOUND", providerName)
-				allValid = false
+		if len(providerNames) > 0 {
+			allValid := true
+			log.Info("Checking rclone remotes...")
+			for providerName := range providerNames {
+				exists, err := engine.RemoteProviderExists(ctx, providerName)
+				if err != nil {
+					log.Error("Failed to verify provider %s: %v", providerName, err)
+					allValid = false
+					continue
+				}
+
+				if exists {
+					log.Info("  %s: OK", providerName)
+				} else {
+					log.Error("  %s: NOT FOUND", providerName)
+					allValid = false
+				}
+			}
+
+			if !allValid {
+				return wrapError(exitCodeValidationError, fmt.Errorf("one or more remotes checks failed"), "")
 			}
 		}
 
-		if allValid {
-			log.Info("All checks passed")
-		} else {
-			return wrapError(exitCodeValidationError, fmt.Errorf("one or more checks failed"), "")
-		}
-
+		log.Info("All checks passed")
 		return nil
 	},
 }

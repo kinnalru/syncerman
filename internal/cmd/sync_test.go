@@ -36,15 +36,33 @@ func (m *mockCmdLogger) CombinedOutput(output string)               {}
 func (m *mockCmdLogger) StageInfo(msg string, args ...interface{})  {}
 func (m *mockCmdLogger) TargetInfo(msg string, args ...interface{}) {}
 
+func getTestConfig() *config.Config {
+	return &config.Config{
+		Jobs: []config.Job{
+			{
+				ID:      "test-job",
+				Name:    "Test Job",
+				Enabled: true,
+				Tasks: []config.Task{
+					{
+						From: "gdrive:docs",
+						To: []config.Destination{
+							{Path: "s3:backup"},
+						},
+						Enabled: true,
+					},
+				},
+			},
+		},
+	}
+}
+
 func TestSyncAllTargets_ErrorHandling(t *testing.T) {
 	ctx := context.Background()
 	mockExec := &mockCmdExecutor{success: false}
 	mockLog := &mockCmdLogger{}
 	engine := sync.NewEngine(nil, mockExec, mockLog)
-	cfg := config.NewConfig()
-	cfg.AddProvider("gdrive", config.PathMap{
-		"docs": []config.Destination{{To: "s3:backup"}},
-	})
+	cfg := getTestConfig()
 
 	opts := sync.SyncOptions{
 		DryRun:  false,
@@ -58,15 +76,12 @@ func TestSyncAllTargets_ErrorHandling(t *testing.T) {
 	}
 }
 
-func TestSyncSingleTarget_ErrorHandling(t *testing.T) {
+func TestSyncSingleJob_ErrorHandling(t *testing.T) {
 	ctx := context.Background()
 	mockExec := &mockCmdExecutor{success: false}
 	mockLog := &mockCmdLogger{}
 	engine := sync.NewEngine(nil, mockExec, mockLog)
-	cfg := config.NewConfig()
-	cfg.AddProvider("gdrive", config.PathMap{
-		"docs": []config.Destination{{To: "s3:backup"}},
-	})
+	cfg := getTestConfig()
 
 	opts := sync.SyncOptions{
 		DryRun:  false,
@@ -74,9 +89,9 @@ func TestSyncSingleTarget_ErrorHandling(t *testing.T) {
 		Quiet:   false,
 	}
 
-	err := syncSingleTarget(ctx, GetLogger(), engine, cfg, "gdrive:docs", opts)
+	err := syncSingleJob(ctx, GetLogger(), engine, cfg, "test-job", opts)
 	if err != nil {
-		t.Logf("syncSingleTarget returned expected error: %v", err)
+		t.Logf("syncSingleJob returned expected error: %v", err)
 	}
 }
 
@@ -122,27 +137,26 @@ func TestReportResults_ErrorCases(t *testing.T) {
 	}
 }
 
-func TestFindAndValidateTarget_ErrorCases(t *testing.T) {
+func TestFindAndValidateJobTargets_ErrorCases(t *testing.T) {
 	tests := []struct {
 		name      string
-		targetArg string
-		setupFunc func()
+		jobID     string
+		setupFunc func() *config.Config
 		wantErr   bool
 	}{
 		{
-			name:      "invalid target format",
-			targetArg: "invalid",
-			setupFunc: func() {},
-			wantErr:   true,
+			name:  "invalid target format (old format)",
+			jobID: "gdrive:docs",
+			setupFunc: func() *config.Config {
+				return getTestConfig()
+			},
+			wantErr: true,
 		},
 		{
-			name:      "target not found",
-			targetArg: "notfound:path",
-			setupFunc: func() {
-				cfg := config.NewConfig()
-				cfg.AddProvider("gdrive", config.PathMap{
-					"docs": []config.Destination{{To: "s3:backup"}},
-				})
+			name:  "job not found",
+			jobID: "nonexistent-job",
+			setupFunc: func() *config.Config {
+				return getTestConfig()
 			},
 			wantErr: true,
 		},
@@ -150,18 +164,14 @@ func TestFindAndValidateTarget_ErrorCases(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			tt.setupFunc()
+			cfg := tt.setupFunc()
 			mockExec := &mockCmdExecutor{success: false}
 			mockLog := &mockCmdLogger{}
 			engine := sync.NewEngine(nil, mockExec, mockLog)
-			cfg := config.NewConfig()
-			cfg.AddProvider("gdrive", config.PathMap{
-				"docs": []config.Destination{{To: "s3:backup"}},
-			})
 
-			_, err := findAndValidateTarget(GetLogger(), engine, cfg, tt.targetArg)
+			_, err := findAndValidateJobTargets(GetLogger(), engine, cfg, tt.jobID)
 			if (err != nil) != tt.wantErr {
-				t.Errorf("findAndValidateTarget() error = %v, wantErr %v", err, tt.wantErr)
+				t.Errorf("findAndValidateJobTargets() error = %v, wantErr %v", err, tt.wantErr)
 			}
 		})
 	}

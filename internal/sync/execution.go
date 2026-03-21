@@ -17,7 +17,7 @@ func (e *Engine) RunSync(ctx context.Context, target SyncTarget, options SyncOpt
 	e.logger.TargetInfo("Target: %s", taskName)
 
 	sourceRemote := FormatRemote(target.Provider, target.SourcePath)
-	destRemote := target.Destination.To
+	destRemote := target.Destination.Path
 
 	bisyncOptions := &rclone.BisyncOptions{
 		Resync: target.Resync || options.DryRun || e.dryRun,
@@ -113,5 +113,5 @@ func (e *Engine) Run(ctx context.Context, target SyncTarget, options SyncOptions
 }
 
 func formatTaskName(target SyncTarget) string {
-	return fmt.Sprintf("%s:%s → %s", target.Provider, target.SourcePath, StripProviderHash(target.Destination.To))
+	return fmt.Sprintf("[%s] %s:%s → %s", target.JobName, target.Provider, target.SourcePath, StripProviderHash(target.Destination.Path))
 }

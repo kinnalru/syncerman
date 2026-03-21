@@ -128,28 +128,32 @@ Create a `.syncerman.yml` file in your project directory. Syncerman uses YAML fo
 **Example configuration:**
 
 ```yaml
-local:
-    "./cloud/mirror/folder":
-        -
-            to: gdrive:folders/folder1
+jobs:
+  cloud_mirror:
+    name: "Cloud Mirroring"
+    tasks:
+      - from: "local:./cloud/mirror/folder"
+        to:
+          - path: "gdrive:folders/folder1"
             args: []
             resync: false
-        -
-            to: ydisk:folders/folder1
+          - path: "ydisk:folders/folder1"
             args: []
             resync: false
-
-gdrive:
-    "folders/folder1":
-        -
-            to: ydisk:folders/folder1
+  inter_cloud:
+    name: "Inter-cloud Sync"
+    tasks:
+      - from: "gdrive:folders/folder1"
+        to:
+          - path: "ydisk:folders/folder1"
             args: []
             resync: false
 ```
 
 **Explanation:**
-- The first section syncs local folder `./cloud/mirror/folder` to both `gdrive:folders/folder1` and `ydisk:folders/folder1`
-- The second section syncs `gdrive:folders/folder1` directly to `ydisk:folders/folder1`
+- Configuration uses a `jobs` map, where each job (`cloud_mirror`, `inter_cloud`) can have an optional `name`, `enabled` flag, and `priority`.
+- The first job syncs local folder `./cloud/mirror/folder` to both `gdrive:folders/folder1` and `ydisk:folders/folder1`
+- The second job syncs `gdrive:folders/folder1` directly to `ydisk:folders/folder1`
 - `args` allows additional rclone arguments (optional)
 - `resync` forces initial sync to prefer source content (default: false)
 
@@ -215,14 +219,19 @@ Syncerman searches for configuration files in the following order:
 
 ### Configuration Format Overview
 
-Syncerman uses YAML configuration files to define sync targets. The configuration is structured by provider names, with each provider containing one or more source paths that define sync targets.
+Syncerman uses YAML configuration files to define sync targets. The configuration is structured using a `jobs` map, where each job defines a list of sync `tasks`. Each task has a source (`from`) and one or more destinations (`to`).
 
 **Basic Structure:**
 ```yaml
-<provider_name>:
-    "<source_path>":
-        -
-            to: "<destination>"
+jobs:
+  my_sync_job:
+    name: "My Sync Job"
+    enabled: true
+    priority: 10
+    tasks:
+      - from: "<source_path>"
+        to:
+          - path: "<destination>"
             args: []
             resync: false
 ```
@@ -232,12 +241,13 @@ Syncerman uses YAML configuration files to define sync targets. The configuratio
 Sync a local folder to a Google Drive folder:
 
 ```yaml
-local:
-    "./documents":
-        -
-            to: gdrive:backup/documents
-            args: []
-            resync: false
+jobs:
+  document_backup:
+    name: "Document Backup"
+    tasks:
+      - from: "local:./documents"
+        to:
+          - path: "gdrive:backup/documents"
 ```
 
 ### Example 2: Multi-Target Sync
@@ -245,23 +255,18 @@ local:
 Sync one source to multiple destinations and sync between remotes:
 
 ```yaml
-local:
-    "./cloud/mirror/folder":
-        -
-            to: gdrive:folders/folder1
-            args: []
-            resync: false
-        -
-            to: ydisk:folders/folder1
-            args: []
-            resync: false
-
-gdrive:
-    "folders/folder1":
-        -
-            to: ydisk:folders/folder1
-            args: []
-            resync: false
+jobs:
+  cloud_mirror:
+    tasks:
+      - from: "local:./cloud/mirror/folder"
+        to:
+          - path: "gdrive:folders/folder1"
+          - path: "ydisk:folders/folder1"
+  inter_cloud:
+    tasks:
+      - from: "gdrive:folders/folder1"
+        to:
+          - path: "ydisk:folders/folder1"
 ```
 
 This configuration:
@@ -270,10 +275,16 @@ This configuration:
 
 ### Configuration Fields Explained
 
-- **Provider Name** - The rclone remote name (e.g., `gdrive`, `ydisk`, `s3`, `local`). Must match a remote name from `rclone listremotes`.
-- **Source Path** - The path within the source provider. Relative to provider's root. For `local` provider, use relative paths like `./folder`.
-- **to** (required) - Destination in format `<provider>:<path>` or `<path>` for local filesystem.
-- **args** (optional) - Array of additional rclone command-line arguments. Default is empty array.
+- **jobs** - Root-level map containing all synchronization jobs.
+- **Job ID** (e.g., `my_sync_job`) - Identifier used for targeted execution.
+- **name** (optional) - Human-readable name for logging. Defaults to the Job ID.
+- **enabled** (optional) - Toggle the job on or off. Defaults to `true`.
+- **priority** (optional) - Numeric value defining execution order. Lower numbers run first. Defaults to `10`.
+- **tasks** - Array of sync operations within the job.
+- **from** (required) - Source path in format `<provider>:<path>`. For local paths, use `local:./path`.
+- **to** (required) - Array of destination objects.
+- **path** (required inside `to`) - Destination in format `<provider>:<path>`.
+- **args** (optional) - Array of additional rclone command-line arguments.
 - **resync** (optional) - Flag to force initial sync with `--resync` option. Default is `false`.
 
 For detailed configuration information, see `guides/OVERALL.md:46-99`.
@@ -309,20 +320,19 @@ This command:
 4. Sequentially runs rclone bisync for each target
 5. Handles first-run errors automatically
 
-#### sync <provider:path> [flags]
+#### sync <job_id> [flags]
 
-Synchronize a specific provider and path.
+Synchronize a specific job defined in the configuration.
 
 **Usage:**
 ```bash
-syncerman sync local:./cloud/docs
-syncerman sync gdrive:folders/folder1 --verbose
-syncerman sync ydisk:folders/folder1 --dry-run
+syncerman sync cloud_mirror
+syncerman sync document_backup --verbose
+syncerman sync inter_cloud --dry-run
 ```
 
 **Target Format:**
-- For local: `local:./path/to/folder` or `./path/to/folder`
-- For remotes: `<provider>:<path>`
+- Uses the `<job_id>` from the configuration file's `jobs` map.
 
 #### check [flags]
 
@@ -379,19 +389,19 @@ syncerman sync --dry-run --verbose
 syncerman sync --verbose
 ```
 
-### Scenario 3: Sync Specific Folder
+### Scenario 3: Sync Specific Job
 
-Sync only a specific folder to save time or target a specific need:
+Sync only a specific job to save time or target a specific need:
 
 ```bash
-# Sync only local documents folder
-syncerman sync local:./documents --verbose
+# Sync only local documents job
+syncerman sync document_backup --verbose
 
-# Sync a specific Google Drive folder
-syncerman sync gdrive:projects/main --verbose
+# Sync a specific Google Drive job
+syncerman sync cloud_mirror --verbose
 
-# Dry-run specific folder first
-syncerman sync gdrive:projects/main --dry-run
+# Dry-run specific job first
+syncerman sync cloud_mirror --dry-run
 ```
 
 ### Scenario 4: Using Custom Config File
@@ -450,17 +460,17 @@ syncerman sync --verbose
   - Verify proper quote usage
   - Use an online YAML validator to check syntax
 
-**Error: "Invalid configuration: provider name cannot be empty"**
-- **Cause**: Empty or missing provider name
+**Error: "Invalid configuration: task source (from) cannot be empty"**
+- **Cause**: Empty or missing source path in a task
 - **Solution**:
-  - Ensure provider names are defined as root-level keys
-  - Reference: `gdrive:`, not empty provider
+  - Ensure `from` path is provided in the task
+  - Reference: `from: "local:./documents"`
 
-**Error: "Invalid configuration: source path cannot be empty"**
-- **Cause**: Empty or missing source path under provider
+**Error: "Invalid configuration: task destinations (to) cannot be empty"**
+- **Cause**: Empty or missing destination array under a task
 - **Solution**:
-  - Ensure paths are quoted and non-empty
-  - Example: `"./documents"` or `"folders/backup"`
+  - Ensure each task has at least one destination path
+  - Example: `- path: "gdrive:backup/documents"`
 
 ### Rclone Remote Verification Failures
 

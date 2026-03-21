@@ -22,6 +22,8 @@ func joinErrorMessages(errors []error, separator string) string {
 
 // SyncTarget represents a single synchronization operation between source and destinations.
 type SyncTarget struct {
+	JobID       string             // The ID of the job this target belongs to
+	JobName     string             // The name of the job this target belongs to
 	Provider    string             // Source provider name
 	SourcePath  string             // Path within source provider
 	Destination config.Destination // Single destination configuration

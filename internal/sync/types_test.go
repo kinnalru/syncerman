@@ -109,8 +109,13 @@ func TestCreateAllDirectories_AllFailureScenarios(t *testing.T) {
 			cfg := config.NewConfig()
 			for i := 0; i < len(tt.results); i++ {
 				providerName := fmt.Sprintf("gdrive%d", i)
-				cfg.AddProvider(providerName, config.PathMap{
-					"docs": []config.Destination{{To: fmt.Sprintf("s3:backup/docs%d", i)}},
+				cfg.Jobs = append(cfg.Jobs, config.Job{
+					ID:      providerName,
+					Name:    providerName,
+					Enabled: true,
+					Tasks: []config.Task{
+						{From: providerName + ":docs", Enabled: true, To: []config.Destination{{Path: fmt.Sprintf("s3:backup/docs%d", i)}}},
+					},
 				})
 			}
 
@@ -128,12 +133,17 @@ func TestCreateAllDirectories_AllFailureScenarios(t *testing.T) {
 }
 
 func createTestConfigFile(t *testing.T, path string) {
-	content := `gdrive:
-  docs:
-    - to: s3:backup/docs
-local:
-  /data:
-    - to: /backup/data`
+	content := `jobs:
+  job1:
+    tasks:
+      - from: gdrive:docs
+        to:
+          - path: s3:backup/docs
+  job2:
+    tasks:
+      - from: /data
+        to:
+          - path: /backup/data`
 	err := os.WriteFile(path, []byte(content), 0644)
 	require.NoError(t, err)
 }

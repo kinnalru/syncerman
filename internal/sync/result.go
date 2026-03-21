@@ -41,8 +41,8 @@ func collectResults(results []*SyncResult) *SyncReport {
 			report.FailedTargets = append(report.FailedTargets, result.Target)
 			report.HasErrors = true
 			if result.Error != nil {
-				report.Errors = append(report.Errors, fmt.Errorf("target %s:%s -> %s: %v",
-					result.Target.Provider, result.Target.SourcePath, result.Target.Destination.To, result.Error))
+				report.Errors = append(report.Errors, fmt.Errorf("job %s target %s:%s -> %s: %v",
+					result.Target.JobName, result.Target.Provider, result.Target.SourcePath, result.Target.Destination.Path, result.Error))
 			}
 		}
 	}
@@ -103,7 +103,7 @@ func (r *SyncReport) formatHeader(builder *strings.Builder) {
 func (r *SyncReport) formatTargetList(builder *strings.Builder, header string, targets []SyncTarget, errors []error) {
 	builder.WriteString(header)
 	for i, target := range targets {
-		fmt.Fprintf(builder, "%d. %s:%s -> %s\n", i+1, target.Provider, target.SourcePath, target.Destination.To)
+		fmt.Fprintf(builder, "%d. [%s] %s:%s -> %s\n", i+1, target.JobName, target.Provider, target.SourcePath, target.Destination.Path)
 
 		if errors != nil && i < len(errors) {
 			fmt.Fprintf(builder, "   Error: %v\n", errors[i])

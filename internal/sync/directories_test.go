@@ -42,14 +42,24 @@ func TestCreateAllDirectories_Success(t *testing.T) {
 	}
 
 	cfg := config.NewConfig()
-	cfg.AddProvider("gdrive", config.PathMap{
-		"docs": []config.Destination{
-			{To: "s3:backup/docs"},
+	cfg.Jobs = append(cfg.Jobs, config.Job{
+		ID: "gdrive_job",
+		Name: "gdrive_job",
+		Enabled: true,
+		Tasks: []config.Task{
+			{From: "gdrive:docs", Enabled: true, To: []config.Destination{
+				{Path: "s3:backup/docs"},
+			}},
 		},
 	})
-	cfg.AddProvider("local", config.PathMap{
-		"/data": []config.Destination{
-			{To: "gdrive:data"},
+	cfg.Jobs = append(cfg.Jobs, config.Job{
+		ID: "local_job",
+		Name: "local_job",
+		Enabled: true,
+		Tasks: []config.Task{
+			{From: "/data", Enabled: true, To: []config.Destination{
+				{Path: "gdrive:data"},
+			}},
 		},
 	})
 
@@ -65,9 +75,14 @@ func TestCreateAllDirectories_DryRun(t *testing.T) {
 	mockExec := &mockMkdirExecutor{}
 
 	cfg := config.NewConfig()
-	cfg.AddProvider("gdrive", config.PathMap{
-		"docs": []config.Destination{
-			{To: "s3:backup/docs"},
+	cfg.Jobs = append(cfg.Jobs, config.Job{
+		ID: "gdrive_job",
+		Name: "gdrive_job",
+		Enabled: true,
+		Tasks: []config.Task{
+			{From: "gdrive:docs", Enabled: true, To: []config.Destination{
+				{Path: "s3:backup/docs"},
+			}},
 		},
 	})
 
@@ -92,10 +107,15 @@ func TestCreateAllDirectories_Error(t *testing.T) {
 	}
 
 	cfg := config.NewConfig()
-	cfg.AddProvider("gdrive", config.PathMap{
-		"docs": []config.Destination{
-			{To: "s3:backup/docs"},
-			{To: "s3:backup/docs2"},
+	cfg.Jobs = append(cfg.Jobs, config.Job{
+		ID: "gdrive_job",
+		Name: "gdrive_job",
+		Enabled: true,
+		Tasks: []config.Task{
+			{From: "gdrive:docs", Enabled: true, To: []config.Destination{
+				{Path: "s3:backup/docs"},
+			{Path: "s3:backup/docs2"},
+			}},
 		},
 	})
 
@@ -129,9 +149,14 @@ func TestPrepare_Directories(t *testing.T) {
 	}
 
 	cfg := config.NewConfig()
-	cfg.AddProvider("gdrive", config.PathMap{
-		"docs": []config.Destination{
-			{To: "s3:backup/docs"},
+	cfg.Jobs = append(cfg.Jobs, config.Job{
+		ID: "gdrive_job",
+		Name: "gdrive_job",
+		Enabled: true,
+		Tasks: []config.Task{
+			{From: "gdrive:docs", Enabled: true, To: []config.Destination{
+				{Path: "s3:backup/docs"},
+			}},
 		},
 	})
 
@@ -147,9 +172,14 @@ func TestCreateAllDirectories_DryRunViaEngine(t *testing.T) {
 	mockExec := &mockMkdirExecutor{}
 
 	cfg := config.NewConfig()
-	cfg.AddProvider("gdrive", config.PathMap{
-		"docs": []config.Destination{
-			{To: "s3:backup/docs"},
+	cfg.Jobs = append(cfg.Jobs, config.Job{
+		ID: "gdrive_job",
+		Name: "gdrive_job",
+		Enabled: true,
+		Tasks: []config.Task{
+			{From: "gdrive:docs", Enabled: true, To: []config.Destination{
+				{Path: "s3:backup/docs"},
+			}},
 		},
 	})
 
@@ -171,9 +201,14 @@ func TestCreateAllDirectories_CreatesSourceDirectories(t *testing.T) {
 	}
 
 	cfg := config.NewConfig()
-	cfg.AddProvider("gdrive", config.PathMap{
-		"source_folder": []config.Destination{
-			{To: "s3:backup/source_folder"},
+	cfg.Jobs = append(cfg.Jobs, config.Job{
+		ID: "gdrive_job",
+		Name: "gdrive_job",
+		Enabled: true,
+		Tasks: []config.Task{
+			{From: "gdrive:source_folder", Enabled: true, To: []config.Destination{
+				{Path: "s3:backup/source_folder"},
+			}},
 		},
 	})
 
@@ -194,9 +229,14 @@ func TestCreateAllDirectories_CreatesLocalSource(t *testing.T) {
 	}
 
 	cfg := config.NewConfig()
-	cfg.AddProvider("local", config.PathMap{
-		"local_folder": []config.Destination{
-			{To: "gdrive:backup/local_folder"},
+	cfg.Jobs = append(cfg.Jobs, config.Job{
+		ID: "local_job",
+		Name: "local_job",
+		Enabled: true,
+		Tasks: []config.Task{
+			{From: "local_folder", Enabled: true, To: []config.Destination{
+				{Path: "gdrive:backup/local_folder"},
+			}},
 		},
 	})
 
@@ -218,9 +258,14 @@ func TestCreateAllDirectories_BothSourceAndDestination(t *testing.T) {
 	}
 
 	cfg := config.NewConfig()
-	cfg.AddProvider("gdrive", config.PathMap{
-		"source_folder": []config.Destination{
-			{To: "s3:backup/source_folder"},
+	cfg.Jobs = append(cfg.Jobs, config.Job{
+		ID: "gdrive_job",
+		Name: "gdrive_job",
+		Enabled: true,
+		Tasks: []config.Task{
+			{From: "gdrive:source_folder", Enabled: true, To: []config.Destination{
+				{Path: "s3:backup/source_folder"},
+			}},
 		},
 	})
 

@@ -16,14 +16,14 @@ import (
 func TestNewReport_SuccessOnly(t *testing.T) {
 	results := []*SyncResult{
 		{
-			Target:     SyncTarget{Provider: "gdrive", SourcePath: "docs", Destination: config.Destination{To: "s3:backup/docs"}},
+			Target:     SyncTarget{Provider: "gdrive", SourcePath: "docs", Destination: config.Destination{Path: "s3:backup/docs"}},
 			Success:    true,
 			Error:      nil,
 			FirstRun:   false,
 			RetryCount: 0,
 		},
 		{
-			Target:     SyncTarget{Provider: "local", SourcePath: "/data", Destination: config.Destination{To: "gdrive:data"}},
+			Target:     SyncTarget{Provider: "local", SourcePath: "/data", Destination: config.Destination{Path: "gdrive:data"}},
 			Success:    true,
 			Error:      nil,
 			FirstRun:   false,
@@ -44,14 +44,14 @@ func TestNewReport_SuccessOnly(t *testing.T) {
 func TestNewReport_WithFailures(t *testing.T) {
 	results := []*SyncResult{
 		{
-			Target:     SyncTarget{Provider: "gdrive", SourcePath: "docs", Destination: config.Destination{To: "s3:backup/docs"}},
+			Target:     SyncTarget{Provider: "gdrive", SourcePath: "docs", Destination: config.Destination{Path: "s3:backup/docs"}},
 			Success:    true,
 			Error:      nil,
 			FirstRun:   false,
 			RetryCount: 0,
 		},
 		{
-			Target:     SyncTarget{Provider: "local", SourcePath: "/data", Destination: config.Destination{To: "gdrive:data"}},
+			Target:     SyncTarget{Provider: "local", SourcePath: "/data", Destination: config.Destination{Path: "gdrive:data"}},
 			Success:    false,
 			Error:      assert.AnError,
 			FirstRun:   false,
@@ -73,14 +73,14 @@ func TestNewReport_WithFirstRun(t *testing.T) {
 
 	results := []*SyncResult{
 		{
-			Target:     SyncTarget{Provider: "gdrive", SourcePath: "docs", Destination: config.Destination{To: "s3:backup/docs"}},
+			Target:     SyncTarget{Provider: "gdrive", SourcePath: "docs", Destination: config.Destination{Path: "s3:backup/docs"}},
 			Success:    true,
 			Error:      nil,
 			FirstRun:   true,
 			RetryCount: 1,
 		},
 		{
-			Target:     SyncTarget{Provider: "local", SourcePath: "/data", Destination: config.Destination{To: "gdrive:data"}},
+			Target:     SyncTarget{Provider: "local", SourcePath: "/data", Destination: config.Destination{Path: "gdrive:data"}},
 			Success:    true,
 			Error:      nil,
 			FirstRun:   false,
@@ -102,7 +102,7 @@ func TestNewReport_NilValues(t *testing.T) {
 
 	results := []*SyncResult{
 		{
-			Target:     SyncTarget{Provider: "gdrive", SourcePath: "docs", Destination: config.Destination{To: "s3:backup/docs"}},
+			Target:     SyncTarget{Provider: "gdrive", SourcePath: "docs", Destination: config.Destination{Path: "s3:backup/docs"}},
 			Success:    true,
 			Error:      nil,
 			FirstRun:   false,
@@ -110,7 +110,7 @@ func TestNewReport_NilValues(t *testing.T) {
 		},
 		nil,
 		{
-			Target:     SyncTarget{Provider: "local", SourcePath: "/data", Destination: config.Destination{To: "gdrive:data"}},
+			Target:     SyncTarget{Provider: "local", SourcePath: "/data", Destination: config.Destination{Path: "gdrive:data"}},
 			Success:    true,
 			Error:      nil,
 			FirstRun:   false,
@@ -128,7 +128,7 @@ func TestReportFormat_NonVerbose(t *testing.T) {
 
 	results := []*SyncResult{
 		{
-			Target:     SyncTarget{Provider: "gdrive", SourcePath: "docs", Destination: config.Destination{To: "s3:backup/docs"}},
+			Target:     SyncTarget{Provider: "gdrive", SourcePath: "docs", Destination: config.Destination{Path: "s3:backup/docs"}},
 			Success:    true,
 			Error:      nil,
 			FirstRun:   false,
@@ -150,7 +150,7 @@ func TestReportFormat_Verbose(t *testing.T) {
 
 	results := []*SyncResult{
 		{
-			Target:     SyncTarget{Provider: "gdrive", SourcePath: "docs", Destination: config.Destination{To: "s3:backup/docs"}},
+			Target:     SyncTarget{Provider: "gdrive", SourcePath: "docs", Destination: config.Destination{Path: "s3:backup/docs"}},
 			Success:    true,
 			Error:      nil,
 			FirstRun:   false,
@@ -163,21 +163,21 @@ func TestReportFormat_Verbose(t *testing.T) {
 
 	assert.Contains(t, output, "=== Sync Summary ===")
 	assert.Contains(t, output, "=== Successful Targets ===")
-	assert.Contains(t, output, "1. gdrive:docs -> s3:backup/docs")
+	assert.Contains(t, output, "1. [] gdrive:docs -> s3:backup/docs")
 }
 
 func TestReportFormat_VerboseWithFailures(t *testing.T) {
 
 	results := []*SyncResult{
 		{
-			Target:     SyncTarget{Provider: "gdrive", SourcePath: "docs", Destination: config.Destination{To: "s3:backup/docs"}},
+			Target:     SyncTarget{Provider: "gdrive", SourcePath: "docs", Destination: config.Destination{Path: "s3:backup/docs"}},
 			Success:    true,
 			Error:      nil,
 			FirstRun:   false,
 			RetryCount: 0,
 		},
 		{
-			Target:     SyncTarget{Provider: "local", SourcePath: "/data", Destination: config.Destination{To: "gdrive:data"}},
+			Target:     SyncTarget{Provider: "local", SourcePath: "/data", Destination: config.Destination{Path: "gdrive:data"}},
 			Success:    false,
 			Error:      fmt.Errorf("permission denied"),
 			FirstRun:   false,
@@ -189,7 +189,7 @@ func TestReportFormat_VerboseWithFailures(t *testing.T) {
 	output := report.Format(true)
 
 	assert.Contains(t, output, "=== Failed Targets ===")
-	assert.Contains(t, output, "1. local:/data -> gdrive:data")
+	assert.Contains(t, output, "1. [] local:/data -> gdrive:data")
 	assert.Contains(t, output, "permission denied")
 }
 
@@ -197,7 +197,7 @@ func TestReportFormat_VerboseWithFirstRun(t *testing.T) {
 
 	results := []*SyncResult{
 		{
-			Target:     SyncTarget{Provider: "gdrive", SourcePath: "docs", Destination: config.Destination{To: "s3:backup/docs"}},
+			Target:     SyncTarget{Provider: "gdrive", SourcePath: "docs", Destination: config.Destination{Path: "s3:backup/docs"}},
 			Success:    true,
 			Error:      nil,
 			FirstRun:   true,
@@ -209,14 +209,14 @@ func TestReportFormat_VerboseWithFirstRun(t *testing.T) {
 	output := report.Format(true)
 
 	assert.Contains(t, output, "=== First-Runs ===")
-	assert.Contains(t, output, "1. gdrive:docs -> s3:backup/docs")
+	assert.Contains(t, output, "1. [] gdrive:docs -> s3:backup/docs")
 }
 
 func TestReportFormatError_NoErrors(t *testing.T) {
 
 	results := []*SyncResult{
 		{
-			Target:     SyncTarget{Provider: "gdrive", SourcePath: "docs", Destination: config.Destination{To: "s3:backup/docs"}},
+			Target:     SyncTarget{Provider: "gdrive", SourcePath: "docs", Destination: config.Destination{Path: "s3:backup/docs"}},
 			Success:    true,
 			Error:      nil,
 			FirstRun:   false,
@@ -234,14 +234,14 @@ func TestReportFormatError_WithErrors(t *testing.T) {
 
 	results := []*SyncResult{
 		{
-			Target:     SyncTarget{Provider: "local", SourcePath: "/data", Destination: config.Destination{To: "gdrive:data"}},
+			Target:     SyncTarget{Provider: "local", SourcePath: "/data", Destination: config.Destination{Path: "gdrive:data"}},
 			Success:    false,
 			Error:      fmt.Errorf("permission denied"),
 			FirstRun:   false,
 			RetryCount: 0,
 		},
 		{
-			Target:     SyncTarget{Provider: "gdrive", SourcePath: "photos", Destination: config.Destination{To: "s3:backup/photos"}},
+			Target:     SyncTarget{Provider: "gdrive", SourcePath: "photos", Destination: config.Destination{Path: "s3:backup/photos"}},
 			Success:    false,
 			Error:      fmt.Errorf("network timeout"),
 			FirstRun:   false,
@@ -261,7 +261,7 @@ func TestCalculateExitCode_Success(t *testing.T) {
 
 	results := []*SyncResult{
 		{
-			Target:     SyncTarget{Provider: "gdrive", SourcePath: "docs", Destination: config.Destination{To: "s3:backup/docs"}},
+			Target:     SyncTarget{Provider: "gdrive", SourcePath: "docs", Destination: config.Destination{Path: "s3:backup/docs"}},
 			Success:    true,
 			Error:      nil,
 			FirstRun:   false,
@@ -278,7 +278,7 @@ func TestCalculateExitCode_Failure(t *testing.T) {
 
 	results := []*SyncResult{
 		{
-			Target:     SyncTarget{Provider: "local", SourcePath: "/data", Destination: config.Destination{To: "gdrive:data"}},
+			Target:     SyncTarget{Provider: "local", SourcePath: "/data", Destination: config.Destination{Path: "gdrive:data"}},
 			Success:    false,
 			Error:      assert.AnError,
 			FirstRun:   false,
@@ -295,7 +295,7 @@ func TestCalculateExitCode_FirstRunNoFailure(t *testing.T) {
 
 	results := []*SyncResult{
 		{
-			Target:     SyncTarget{Provider: "gdrive", SourcePath: "docs", Destination: config.Destination{To: "s3:backup/docs"}},
+			Target:     SyncTarget{Provider: "gdrive", SourcePath: "docs", Destination: config.Destination{Path: "s3:backup/docs"}},
 			Success:    true,
 			Error:      nil,
 			FirstRun:   true,
@@ -312,7 +312,7 @@ func TestHasErrorsField_True(t *testing.T) {
 
 	results := []*SyncResult{
 		{
-			Target:     SyncTarget{Provider: "local", SourcePath: "/data", Destination: config.Destination{To: "gdrive:data"}},
+			Target:     SyncTarget{Provider: "local", SourcePath: "/data", Destination: config.Destination{Path: "gdrive:data"}},
 			Success:    false,
 			Error:      assert.AnError,
 			FirstRun:   false,
@@ -328,7 +328,7 @@ func TestHasErrorsField_False(t *testing.T) {
 
 	results := []*SyncResult{
 		{
-			Target:     SyncTarget{Provider: "gdrive", SourcePath: "docs", Destination: config.Destination{To: "s3:backup/docs"}},
+			Target:     SyncTarget{Provider: "gdrive", SourcePath: "docs", Destination: config.Destination{Path: "s3:backup/docs"}},
 			Success:    true,
 			Error:      nil,
 			FirstRun:   false,
@@ -343,7 +343,7 @@ func TestHasErrorsField_False(t *testing.T) {
 func TestNewReport(t *testing.T) {
 	results := []*SyncResult{
 		{
-			Target:     SyncTarget{Provider: "gdrive", SourcePath: "docs", Destination: config.Destination{To: "s3:backup/docs"}},
+			Target:     SyncTarget{Provider: "gdrive", SourcePath: "docs", Destination: config.Destination{Path: "s3:backup/docs"}},
 			Success:    true,
 			Error:      nil,
 			FirstRun:   false,
@@ -504,8 +504,8 @@ func TestFormatSuccessfulTargets(t *testing.T) {
 	report := &SyncReport{
 		SuccessCount: 2,
 		SucceededTargets: []SyncTarget{
-			{Provider: "gdrive", SourcePath: "docs", Destination: config.Destination{To: "s3:backup/docs"}},
-			{Provider: "local", SourcePath: "/data", Destination: config.Destination{To: "gdrive:data"}},
+			{Provider: "gdrive", SourcePath: "docs", Destination: config.Destination{Path: "s3:backup/docs"}},
+			{Provider: "local", SourcePath: "/data", Destination: config.Destination{Path: "gdrive:data"}},
 		},
 	}
 
@@ -514,15 +514,15 @@ func TestFormatSuccessfulTargets(t *testing.T) {
 	output := builder.String()
 
 	assert.Contains(t, output, "=== Successful Targets ===")
-	assert.Contains(t, output, "1. gdrive:docs -> s3:backup/docs")
-	assert.Contains(t, output, "2. local:/data -> gdrive:data")
+	assert.Contains(t, output, "1. [] gdrive:docs -> s3:backup/docs")
+	assert.Contains(t, output, "2. [] local:/data -> gdrive:data")
 }
 
 func TestFormatSuccessfulTargets_NonVerbose(t *testing.T) {
 	report := &SyncReport{
 		SuccessCount: 2,
 		SucceededTargets: []SyncTarget{
-			{Provider: "gdrive", SourcePath: "docs", Destination: config.Destination{To: "s3:backup/docs"}},
+			{Provider: "gdrive", SourcePath: "docs", Destination: config.Destination{Path: "s3:backup/docs"}},
 		},
 	}
 
@@ -537,8 +537,8 @@ func TestFormatFailedTargets(t *testing.T) {
 	report := &SyncReport{
 		FailureCount: 2,
 		FailedTargets: []SyncTarget{
-			{Provider: "local", SourcePath: "/data", Destination: config.Destination{To: "gdrive:data"}},
-			{Provider: "gdrive", SourcePath: "photos", Destination: config.Destination{To: "s3:backup/photos"}},
+			{Provider: "local", SourcePath: "/data", Destination: config.Destination{Path: "gdrive:data"}},
+			{Provider: "gdrive", SourcePath: "photos", Destination: config.Destination{Path: "s3:backup/photos"}},
 		},
 		Errors: []error{
 			fmt.Errorf("permission denied"),
@@ -551,9 +551,9 @@ func TestFormatFailedTargets(t *testing.T) {
 	output := builder.String()
 
 	assert.Contains(t, output, "=== Failed Targets ===")
-	assert.Contains(t, output, "1. local:/data -> gdrive:data")
+	assert.Contains(t, output, "1. [] local:/data -> gdrive:data")
 	assert.Contains(t, output, "   Error: permission denied")
-	assert.Contains(t, output, "2. gdrive:photos -> s3:backup/photos")
+	assert.Contains(t, output, "2. [] gdrive:photos -> s3:backup/photos")
 	assert.Contains(t, output, "   Error: network timeout")
 }
 
@@ -561,7 +561,7 @@ func TestFormatFailedTargets_NonVerbose(t *testing.T) {
 	report := &SyncReport{
 		FailureCount: 2,
 		FailedTargets: []SyncTarget{
-			{Provider: "local", SourcePath: "/data", Destination: config.Destination{To: "gdrive:data"}},
+			{Provider: "local", SourcePath: "/data", Destination: config.Destination{Path: "gdrive:data"}},
 		},
 	}
 
@@ -576,8 +576,8 @@ func TestFormatFirstRunTargets(t *testing.T) {
 	report := &SyncReport{
 		FirstRunCount: 2,
 		FirstRunTargets: []SyncTarget{
-			{Provider: "gdrive", SourcePath: "docs", Destination: config.Destination{To: "s3:backup/docs"}},
-			{Provider: "local", SourcePath: "/data", Destination: config.Destination{To: "gdrive:data"}},
+			{Provider: "gdrive", SourcePath: "docs", Destination: config.Destination{Path: "s3:backup/docs"}},
+			{Provider: "local", SourcePath: "/data", Destination: config.Destination{Path: "gdrive:data"}},
 		},
 	}
 
@@ -586,15 +586,15 @@ func TestFormatFirstRunTargets(t *testing.T) {
 	output := builder.String()
 
 	assert.Contains(t, output, "=== First-Runs ===")
-	assert.Contains(t, output, "1. gdrive:docs -> s3:backup/docs")
-	assert.Contains(t, output, "2. local:/data -> gdrive:data")
+	assert.Contains(t, output, "1. [] gdrive:docs -> s3:backup/docs")
+	assert.Contains(t, output, "2. [] local:/data -> gdrive:data")
 }
 
 func TestFormatFirstRunTargets_NonVerbose(t *testing.T) {
 	report := &SyncReport{
 		FirstRunCount: 2,
 		FirstRunTargets: []SyncTarget{
-			{Provider: "gdrive", SourcePath: "docs", Destination: config.Destination{To: "s3:backup/docs"}},
+			{Provider: "gdrive", SourcePath: "docs", Destination: config.Destination{Path: "s3:backup/docs"}},
 		},
 	}
 
@@ -618,7 +618,7 @@ func TestRun_Interface(t *testing.T) {
 	target := SyncTarget{
 		Provider:    "gdrive",
 		SourcePath:  "docs",
-		Destination: config.Destination{To: "s3:backup/docs"},
+		Destination: config.Destination{Path: "s3:backup/docs"},
 		Resync:      false,
 	}
 
