@@ -205,7 +205,7 @@ func TestCommandHelp(t *testing.T) {
 func TestNewCommandConfig(t *testing.T) {
 	cfg := NewCommandConfig()
 	if cfg == nil {
-		t.Error("NewCommandConfig() returned nil")
+		t.Fatal("NewCommandConfig() returned nil")
 	}
 	if cfg.ConfigFile != "" {
 		t.Errorf("NewCommandConfig() ConfigFile = %v, want empty string", cfg.ConfigFile)
@@ -498,7 +498,7 @@ func TestInitCommandConfig(t *testing.T) {
 			testRoot.SetArgs([]string{"version"})
 
 			if tt.verbose && tt.quiet {
-				testRoot.Execute()
+				_ = testRoot.Execute()
 			} else {
 				err := testRoot.Execute()
 				if err != nil && tt.verbose && tt.quiet {

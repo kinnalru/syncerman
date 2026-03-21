@@ -17,7 +17,8 @@ func (e *Engine) RunSync(ctx context.Context, target SyncTarget, options SyncOpt
 	e.logger.TargetInfo("Target: %s", taskName)
 
 	sourceRemote := FormatRemote(target.Provider, target.SourcePath)
-	destRemote := target.Destination.Path
+	destProvider, destPath, _ := ParseRemote(target.Destination.Path)
+	destRemote := FormatRemote(destProvider, destPath)
 
 	bisyncOptions := &rclone.BisyncOptions{
 		Resync: target.Resync || options.DryRun || e.dryRun,

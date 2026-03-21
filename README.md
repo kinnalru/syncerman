@@ -356,6 +356,22 @@ This command validates:
 - Rclone binary is accessible
 - Connection to each remote is possible
 
+#### migrate [config_path]
+
+Migrates an existing configuration file from the legacy provider-to-path format to the current job-centric format.
+
+**Usage:**
+```bash
+syncerman migrate
+syncerman migrate /path/to/old/config.yaml
+```
+
+This command:
+- Reads the specified or default configuration file.
+- Checks if it's already in the new format (skips if it is).
+- Creates a backup of the original file (`<config_path>.bak`).
+- Rewrites the configuration using the new `jobs` format while preserving all syncing logic.
+
 ## Usage Examples
 
 ### Scenario 1: First-time Setup and Validation
