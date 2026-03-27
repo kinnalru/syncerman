@@ -10,6 +10,8 @@
 
 ## Installation
 
+Main repository: https://gitlab.com/kinnalru/syncerman
+
 ### Prerequisites
 
 - **Go 1.25.5+** - Required for building Syncerman from source
