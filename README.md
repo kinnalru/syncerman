@@ -10,7 +10,7 @@
 
 ## Installation
 
-Main repository: https://gitlab.com/kinnalru/syncerman
+Main repository on Gitlab: https://gitlab.com/kinnalru/syncerman
 
 ### Prerequisites
 
